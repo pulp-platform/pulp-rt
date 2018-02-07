@@ -45,7 +45,7 @@ RT_L2_DATA static _sccb_short_read_t _short_readReg= {
     I2C_CMD_WR,  0x43,       // Send the control byte: change to read mode
     I2C_CMD_RD_NACK,         // Read NACK, fin of read
     I2C_CMD_STOP,
-    I2C_CMD_WAIT,0xff
+    I2C_CMD_WAIT,0x3
 };
 
 RT_L2_DATA static _sccb_read_t _sccbReadReg= {
@@ -57,7 +57,7 @@ RT_L2_DATA static _sccb_read_t _sccbReadReg= {
     I2C_CMD_WR,  0x43,       // Send the control byte: change to read mode
     I2C_CMD_RD_NACK,         // Read NACK, fin of read
     I2C_CMD_STOP,
-    I2C_CMD_WAIT,0xff
+    I2C_CMD_WAIT,0x3
 };
 
 RT_L2_DATA static _sccb_write_t _sccbWriteReg= {
@@ -66,7 +66,7 @@ RT_L2_DATA static _sccb_write_t _sccbWriteReg= {
     I2C_CMD_WR,  0x00,      // Addr Low Byte
     I2C_CMD_WR,  0x00,      // Write Data
     I2C_CMD_STOP,
-    I2C_CMD_WAIT,0xff,
+    I2C_CMD_WAIT,0x3
 };
 
 void rt_sccb_write(rt_i2c_t *dev_sccb, unsigned int addr, unsigned char value, rt_event_t *event){

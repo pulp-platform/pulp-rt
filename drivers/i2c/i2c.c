@@ -92,11 +92,19 @@ RT_L2_DATA static i2c_write_t _writeReg = {
   I2C_CMD_WAIT,0x1
 };
 
-void rt_i2c_write_seq(rt_i2c_t *dev_i2c, unsigned char *data, int length, rt_event_t *event){
+void rt_i2c_write_seq(rt_i2c_t *dev_i2c, unsigned char *addr, char addr_len, unsigned char *data, int length, rt_event_t *event){
     int irq = hal_irq_disable();
     _i2c_seq[seq_index++] = I2C_CMD_START;
     _i2c_seq[seq_index++] = I2C_CMD_WR;
     _i2c_seq[seq_index++] = dev_i2c->i2c_conf.addr_cs;
+    for (int i=0; i<addr_len; i++){
+        _i2c_seq[seq_index++] = I2C_CMD_WR;
+        _i2c_seq[seq_index++] = addr[i];
+    }
+    if (length > 1){
+        _i2c_seq[seq_index++] = I2C_CMD_RPT;
+        _i2c_seq[seq_index++] = length;
+    }
     for (int i=0; i<length; i++){
         _i2c_seq[seq_index++] = I2C_CMD_WR;
         _i2c_seq[seq_index++] = data[i];
