@@ -33,7 +33,7 @@ __rt_fc_socevents_handler:
   sw  x12, 16(sp)
 
   // Pop one element from the FIFO
-  la   x8, ARCHI_FC_ITC_ADDR
+  li   x8, ARCHI_FC_ITC_ADDR
   lw   x10, ARCHI_ITC_FIFO(x8)
 
   // UDMA CHANNEL EVENTS
@@ -43,7 +43,7 @@ __rt_fc_socevents_handler:
 
   // If the event is not handled, store it in the soc event status mask
   la      x9, __rt_socevents_status
-  la      x11, 32
+  li      x11, 32
   blt     x10, x11, socevents_set
   addi    x9, x9, 4
   addi    x10, x10, -32

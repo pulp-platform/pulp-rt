@@ -289,7 +289,7 @@ spim_step2:
 
   #else
 
-  la          x12, SPI_CMD_EOT(0)
+  li          x12, SPI_CMD_EOT(0)
   sw          x12, RT_PERIPH_COPY_T_PERIPH_DATA(x8)
   lw          x12, RT_PERIPH_CHANNEL_T_BASE(x9)
   addi        x10, x8, RT_PERIPH_COPY_T_PERIPH_DATA
