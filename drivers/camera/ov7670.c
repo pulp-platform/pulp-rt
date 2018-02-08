@@ -96,16 +96,17 @@ static RT_L2_DATA ov7670_reg_cfg_t _yuv422_conf[] = {
 };
 
 RT_L2_DATA unsigned char valueReg;
+RT_L2_DATA unsigned char__ov7670Inited = 0;
 
 
 void ov7670RegWrite(rt_camera_t *cam, unsigned char addr, unsigned char value, rt_event_t *event){
-  rt_event_t *call_event = rt_event_get_blocking(NULL);
+  rt_event_t *call_event = rt_event_get_blocking(event;
   rt_sccb_write(cam->i2c, addr, value, call_event);
   rt_event_wait(call_event);
 }
 
 unsigned int ov7670RegRead(rt_camera_t *cam, unsigned char addr, rt_event_t *event){
-  rt_event_t *call_event = rt_event_get_blocking(NULL);
+  rt_event_t *call_event = rt_event_get_blocking(event);
   rt_sccb_read(cam->i2c, addr, &valueReg, call_event);
   rt_event_wait(call_event);
   return valueReg;
@@ -114,13 +115,13 @@ unsigned int ov7670RegRead(rt_camera_t *cam, unsigned char addr, rt_event_t *eve
 
 static void regDump(rt_camera_t *cam){
     for (unsigned int i=0; i<=0xC9; i++)
-        printf("addr: %X, value: %X\n", i, ov7670RegRead(cam, i, 0));
+        printf("addr: %X, value: %X\n", i, ov7670RegRead(cam, i, NULL));
 }
 
 void ov7670_reset(rt_camera_t *cam){
 #ifdef ACTIVATE_SCCB
-    ov7670RegWrite(cam, REG_COM7, COM7_RESET, 0);
-    for (int i=0; i<50000; i++);
+    ov7670RegWrite(cam, REG_COM7, COM7_RESET, NULL);
+    for (volatile int i=0; i<50000; i++);
 #endif
 }
 
@@ -130,7 +131,7 @@ static void _ov7670RegInit(rt_camera_t *cam){
     ov7670_reset(cam);
     /*
     for(i=0; i<(sizeof(ov7670RegConf)/sizeof(ov7670_reg_cfg_t)); i++){
-        ov7670RegWrite(cam, ov7670RegConf[i].addr, ov7670RegConf[i].data, 0);
+        ov7670RegWrite(cam, ov7670RegConf[i].addr, ov7670RegConf[i].data, NULL);
     }
     */
 #endif
@@ -140,17 +141,17 @@ static void _ov7670RegInit(rt_camera_t *cam){
 static void _ov7670_rgb565(rt_camera_t *cam){
   unsigned int i;
   for(i=0; i<(sizeof(_rgb565_conf)/sizeof(ov7670_reg_cfg_t)); i++){
-    ov7670RegWrite(cam, _rgb565_conf[i].addr, _rgb565_conf[i].data, 0);
+    ov7670RegWrite(cam, _rgb565_conf[i].addr, _rgb565_conf[i].data, NULL);
   }
-  unsigned char value = ov7670RegRead(cam, REG_CLKRC, 0);
+  unsigned char value = ov7670RegRead(cam, REG_CLKRC, NULL);
   // TODO, to be replaced by a wait xx us function.
   for(i=0; i<5000; i++);
-  ov7670RegWrite(cam, REG_CLKRC, value, 0);
+  ov7670RegWrite(cam, REG_CLKRC, value, NULL);
 }
 
 static void _ov7670_yuv(rt_camera_t *cam){
   for(unsigned int i=0; i<(sizeof(_yuv422_conf)/sizeof(ov7670_reg_cfg_t)); i++){
-    ov7670RegWrite(cam, _yuv422_conf[i].addr, _yuv422_conf[i].data, 0);
+    ov7670RegWrite(cam, _yuv422_conf[i].addr, _yuv422_conf[i].data, NULL);
   }
 }
 
@@ -170,9 +171,11 @@ static void _ov7670ConfigAndEnable(rt_camera_t *cam){
 
     default:
 qvga:
-      ov7670RegWrite(cam, REG_COM3, 0x4, 0);
-      for(unsigned int i=0; i<(sizeof(_qvga_conf)/sizeof(ov7670_reg_cfg_t)); i++)
-        ov7670RegWrite(cam, _qvga_conf[i].addr, _qvga_conf[i].data, 0);
+      if (!__ov7670Inited){
+          ov7670RegWrite(cam, REG_COM3, 0x4, NULL);
+          for(unsigned int i=0; i<(sizeof(_qvga_conf)/sizeof(ov7670_reg_cfg_t)); i++)
+              ov7670RegWrite(cam, _qvga_conf[i].addr, _qvga_conf[i].data, NULL);
+      }
       _cpi.cfg_size.row_length = (QVGA_W-1) & MASK_16BITS;
 
   }
@@ -181,7 +184,8 @@ qvga:
 
   switch (cam->conf.format){
     case OV7670_RGB565:
-      _ov7670_rgb565(cam);
+      if (!__ov7670Inited)
+          _ov7670_rgb565(cam);
       _cpi.cfg_glob.format = RGB565;
       break;
     case OV7670_RGB555:
@@ -193,11 +197,13 @@ qvga:
       _cpi.cfg_glob.format = RGB444;
       break;
     case OV7670_YUV422:
-      _ov7670_yuv(cam);
+      if (!__ov7670Inited)
+          _ov7670_yuv(cam);
       _cpi.cfg_glob.format = BYPASS_LITEND;
       break;
     case OV7670_MONO_COLOR:
-      _ov7670_yuv(cam);
+      if (!__ov7670Inited)
+          _ov7670_yuv(cam);
       _cpi.cfg_glob.format = BYPASS_LITEND;
       cam->conf.cpiCfg = UDMA_CHANNEL_CFG_SIZE_8;
       break;
@@ -209,6 +215,7 @@ qvga:
   _cpi.cfg_glob.enable = ENABLE;
 
   hal_cpi_glob_set(0, _cpi.raw);
+  __ov7670Inited = 1;
 }
 
 void __rt_ov7670_close(rt_camera_t *dev_cam, rt_event_t *event){
@@ -217,6 +224,7 @@ void __rt_ov7670_close(rt_camera_t *dev_cam, rt_event_t *event){
   rt_camera_t *cam = (rt_camera_t *) dev_cam;
   rt_free(RT_ALLOC_FC_DATA, (void*)dev_cam, sizeof(rt_camera_t));
   plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
+  __ov7670Inited = 0;
   hal_irq_restore(irq);
 }
 
@@ -282,10 +290,13 @@ rt_camera_t* __rt_ov7670_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*even
   //cam->i2c = rt_sccb_open("sccb", &dev_cam->conf.i2c_conf, 0);
   unsigned char i2c_ch = 6;
   camera->i2c = __rt_sccb_open_channel(i2c_ch, &camera->i2c_conf, NULL);
-  if (camera->i2c == NULL) printf ("Filed to open I2C\n");
+  if (camera->i2c == NULL) {
+      printf ("Filed to open I2C\n");
+      return NULL;
+  }
   // the I2C of Himax freq: 400kHz max.
   rt_event_t *call_event = rt_event_get_blocking(NULL);
-  rt_sccb_conf(camera->i2c, 0x42, 0x400, call_event);
+  rt_sccb_conf(camera->i2c, 0x42, 0x100, call_event);
   rt_event_wait(call_event);
 #endif
 
@@ -298,7 +309,6 @@ rt_camera_t* __rt_ov7670_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*even
 void __rt_ov7670_capture(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, rt_event_t *event)
 {
   rt_trace(RT_TRACE_CAM, "[CAM OV7670] Capture (buffer: %p, size: 0x%x)\n", buffer, bufferlen);
-  //regDump(dev_cam);
 
   int irq = hal_irq_disable();
 
