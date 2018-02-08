@@ -51,7 +51,7 @@ __rt_fc_socevents_handler:
 socevents_set:
   lw      x11, 0(x9)
 #ifdef RV_ISA_RV32
-  la      x8, 1
+  li      x8, 1
   sll     x10, x8, x10
   or      x12, x11, x10
 #else
