@@ -177,7 +177,7 @@ static void  rt_rtc_countDown(rt_rtc_cntDwn_t *cntDwn){
 
 static void  rt_rtc_alarm_start(rt_rtc_alarm_t * alarm){
   RtcT rtc;
-  unsigned int repeat = NULL;
+  unsigned int repeat = 0;
   unsigned int mode = alarm->repeat_mode;
   if (mode) repeat = 1;
   rtc.Raw = rt_rtc_reg_read(RTC_Alarm_Ctrl_Addr);
