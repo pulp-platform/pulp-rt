@@ -96,20 +96,28 @@ static RT_L2_DATA ov7670_reg_cfg_t _yuv422_conf[] = {
 };
 
 RT_L2_DATA unsigned char valueReg;
-RT_L2_DATA unsigned char__ov7670Inited = 0;
+RT_L2_DATA unsigned char __ov7670Inited = 0;
 
 
 void ov7670RegWrite(rt_camera_t *cam, unsigned char addr, unsigned char value, rt_event_t *event){
-  rt_event_t *call_event = rt_event_get_blocking(event;
-  rt_sccb_write(cam->i2c, addr, value, call_event);
-  rt_event_wait(call_event);
+    if (event){
+        rt_sccb_write(cam->i2c, addr, value, event);
+    }else{
+        rt_event_t *call_event = rt_event_get_blocking(NULL);
+        rt_sccb_write(cam->i2c, addr, value, call_event);
+        rt_event_wait(call_event);
+    }
 }
 
 unsigned int ov7670RegRead(rt_camera_t *cam, unsigned char addr, rt_event_t *event){
-  rt_event_t *call_event = rt_event_get_blocking(event);
-  rt_sccb_read(cam->i2c, addr, &valueReg, call_event);
-  rt_event_wait(call_event);
-  return valueReg;
+    if (event){
+        rt_sccb_read(cam->i2c, addr, &valueReg, event);
+    }else{
+        rt_event_t *call_event = rt_event_get_blocking(NULL);
+        rt_sccb_read(cam->i2c, addr, &valueReg, call_event);
+        rt_event_wait(call_event);
+    }
+    return valueReg;
 }
 
 
