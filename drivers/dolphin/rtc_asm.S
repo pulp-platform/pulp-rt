@@ -41,8 +41,8 @@ rtc_apb_event_handler:
   sw   x10, 0(x9)
 
   // continue with sw event raising
-  la   x9, ARCHI_EU_DEMUX_ADDR + EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT + (PLP_RT_NOTIF_EVENT << 2)
-  la   x10, -1
+  li   x9, ARCHI_EU_DEMUX_ADDR + EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT + (PLP_RT_NOTIF_EVENT << 2)
+  li   x10, -1
   sw   x10, 0(x9)
 
   j udma_event_handler_end
