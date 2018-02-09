@@ -79,10 +79,11 @@ endif
 
 PULP_LIB_FC_SRCS_rt += kernel/cluster.c
 
-ifneq '$(soc/cluster)' ''
 ifneq '$(perf_counters)' ''
 PULP_LIB_FC_SRCS_rt += kernel/perf.c
 endif
+
+ifneq '$(soc/cluster)' ''
 ifneq '$(event_unit/version)' '1'
 PULP_LIB_CL_SRCS_rt += kernel/sync_mc.c
 endif
