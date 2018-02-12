@@ -48,11 +48,10 @@
 #include "rt/rt_debug.h"
 #include "rt/rt_config.h"
 #include "rt/rt_pe.h"
+#include "rt/rt_i2c.h"
 #include "rt/rt_camera.h"
 #include "rt/rt_himax.h"
 #include "rt/rt_ov7670.h"
-#include "rt/rt_i2c.h"
-#include "rt/rt_sccb.h"
 #include "rt/rt_dma.h"
 #include "rt/rt_sync_mc.h"
 #if defined(ARCHI_HAS_CLUSTER)

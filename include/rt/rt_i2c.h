@@ -33,7 +33,7 @@
 #ifndef __RT__RT_API_I2C_H__
 #define __RT__RT_API_I2C_H__
 
-#include "rt/rt_api.h"
+#include "rt/data/rt_data_i2c.h"
 
 /**
 * @ingroup groupDrivers
@@ -55,6 +55,17 @@
 
 /**@{*/
 
+/** \struct rt_i2c_conf_t
+ * \brief I2C master configuration structure.
+ *
+ * This structure is used to pass the desired I2C configuration to the runtime when opening a device.
+ */
+
+typedef struct{
+    signed char id;               /*!< If it is different from -1, this specifies on which I2C interface the device is connected. */
+    signed char cs;               /*!< i2c slave address (7 bits on MSB), the runtime will take care of the LSB of READ and Write. */
+    unsigned int  max_baudrate;     /*!< Maximum baudrate for the I2C bitstream which can be used with the opened device . */
+}rt_i2c_conf_t;
 
 /** \brief Open an I2C device.
  *
@@ -69,6 +80,15 @@
  */
 rt_i2c_t *rt_i2c_open(char *dev_name, rt_i2c_conf_t *conf, rt_event_t *event);
 
+/** \brief Initialize an I2C configuration with default values.
+ *
+ * This function can be called to get default values for all parameters before setting some of them.
+ * The structure containing the configuration must be kept alive until the I2C device is opened.
+ *
+ * \param conf A pointer to the I2C configuration.
+ */
+void rt_i2c_conf_init(rt_i2c_conf_t *conf);
+
 /** \brief Close an opened I2C device.
  *
  * This function can be called to close an opened I2C device once it is not needed anymore, in order to free
@@ -82,55 +102,14 @@ void rt_i2c_close (rt_i2c_t *handle, rt_event_t *event);
 
 /** \brief Configure the I2C interface.
  *
- * This function can be called to configure an opened I2C interface.
+ * This function can be called to configure the frequency of an opened I2C interface.
  * This operation is asynchronous and its termination can be managed through an event.
  *
  * \param handle        The handler of the device which was returned when the device was opened.
- * \param addr_cs       The 7 bits (MSB) i2c slave address. Please left the LSB 0.
- * \param clk_divider   The clock divider of the i2c interface. freq_interface = 50MHz/(clk_divider*2)
+ * \param frequency     The frequency of the i2c device.
  * \param event         The event used for managing termination.
  */
-void rt_i2c_conf(rt_i2c_t *handle, unsigned char addr_cs, unsigned int clk_divider, rt_event_t *event);
-
-/** \brief Enqueue a write copy to the I2C (from Chip to I2C device).
- *
- * This function can be used to send 1 byte data to the I2C device.
- * The copy will make an asynchronous transfer between the I2C and one of the chip memory.
- * An event can be specified in order to be notified when the transfer is finished.
- *
- * \param handle        The handler of the device which was returned when the device was opened.
- * \param addr          The address (8 bits) specified in the I2C device for this write operation.
- * \param value         The value should be writen to the address
- * \param event         The event used for managing termination.
- */
-void rt_i2c_write(rt_i2c_t *handle, unsigned int addr, unsigned char value, rt_event_t *event);
-
-/** \brief Enqueue a read copy to the I2C (from Chip to I2C device).
- *
- * This function can be used to read 1 byte data from the I2C device.
- * The copy will make an asynchronous transfer between the I2C and one of the chip memory.
- * An event can be specified in order to be notified when the transfer is finished.
- *
- * \param handle        The handler of the device which was returned when the device was opened.
- * \param addr          The address (16 bits) specified in the I2C device for this read operation.
- * \param rx_data       The address in the chip where the received data must be written.
- * \param event         The event used for managing termination.
- */
-void rt_i2c_read(rt_i2c_t *handle, unsigned int addr, unsigned char *rx_data, rt_event_t *event);
-
-/** \brief Enqueue a burst read copy from the I2C (from I2C device to chip).
- *
- * This function can be used to read several bytes of data from the I2C device.
- * The copy will make an asynchronous transfer between the I2C and one of the chip memory.
- * An event can be specified in order to be notified when the transfer is finished.
- *
- * \param handle        The handler of the device which was returned when the device was opened.
- * \param addr          The address (16 bits) specified in the I2C device for this read operation.
- * \param rx_data       The address in the chip where the received data must be written.
- * \param length        The size in bytes of the copy
- * \param event         The event used for managing termination.
- */
-void i2c_read_burst(rt_i2c_t *handle, unsigned int addr, unsigned char *rx_buff, unsigned char length, rt_event_t *event);
+void rt_i2c_freq_set(rt_i2c_t *handle, unsigned int frequency, rt_event_t *event);
 
 /** \brief Enqueue a burst read copy from the I2C (from I2C device to chip).
  *
@@ -143,9 +122,10 @@ void i2c_read_burst(rt_i2c_t *handle, unsigned int addr, unsigned char *rx_buff,
  * \param addr_len      The size in byte of this address above.
  * \param rx_data       The address in the chip where the received data must be written.
  * \param length        The size in bytes of the copy
+ * \param stop          Stop to be generated after the tx part is done, it will be followed by a Start for the rx part
  * \param event         The event used for managing termination.
  */
-void rt_i2c_read_seq(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned char *rx_data, int length, rt_event_t *event);
+void rt_i2c_read(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned char *rx_buff, int length, unsigned char stop, rt_event_t *event);
 
 /** \brief Enqueue a burst write copy to the I2C (from chip to I2C device).
  *
@@ -160,7 +140,7 @@ void rt_i2c_read_seq(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsig
  * \param length        The size in bytes of the copy
  * \param event         The event used for managing termination.
  */
-void rt_i2c_write_seq(rt_i2c_t *dev_i2c, unsigned char *addr, char addr_len, unsigned char *tx_data, int length, rt_event_t *event);
+void rt_i2c_write(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned char *tx_data, int length, rt_event_t *event);
 
 
 //!@}
@@ -168,11 +148,6 @@ void rt_i2c_write_seq(rt_i2c_t *dev_i2c, unsigned char *addr, char addr_len, uns
 /**
  * @}
  */
-
-/// @cond IMPLEM
-rt_i2c_t *__rt_i2c_open_channel(int channel, rt_i2c_conf_t *i2c_conf, rt_event_t *event);
-/// @endcond
-
 #endif
 
 

@@ -30,10 +30,10 @@
  * limitations under the License.
  */
 
-#ifndef __RT_DATA_RT_DATA_CAMERA_H__
-#define __RT_DATA_RT_DATA_CAMERA_H__
+#ifndef __RT_DATA_RT_DATA_RT_DATA_CAMERA_H__
+#define __RT_DATA_RT_DATA_RT_DATA_CAMERA_H__
 
-
+#include "rt/rt_i2c.h"
 #include "rt/data/rt_data_i2c.h"
 
 /**

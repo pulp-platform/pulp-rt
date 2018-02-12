@@ -30,70 +30,17 @@
  * limitations under the License.
  */
 
-#ifndef __RT_DATA_RT_DATA_I2C_H__
-#define __RT_DATA_RT_DATA_I2C_H__
+#ifndef __RT_DATA_RT_DATA_RT_DATA_I2C_H__
+#define __RT_DATA_RT_DATA_RT_DATA_I2C_H__
 
-/// @cond IMPLEM
+typedef struct __rt_i2c_s rt_i2c_t;
 
-/** \struct rt_i2c_conf_t
- * \brief I2C interface configuration structure.
- *
- * This structure is used to pass the desired I2C configuration to the runtime when opening the device.
- *
- */
-typedef struct{
-  unsigned char i2c_id;
-  unsigned char addr_cs;
-  unsigned int  clk_divider;
-  rt_periph_copy_t writeCopy;
-}rt_i2c_conf_t;
-
-typedef struct rt_i2c_s {
-  rt_dev_t *dev;
-  int channel;
-  rt_i2c_conf_t i2c_conf;
+typedef struct __rt_i2c_s {
+    int channel;
+    unsigned char open_count;
+    char cs;
+    unsigned int  max_baudrate;
+    unsigned int  div;
 } rt_i2c_t;
-
-typedef struct{
-  const unsigned char     config_cmd;
-  unsigned char           value_MSB;
-  unsigned char           value_LSB;
-} i2c_config_t;
-
-typedef struct {
-  const unsigned char     start;
-  const unsigned char     cmd_w_ctrl;
-  unsigned char           addr_cs_w;
-  const unsigned char     cmd_w_addrI_MSB;
-  unsigned char           addr_MSB;
-  const unsigned char     cmd_w_addrI_LSB;
-  unsigned char           addr_LSB;
-  const unsigned char     start_rd;
-  const unsigned char     cmd_r_ctrl;
-  unsigned char           addr_cs_r;
-  const unsigned char     cmd_rpt;
-  unsigned char           repeat;
-  const unsigned char     cmd_r_ack;
-  const unsigned char     cmd_r_nack;
-  const unsigned char     end;
-  const unsigned char     cmd_wait;
-  unsigned char           wait;
-} i2c_read_t;
-
-typedef struct {
-  const unsigned char     start;
-  const unsigned char     cmd_w_ctrl;
-  unsigned char           addr_cs_w;
-  const unsigned char     cmd_w_addrI_MSB;
-  unsigned char           addr_MSB;
-  const unsigned char     cmd_w_addrI_LSB;
-  unsigned char           addr_LSB;
-  const unsigned char     cmd_w_data;
-  unsigned char           data;
-  const unsigned char     end;
-  const unsigned char     cmd_wait;
-  unsigned char           wait;
-} i2c_write_t;
-/// @endcond
 
 #endif
