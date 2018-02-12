@@ -36,7 +36,7 @@
 
 #include "rt/rt_api.h"
 
-#define ACTIVATE_I2C 1
+//#define ACTIVATE_I2C 1
 
 //TODO: this sequence could be optimized
 static himax_reg_cfg_t himaxRegInit[] = {

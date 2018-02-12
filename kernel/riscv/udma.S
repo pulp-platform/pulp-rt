@@ -27,7 +27,9 @@ udma_event_handler:
 
   // We have the channel ID in x10, get pointer to the corresponding channel
   li     x9, RT_PERIPH_CHANNEL_T_SIZEOF
+#ifndef CORE_NO_MUL
   p.mul  x9, x9, x10
+#endif
   la     x8, periph_channels
   add    x9, x9, x8
 
