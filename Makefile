@@ -150,7 +150,7 @@ endif
 # I2C
 
 ifneq '$(udma/i2c)' ''
-PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c.c drivers/i2c/sccb.c
+PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c.c
 endif
 
 

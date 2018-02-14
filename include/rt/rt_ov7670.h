@@ -33,6 +33,8 @@
 #ifndef __OV7670_H__
 #define __OV7670_H__
 
+#include "rt/rt_camera.h"
+
 /*
  *  Bit field of ov7670 Reg
  */
