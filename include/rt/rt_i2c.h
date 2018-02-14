@@ -91,8 +91,7 @@ void rt_i2c_conf_init(rt_i2c_conf_t *conf);
 
 /** \brief Close an opened I2C device.
  *
- * This function can be called to close an opened I2C device once it is not needed anymore, in order to free
- * all allocated resources. Once this function is called, the device is not accessible anymore and must be opened again before being used.
+ * This function can be called to close an opened I2C device once it is not needed anymore, in order to free all allocated resources. Once this function is called, the device is not accessible anymore and must be opened again before being used.
  * This operation is asynchronous and its termination can be managed through an event.
  *
  * \param handle    The handler of the device which was returned when the device was opened.
