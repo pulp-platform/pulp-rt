@@ -233,10 +233,10 @@ error:
 
 void rt_rtc_close(rt_rtc_t *rtc)
 {
+  rt_rtc_disable();
   unsigned int Val = soc_eu_eventMask_get(SOC_FC_MASK_MSB);
   Val = Val | ((1<<(RTC_RTC_INT_EVENT-32)) | (1<<(RTC_RTC_APB_EVENT-32)));
   soc_eu_eventMask_set(SOC_FC_MASK_MSB, Val);
-  rt_rtc_disable();
 }
 
 void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_t *event )
