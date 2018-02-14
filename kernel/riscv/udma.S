@@ -27,7 +27,9 @@ udma_event_handler:
 
   // We have the channel ID in x10, get pointer to the corresponding channel
   li     x9, RT_PERIPH_CHANNEL_T_SIZEOF
+#ifndef CORE_NO_MUL
   p.mul  x9, x9, x10
+#endif
   la     x8, periph_channels
   add    x9, x9, x8
 
@@ -67,9 +69,9 @@ __rt_udma_call_enqueue_callback_resume:
   beqz x9, transfer_resume
 
 #ifdef RV_ISA_RV32
-  la          x10, RT_PERIPH_COPY_HYPER
+  li          x10, RT_PERIPH_COPY_HYPER
   beq         x9, x10, hyper
-  la          x10, RT_PERIPH_COPY_FC_TCDM
+  li          x10, RT_PERIPH_COPY_FC_TCDM
   beq         x9, x10, fc_tcdm
 #else
   p.beqimm      x9, RT_PERIPH_COPY_HYPER, hyper
@@ -178,7 +180,7 @@ repeat_transfer:
   lw      x11, RT_PERIPH_CHANNEL_T_BASE(x9)
   
 #ifdef RV_ISA_RV32
-  la      x10, ~(1<<UDMA_CHANNEL_SIZE_LOG2)
+  li      x10, ~(1<<UDMA_CHANNEL_SIZE_LOG2)
   and     x9, x11, x10
   lw      x10, RT_PERIPH_COPY_T_HYPER_ADDR(x8)
 #else
@@ -232,14 +234,14 @@ __rt_udma_no_copy:
 handle_special_end:
 
 #ifdef RV_ISA_RV32
-  la          x12, RT_PERIPH_COPY_SPIM_STEP1
+  li          x12, RT_PERIPH_COPY_SPIM_STEP1
   beq         x10, x12, spim_step1
 #else
   p.beqimm    x10, RT_PERIPH_COPY_SPIM_STEP1, spim_step1  
 #endif
 
 #ifdef RV_ISA_RV32
-  la          x12, RT_PERIPH_COPY_SPIM_STEP2
+  li          x12, RT_PERIPH_COPY_SPIM_STEP2
   beq         x10, x12, spim_step2
 #else
   p.beqimm    x10, RT_PERIPH_COPY_SPIM_STEP2, spim_step2
@@ -289,7 +291,7 @@ spim_step2:
 
   #else
 
-  la          x12, SPI_CMD_EOT(0)
+  li          x12, SPI_CMD_EOT(0)
   sw          x12, RT_PERIPH_COPY_T_PERIPH_DATA(x8)
   lw          x12, RT_PERIPH_CHANNEL_T_BASE(x9)
   addi        x10, x8, RT_PERIPH_COPY_T_PERIPH_DATA

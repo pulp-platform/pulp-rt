@@ -51,8 +51,8 @@ __rt_pe_start:
     addi    s7, s7, RT_FC_CLUSTER_DATA_T_EVENTS
 #if defined(ARCHI_HAS_FC)
 #if defined(ITC_VERSION)
-    la      s9, ARCHI_FC_ITC_ADDR + ARCHI_ITC_STATUS_SET
-    la      s8, 1<<RT_FC_ENQUEUE_EVENT
+    li      s9, ARCHI_FC_ITC_ADDR + ARCHI_ITC_STATUS_SET
+    li      s8, 1<<RT_FC_ENQUEUE_EVENT
 #else
     li      s9, ARCHI_FC_GLOBAL_ADDR + ARCHI_FC_PERIPHERALS_OFFSET + ARCHI_FC_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (RT_FC_ENQUEUE_EVENT << 2)
     li      s8, 1

@@ -54,9 +54,7 @@
 #include "rt/rt_ov7670.h"
 #include "rt/rt_dma.h"
 #include "rt/rt_sync_mc.h"
-#if defined(ARCHI_HAS_CLUSTER)
 #include "rt/rt_perf.h"
-#endif
 #include "rt/rt_time.h"
 #include "rt/rt_freq.h"
 #include "rt/rt_i2s.h"

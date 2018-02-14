@@ -84,6 +84,9 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
     // Initialize cluster L1 memory allocator
     __rt_alloc_init_l1(cid);
 
+    // Activate icache
+    hal_icache_cluster_enable(cid);
+
 #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
 
     // Fetch all cores, they will directly jump to the PE loop waiting from orders through the dispatcher
@@ -103,6 +106,9 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
   {
     // Initialize cluster global variables
     __rt_init_cluster_data(cid);
+
+    // Activate icache
+    hal_icache_cluster_enable(cid);
 
     // Only initialize it if it is not our own allocator as in this case
     // it has already been initialized during start-up
