@@ -67,6 +67,23 @@
  */
 unsigned long long rt_time_get_us();
 
+
+
+
+/** \brief Wait for a specific amount of time.
+ *
+ * Calling this function puts the calling core to sleep mode until the specified
+ * amount of time has passed.
+ * The time is specified in microseconds and is a minimum amount of time that
+ * the core will sleep. The actual time may be bigger due to the timer
+ * resolution.
+ *
+ * \param time_us  The time to wait in microseconds.
+ */
+void rt_time_wait_us(int time_us);
+
+
+
 //!@}
 
 /**        
@@ -75,6 +92,10 @@ unsigned long long rt_time_get_us();
 
 
 /// @cond IMPLEM
+
+extern rt_event_t *first_delayed;
+
+void __attribute__((interrupt)) __rt_timer_handler();
 
 /// @endcond
 

@@ -108,7 +108,16 @@ extern rt_thread_t *__rt_thread_current;
 
 extern rt_event_sched_t __rt_sched;
 
-void __rt_thread_enqueue(rt_thread_queue_t *queue, rt_thread_t *thread);
+static inline void __rt_thread_enqueue(rt_thread_queue_t *queue, rt_thread_t *thread)
+{
+  thread->next = NULL;
+  if (queue->first == NULL) {
+    queue->first = thread;
+  } else {
+    queue->last->next = thread;
+  }
+  queue->last = thread;
+}
 
 void __rt_thread_sleep();
 

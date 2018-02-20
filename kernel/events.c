@@ -74,35 +74,6 @@ void rt_event_free(rt_event_sched_t *sched, int nb_events)
   }
 }
 
-static inline __attribute__((always_inline)) void __rt_enqueue_event_to_sched(rt_event_sched_t *sched, rt_event_t *event)
-{
-  event->next = NULL;
-  if (sched->first == NULL) {
-    sched->first = event;
-  } else {
-    sched->last->next = event;
-  }
-  sched->last = event;
-}
-
-static inline __attribute__((always_inline)) void __rt_wakeup_thread(rt_event_sched_t *sched)
-{
-  rt_thread_t *thread = sched->waiting;
-  if (thread) {
-    sched->waiting = NULL;
-    __rt_thread_enqueue_ready_check(thread);
-  }
-}
-
-static inline __attribute__((always_inline)) void __rt_push_event(rt_event_sched_t *sched, rt_event_t *event)
-{
-  // Enqueue the event into the scheduler tail
-  __rt_enqueue_event_to_sched(sched, event);
-
-  // Then maybe wakeup a waiting thread
-  __rt_wakeup_thread(sched);
-}
-
 static inline __attribute__((always_inline)) rt_event_t *__rt_get_event(rt_event_sched_t *sched, void (*callback)(void *), void *arg)
 {
   // Get event from scheduler and initialize it
@@ -245,4 +216,7 @@ __rt_wait_event(event);
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_event_sched_init()
 {
   rt_event_sched_init(&__rt_sched);
+  // Push one event ot the runtime scheduler as some runtime services need
+  // one event.
+  rt_event_alloc(&__rt_sched, 1);
 }

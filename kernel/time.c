@@ -23,6 +23,7 @@
 #if defined(ARCHI_HAS_FC)
 
 static unsigned long long timer_count;
+rt_event_t *first_delayed = NULL;
 
 
 
@@ -52,6 +53,72 @@ unsigned long long rt_time_get_us()
   else return count / ARCHI_REF_CLOCK * 1000000;
 }
 
+void rt_event_push_delayed(rt_event_t *event, int us)
+{
+  int irq = hal_irq_disable();
+
+  int set_irq = 0;
+  rt_event_t *current = first_delayed, *prev=NULL;
+  unsigned int ticks, ticks_from_now;
+  uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 0));
+  
+  // First compute the corresponding number of ticks.
+  // The specified time is the minimum we must, so we have to round-up
+  // the number of ticks.
+  ticks = us / ( 1000000 / ARCHI_REF_CLOCK) + 1;
+  ticks_from_now = ticks;
+
+  // As we will compare this event to others expressed in ticks related to
+  // the time when the first one was enqueued, also express our number of ticks
+  // relative to the same time.
+  if (current != NULL)
+  {
+    ticks += current_time - current->enqueue_time;
+  }
+
+  // Enqueue the event in the wait list.
+  while (current && current->ticks < ticks)
+  {
+    current = current->next;
+  }
+
+  if (prev)
+  {
+    prev->next = event;
+  }
+  else
+  {
+    set_irq = 1;
+    first_delayed = event;
+  }
+  event->next = current;
+
+  // And finally update the timer trigger time in case we enqueued the event
+  // at the head of the wait list.
+  if (set_irq)
+  {
+    //printf("Setting timer interrupt tick %d time  %ld\n", ticks_from_now, current_time);
+    hal_timer_cmp_set(hal_timer_fc_addr(0, 0), current_time + ticks_from_now);
+
+    hal_timer_conf(
+      hal_timer_fc_addr(0, 0), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
+      PLP_TIMER_IRQ_ENABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
+      PLP_TIMER_ONE_SHOT_ENABLED, PLP_TIMER_REFCLK_ENABLED,
+      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_ENABLED
+    );
+  }
+
+  hal_irq_restore(irq);
+}
+
+
+void rt_time_wait_us(int time_us)
+{
+  rt_event_t *event = rt_event_get_blocking(NULL);
+  rt_event_push_delayed(event, time_us);
+  rt_event_wait(event);
+}
+
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
 {
   int err = 0;
@@ -66,8 +133,10 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
     PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_ENABLED
   );
 
-  err |= __rt_cbsys_add(RT_CBSYS_POWEROFF, __rt_time_poweroff, NULL);
+  rt_irq_set_handler(ARCHI_FC_EVT_TIMER0, __rt_timer_handler);
+  rt_irq_mask_set(1<<ARCHI_FC_EVT_TIMER0);
 
+  err |= __rt_cbsys_add(RT_CBSYS_POWEROFF, __rt_time_poweroff, NULL);
   err |= __rt_cbsys_add(RT_CBSYS_POWERON, __rt_time_poweron, NULL);
 
   if (err) rt_fatal("Unable to initialize time driver\n");
