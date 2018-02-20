@@ -231,8 +231,7 @@ typedef struct rt_event_s {
       unsigned int data[3];
     };
     struct {
-      unsigned int enqueue_time;
-      unsigned int ticks;
+      unsigned int time;
     };
   };
 } rt_event_t;

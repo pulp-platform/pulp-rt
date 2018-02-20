@@ -22,7 +22,7 @@
 
 #if defined(ARCHI_HAS_FC)
 
-static unsigned long long timer_count;
+static uint32_t timer_count;
 rt_event_t *first_delayed = NULL;
 
 
@@ -31,7 +31,7 @@ static int __rt_time_poweroff(void *arg)
 {
   // Remember the current timer count so that we can restore it
   // when the system is powered-on
-  timer_count = hal_timer_count_get_64(hal_timer_fc_addr(0, 0));
+  timer_count = hal_timer_count_get(hal_timer_fc_addr(0, 1));
 
   return 0;
 }
@@ -39,7 +39,7 @@ static int __rt_time_poweroff(void *arg)
 static int __rt_time_poweron(void *arg)
 {
   // Restore the timer count we saved before shutdown
-  hal_timer_count_set_64(hal_timer_fc_addr(0, 0), timer_count);
+  hal_timer_count_set(hal_timer_fc_addr(0, 1), timer_count);
 
   return 0;
 }
@@ -48,7 +48,7 @@ unsigned long long rt_time_get_us()
 {
   // Get 64 bit timer counter value and convert it to microseconds
   // as the timer input is connected to the ref clock.
-  unsigned long long count = hal_timer_count_get_64(hal_timer_fc_addr(0, 0));
+  unsigned long long count = hal_timer_count_get(hal_timer_fc_addr(0, 1));
   if ((count >> 32) == 0) return count * 1000000 / ARCHI_REF_CLOCK;
   else return count / ARCHI_REF_CLOCK * 1000000;
 }
@@ -60,25 +60,23 @@ void rt_event_push_delayed(rt_event_t *event, int us)
   int set_irq = 0;
   rt_event_t *current = first_delayed, *prev=NULL;
   unsigned int ticks, ticks_from_now;
-  uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 0));
+  uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 1));
   
   // First compute the corresponding number of ticks.
   // The specified time is the minimum we must, so we have to round-up
   // the number of ticks.
   ticks = us / ( 1000000 / ARCHI_REF_CLOCK) + 1;
-  ticks_from_now = ticks;
 
-  // As we will compare this event to others expressed in ticks related to
-  // the time when the first one was enqueued, also express our number of ticks
-  // relative to the same time.
-  if (current != NULL)
-  {
-    ticks += current_time - current->enqueue_time;
-  }
+  // In order to simplify time comparison, we sacrify the MSB to avoid overflow
+  // as the given amount of time must be short
+  uint32_t time = (current_time & 0x7fffffff) + ticks;
+  event->time = current_time + ticks;
+
 
   // Enqueue the event in the wait list.
-  while (current && current->ticks < ticks)
+  while (current && (current->time & 0x7fffffff) < time)
   {
+    prev = current;
     current = current->next;
   }
 
@@ -97,14 +95,16 @@ void rt_event_push_delayed(rt_event_t *event, int us)
   // at the head of the wait list.
   if (set_irq)
   {
-    //printf("Setting timer interrupt tick %d time  %ld\n", ticks_from_now, current_time);
-    hal_timer_cmp_set(hal_timer_fc_addr(0, 0), current_time + ticks_from_now);
+    // This is important to reload the current time, in case the previous code
+    // took too much time so that the interrupt is not missed
+    uint32_t timer = hal_timer_count_get(hal_timer_fc_addr(0, 1)) + ticks;
+    hal_timer_cmp_set(hal_timer_fc_addr(0, 1), timer);
 
     hal_timer_conf(
-      hal_timer_fc_addr(0, 0), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
+      hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
       PLP_TIMER_IRQ_ENABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
       PLP_TIMER_ONE_SHOT_ENABLED, PLP_TIMER_REFCLK_ENABLED,
-      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_ENABLED
+      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
     );
   }
 
@@ -127,14 +127,14 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
   // timer for all virtual timers.
   // We also use the ref clock to make the frequency stable.
   hal_timer_conf(
-    hal_timer_fc_addr(0, 0), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_ENABLED,
+    hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_ENABLED,
     PLP_TIMER_IRQ_DISABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
     PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
-    PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_ENABLED
+    PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
   );
 
-  rt_irq_set_handler(ARCHI_FC_EVT_TIMER0, __rt_timer_handler);
-  rt_irq_mask_set(1<<ARCHI_FC_EVT_TIMER0);
+  rt_irq_set_handler(ARCHI_FC_EVT_TIMER1, __rt_timer_handler);
+  rt_irq_mask_set(1<<ARCHI_FC_EVT_TIMER1);
 
   err |= __rt_cbsys_add(RT_CBSYS_POWEROFF, __rt_time_poweroff, NULL);
   err |= __rt_cbsys_add(RT_CBSYS_POWERON, __rt_time_poweron, NULL);

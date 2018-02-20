@@ -62,6 +62,9 @@
  *
  * This returns the total amount of time elapsed since the runtime was started. Periods where the system
  * was powered-down are not counted.
+ * Note that the time returned may start again from 0 after a while as the timer
+ * used is limited, thus this functions is only suitable when computing
+ * a difference of time.
  *
  * \return           The time in microseconds.
  */

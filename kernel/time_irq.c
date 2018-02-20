@@ -30,39 +30,38 @@ void __attribute__((interrupt)) __rt_timer_handler()
 {
   rt_event_t *event = first_delayed;
 
-  unsigned int ticks = event->ticks;
+  uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 1));
 
   // First dequeue and push to their scheduler all events with the same number of
   // ticks as they were waiting for the same time.
-  while (event && event->ticks == ticks)
+  while (event && (current_time - event->time) < 0x7fffffff)
   {
+    rt_event_t *next = event->next;
     __rt_push_event(event->sched, event);
-    event = event->next;
+    event = next;
   }
 
   // Update the wait list with the next waiting event which has a different number
   // of ticks
   first_delayed = event;
 
-  // And update the number of ticks for all the remaining events to prevent
-  // them from always growing
-  while (event)
-  {
-    event->ticks -= ticks;
-    event = event->next;
-  }
-
   // Now re-arm the timer in case there are still some events
   if (first_delayed)
   {
-    uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 0));
-    hal_timer_cmp_set(hal_timer_fc_addr(0, 0), current_time + first_delayed->ticks);
+    // Be carefull to set the new comparator from the current time plus a number of ticks
+    // in order to set a value which is not before the actual count.
+    // This may just delay a bit the events which is fine as the specified
+    // duration is a minimum.
+    hal_timer_cmp_set(hal_timer_fc_addr(0, 1),
+      hal_timer_count_get(hal_timer_fc_addr(0, 1)) + 
+      first_delayed->time - current_time
+    );
 
     hal_timer_conf(
-      hal_timer_fc_addr(0, 0), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
+      hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
       PLP_TIMER_IRQ_ENABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
       PLP_TIMER_ONE_SHOT_ENABLED, PLP_TIMER_REFCLK_ENABLED,
-      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_ENABLED
+      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
     );
   }
 }
