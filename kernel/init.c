@@ -165,12 +165,12 @@ static void cluster_start(void *arg)
     }
     else
     {
-      rt_team_fork(rt_nb_pe(), cluster_pe_start, NULL);      
+      rt_team_fork(rt_nb_active_pe(), cluster_pe_start, NULL);      
     }
   }
   else
   {
-    __rt_team_config(rt_nb_pe());
+    __rt_team_config(rt_nb_active_pe());
     retval = main();
   }
 
@@ -189,23 +189,23 @@ static int __rt_check_cluster_start(int cid)
   {
     // Classic remote cluster start procedure
     rt_cluster_mount(1, cid, 0, NULL);
-    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, STACK_SIZE*rt_nb_pe());
+    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*rt_nb_active_pe());
     if (stacks == NULL) return -1;
 
-    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, STACK_SIZE, STACK_SIZE, rt_nb_pe(), NULL)) return -1;
+    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, rt_stack_size_get(), rt_stack_size_get(), rt_nb_active_pe(), NULL)) return -1;
 
   }
   else
   {
     // Local cluster start procedure in case we are running here
     rt_cluster_mount(1, cid, 0, NULL);
-    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, STACK_SIZE*(rt_nb_pe()-1));
+    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*(rt_nb_active_pe()-1));
 
     if (stacks == NULL) return -1;
 #if defined(EU_VERSION) && EU_VERSION >= 3
-    eu_dispatch_team_config((1<<rt_nb_pe())-1);
+    eu_dispatch_team_config((1<<rt_nb_active_pe())-1);
     eu_dispatch_push((unsigned int)__rt_set_slave_stack | 1);
-    eu_dispatch_push((unsigned int)STACK_SIZE);
+    eu_dispatch_push((unsigned int)rt_stack_size_get());
     eu_dispatch_push((unsigned int)stacks);
 #endif
 

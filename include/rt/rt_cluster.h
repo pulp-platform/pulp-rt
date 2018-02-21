@@ -119,7 +119,7 @@ void rt_cluster_notif_init(rt_notif_t *notif, int cid);
 /** \brief Send a notification.
  *
  * Notifications can be used to make a cluster core go to sleep until a notification is sent to him. This is useful for example for polling a variable without consuming power for nothing.  
- * Can only be called from fabric controller.
+ * Can only be called from cluster.
  *
  * \param notif    A pointer to the notification structure, this will tell the runtime which event must be used and to which cluster it must be sent.
  * \param core_mask The mask of cores which will receive the notification. There is 1 bit per core, bit 0 (least signigicant bit) is for core 0. A bit set to 1 means the core will receive the notification. The special value RT_TRIGGER_ALL_CORE can also be used to send to all cores.
@@ -131,7 +131,7 @@ static inline void rt_cluster_notif_trigger(rt_notif_t *notif, unsigned core_mas
 /** \brief Get the event associated to the notification.
  *
  * The event is the information used by cluster cores to go to sleep. As the notification structure is usually stored close to the fabric controller, calling this function let cluster cores store the event information closer, e.g. on the stack.
- * Can only be called from fabric controller.
+ * Can only be called from cluster.
  *
  * \param notif    A pointer to the notification structure.
  * \return   The event. This can then be used when calling rt_cluster_notif_wait.

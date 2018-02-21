@@ -38,7 +38,7 @@ PULP_LIB_HOST_SRCS_bench   += libs/bench/bench.c
 else
 
 PULP_LIB_FC_SRCS_rt     += kernel/init.c kernel/alloc.c kernel/alloc_extern.c kernel/thread.c \
-  kernel/events.c kernel/dev.c kernel/irq.c kernel/debug.c kernel/time.c kernel/utils.c kernel/error.c
+  kernel/events.c kernel/dev.c kernel/irq.c kernel/debug.c kernel/time.c kernel/time_irq.c kernel/utils.c kernel/error.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/crt0.S kernel/$(fc_archi)/thread.S
 
 ifneq '$(fc_archi)' 'or1k'
@@ -150,7 +150,7 @@ endif
 # I2C
 
 ifneq '$(udma/i2c)' ''
-PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c.c drivers/i2c/sccb.c
+PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c.c
 endif
 
 

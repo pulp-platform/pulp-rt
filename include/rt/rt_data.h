@@ -230,6 +230,9 @@ typedef struct rt_event_s {
     struct {
       unsigned int data[3];
     };
+    struct {
+      unsigned int time;
+    };
   };
 } rt_event_t;
 
@@ -555,6 +558,7 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 
 #include "rt/data/rt_data_spim.h"
 #include "rt/data/rt_data_camera.h"
+#include "rt/data/rt_data_i2c.h"
 
 #endif
 

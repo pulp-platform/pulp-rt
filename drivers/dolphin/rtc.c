@@ -217,26 +217,24 @@ static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
 
 rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *rtc_conf, rt_event_t *event)
 {
-  /*
-  dev_rtc.dev = rt_dev_get("rtc");
-  if (dev_rtc.dev == NULL) goto error;
-  */
+  if(dev_rtc.open_count) goto error;
   rt_rtc_init(&dev_rtc, rtc_conf);
   if (event) __rt_event_enqueue(event);
+  dev_rtc.open_count++;
   return &dev_rtc;
-/*
+
 error:
   rt_warning("[RTC] Failed to open rtc\n");
   return NULL;
-*/
 }
 
-void rt_rtc_close(rt_rtc_t *rtc)
+void rt_rtc_close(rt_rtc_t *rtc, rt_event_t *event)
 {
+  rt_rtc_disable();
   unsigned int Val = soc_eu_eventMask_get(SOC_FC_MASK_MSB);
   Val = Val | ((1<<(RTC_RTC_INT_EVENT-32)) | (1<<(RTC_RTC_APB_EVENT-32)));
   soc_eu_eventMask_set(SOC_FC_MASK_MSB, Val);
-  rt_rtc_disable();
+  if (event) __rt_event_enqueue(event);
 }
 
 void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_t *event )

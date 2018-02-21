@@ -182,10 +182,16 @@ static inline int rt_nb_pe();
 
 extern unsigned char __rt_cl_master_stack_size;
 extern unsigned char __rt_cl_slave_stack_size;
+extern unsigned char __rt_stack_size;
 
 static inline int rt_cl_master_stack_size_get()
 {
   return (int)(long)&__rt_cl_master_stack_size;
+}
+
+static inline int rt_stack_size_get()
+{
+  return (int)(long)&__rt_stack_size;
 }
 
 static inline int rt_cl_slave_stack_size_get()
@@ -276,7 +282,7 @@ extern unsigned char __l2_heap_size;
 #endif
 
 #endif
-extern unsigned char __l1_heap_start;
+extern unsigned char __l1_heap_start;;
 extern unsigned char __l1_heap_size;
 extern unsigned char __fc_tcdm_heap_start;
 extern unsigned char __fc_tcdm_heap_size;

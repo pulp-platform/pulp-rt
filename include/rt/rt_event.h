@@ -139,6 +139,8 @@ rt_event_t *rt_event_get_blocking(rt_event_sched_t *sched);
  */
 void rt_event_push(rt_event_t *event);
 
+
+
 /** \brief Enqueue a callback to a scheduler.
  *
  * This pushes a function callback to the specified scheduler. An event is reserved from the scheduler,
@@ -151,6 +153,8 @@ void rt_event_push(rt_event_t *event);
  */
 int rt_event_push_callback(rt_event_sched_t *sched, void (*callback)(void *), void *arg);
 
+
+
 /** \brief Execute all pending events.
  *
  * This will invoke the specified scheduler and execute all its pending events. If no
@@ -162,6 +166,8 @@ int rt_event_push_callback(rt_event_sched_t *sched, void (*callback)(void *), vo
  */
 static inline void rt_event_execute(rt_event_sched_t *sched, int wait);
 
+
+
 /** \brief Return the internal runtime event scheduler.
  *
  * This returns the runtime event scheduler which is created at boot time and which can be used
@@ -170,6 +176,8 @@ static inline void rt_event_execute(rt_event_sched_t *sched, int wait);
  * \return The runtime scheduler.
  */
 static inline rt_event_sched_t *rt_event_internal_sched();
+
+
 
 /** \brief Set a thread event scheduler.
  *
@@ -191,6 +199,21 @@ static inline void rt_event_thread_sched(rt_thread_t *thread, rt_event_sched_t *
  * \param event   The event to wait for.
  */
 void rt_event_wait(rt_event_t *event);
+
+
+
+/** \brief Enqueue an event to a scheduler after the specified amount of time.
+ *
+ * This first waits that the specified amount of time has passed and then
+ * pushes the event to its scheduler, and makes it ready to be executed.
+ * The time is specified in microseconds and is a minimum amount of time. The
+ * actual time may be bigger due to timer resolution.
+ *
+ * \param event   The event to be pushed.
+ * \param time_us The time in microseconds after which the event is pushed to the scheduler.
+ */
+void rt_event_push_delayed(rt_event_t *event, int time_us);
+
 
 
 //!@}
@@ -295,6 +318,35 @@ static inline void rt_event_enqueue(rt_event_t *event) {
   int irq = hal_irq_disable();
   __rt_event_enqueue(event);
   hal_irq_restore(irq);
+}
+
+static inline __attribute__((always_inline)) void __rt_enqueue_event_to_sched(rt_event_sched_t *sched, rt_event_t *event)
+{
+  event->next = NULL;
+  if (sched->first == NULL) {
+    sched->first = event;
+  } else {
+    sched->last->next = event;
+  }
+  sched->last = event;
+}
+
+static inline __attribute__((always_inline)) void __rt_wakeup_thread(rt_event_sched_t *sched)
+{
+  rt_thread_t *thread = sched->waiting;
+  if (thread) {
+    sched->waiting = NULL;
+    __rt_thread_enqueue_ready_check(thread);
+  }
+}
+
+static inline __attribute__((always_inline)) void __rt_push_event(rt_event_sched_t *sched, rt_event_t *event)
+{
+  // Enqueue the event into the scheduler tail
+  __rt_enqueue_event_to_sched(sched, event);
+
+  // Then maybe wakeup a waiting thread
+  __rt_wakeup_thread(sched);
 }
 
 /// @endcond
