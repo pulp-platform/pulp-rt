@@ -96,9 +96,11 @@ void __attribute__((weak)) illegal_insn_handler_c()
 
 void __rt_handle_illegal_instr()
 {
+#ifdef __riscv__
   unsigned int mepc = hal_mepc_read();
   rt_warning("Reached illegal instruction (PC: 0x%x, opcode: 0x%x\n", mepc, *(int *)mepc);
   illegal_insn_handler_c();
+#endif
 }
 
 RT_BOOT_CODE void __attribute__((constructor)) __rt_irq_init()

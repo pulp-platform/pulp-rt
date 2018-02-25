@@ -227,7 +227,7 @@ static void tfp_putc(void *data, char c) {
     else
 #endif
     {
-      __rt_putc_stdout(c);      
+      __rt_putc_stdout(c);
     }
   }
   else 
