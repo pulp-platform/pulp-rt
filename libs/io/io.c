@@ -239,9 +239,9 @@ static void tfp_putc(void *data, char c) {
 static void __rt_io_lock()
 {
 #if !defined(__RT_USE_UART)
-  return;
+  if (hal_debug_struct_get()->use_internal_printf) return;
 #else
-  if (!_rt_io_uart) return;
+  if (hal_debug_struct_get()->use_internal_printf && !_rt_io_uart) return;
 #endif
 
   if (rt_is_fc() || !rt_has_fc())
@@ -261,9 +261,9 @@ static void __rt_io_lock()
 static void __rt_io_unlock()
 {
 #if !defined(__RT_USE_UART)
-  return;
+  if (hal_debug_struct_get()->use_internal_printf) return;
 #else
-  if (!_rt_io_uart) return;
+  if (hal_debug_struct_get()->use_internal_printf && !_rt_io_uart) return;
 #endif
 
   if (rt_is_fc() || !rt_has_fc())
