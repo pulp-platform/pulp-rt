@@ -74,8 +74,11 @@ __rt_fc_socevents_handler:
 
 #ifdef ARCHI_SOC_EVENT_RTC_FIRST_EVT
   // RTC EVENTS
-  //li  x9, ARCHI_SOC_EVENT_RTC_FIRST_EVT
-  //ble x9, x10, rtc_event_handler
+  li  x9, ARCHI_SOC_EVENT_RTC_FIRST_EVT
+  beq x9, x10, rtc_event_handler
+
+  li  x9, ARCHI_SOC_EVENT_RTC_IRQ
+  beq x9, x10, rtc_event_handler
 #endif
 
   // If the event is not handled, store it in the soc event status mask
