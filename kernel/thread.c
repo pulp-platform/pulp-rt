@@ -33,17 +33,6 @@ static void __rt_thread_queue_init(rt_thread_queue_t *queue)
   queue->first = NULL;
 }
 
-void __rt_thread_enqueue(rt_thread_queue_t *queue, rt_thread_t *thread)
-{
-  thread->next = NULL;
-  if (queue->first == NULL) {
-    queue->first = thread;
-  } else {
-    queue->last->next = thread;
-  }
-  queue->last = thread;
-}
-
 static void __rt_thread_init(rt_thread_t *thread, void *(*entry)(void *), void *arg,
   unsigned int stack, unsigned int stack_size)
 {

@@ -165,12 +165,12 @@ static void cluster_start(void *arg)
     }
     else
     {
-      rt_team_fork(rt_nb_pe(), cluster_pe_start, NULL);      
+      rt_team_fork(rt_nb_active_pe(), cluster_pe_start, NULL);      
     }
   }
   else
   {
-    __rt_team_config(rt_nb_pe());
+    __rt_team_config(rt_nb_active_pe());
     retval = main();
   }
 
@@ -183,27 +183,27 @@ static int cluster_master_start(void *arg)
   return retval;
 }
 
-static int __rt_check_cluster_start(int cid)
+static int __rt_check_cluster_start(int cid, rt_event_t *event)
 {
   if (rt_cluster_id() != cid)
   {
     // Classic remote cluster start procedure
     rt_cluster_mount(1, cid, 0, NULL);
-    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*rt_nb_pe());
+    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*rt_nb_active_pe());
     if (stacks == NULL) return -1;
 
-    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, rt_stack_size_get(), rt_stack_size_get(), rt_nb_pe(), NULL)) return -1;
+    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, rt_stack_size_get(), rt_stack_size_get(), rt_nb_active_pe(), event)) return -1;
 
   }
   else
   {
     // Local cluster start procedure in case we are running here
     rt_cluster_mount(1, cid, 0, NULL);
-    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*(rt_nb_pe()-1));
+    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*(rt_nb_active_pe()-1));
 
     if (stacks == NULL) return -1;
 #if defined(EU_VERSION) && EU_VERSION >= 3
-    eu_dispatch_team_config((1<<rt_nb_pe())-1);
+    eu_dispatch_team_config((1<<rt_nb_active_pe())-1);
     eu_dispatch_push((unsigned int)__rt_set_slave_stack | 1);
     eu_dispatch_push((unsigned int)rt_stack_size_get());
     eu_dispatch_push((unsigned int)stacks);
@@ -219,17 +219,40 @@ static int __rt_check_clusters_start()
 {
   if (__rt_config_cluster_start() || !rt_is_fc()) {
     // All fetch mode, starts all cluster
+
+    if (rt_event_alloc(NULL, rt_nb_cluster())) return -1;
+
+    rt_event_t *events[rt_nb_cluster()];
+
     for (int cid=0; cid<rt_nb_cluster(); cid++)
     {
-      if (__rt_check_cluster_start(cid)) return -1;
+      events[cid] = rt_event_get_blocking(NULL);
+      if (__rt_check_cluster_start(cid, events[cid])) return -1;
     }
-    if (rt_is_fc())
-      exit(retval);
+    if (rt_is_fc()) {
+      if (__rt_config_fc_start())
+      {
+        int fc_retval = main();
+        for (int cid=0; cid<rt_nb_cluster(); cid++)
+        {
+          rt_event_wait(events[cid]);
+        }
+        exit(retval != 0 || fc_retval != 0);
+      }
+      else
+      {
+        for (int cid=0; cid<rt_nb_cluster(); cid++)
+        {
+          rt_event_wait(events[cid]);
+        }
+        exit(retval);
+      }
+    }
     else 
       return cluster_master_start(NULL);
   } else if (!rt_is_fc()) {
     // Otherwise just check cluster 0, in case we are running on it
-    if (__rt_check_cluster_start(0)) return -1;
+    if (__rt_check_cluster_start(0, NULL)) return -1;
   }
   return 0;
 }

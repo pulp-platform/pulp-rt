@@ -37,6 +37,7 @@
 /// @cond IMPLEM
 
 #define RT_CONFIG_CLUSTER_START   (1<<0)
+#define RT_CONFIG_FC_START   (1<<1)
 
 extern unsigned char __rt_config;
 
@@ -44,6 +45,10 @@ static inline unsigned long __rt_config_get() { return (unsigned long)&__rt_conf
 
 static inline unsigned int __rt_config_cluster_start() {
 	return __rt_config_get() & RT_CONFIG_CLUSTER_START;
+}
+
+static inline unsigned int __rt_config_fc_start() {
+  return __rt_config_get() & RT_CONFIG_FC_START;
 }
 
 /// @endcond

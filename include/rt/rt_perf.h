@@ -33,6 +33,37 @@
 #ifndef __RT_RT_PERF_H__
 #define __RT_RT_PERF_H__
 
+/// @cond IMPLEM
+
+#ifndef __riscv__
+
+#define CSR_PCER_NB_EVENTS 0
+#define CSR_PCER_CYCLES 0
+#define CSR_PCER_INSTR 0
+#define CSR_PCER_LD_STALL 0
+#define CSR_PCER_JMP_STALL 0
+#define CSR_PCER_IMISS 0
+#define CSR_PCER_LD 0
+#define CSR_PCER_ST 0
+#define CSR_PCER_JUMP 0
+#define CSR_PCER_BRANCH 0
+#define CSR_PCER_TAKEN_BRANCH 0
+#define CSR_PCER_RVC 0
+#define CSR_PCER_LD_EXT 0
+#define CSR_PCER_ST_EXT 0
+#define CSR_PCER_LD_EXT_CYC 0
+#define CSR_PCER_ST_EXT_CYC 0
+#define CSR_PCER_TCDM_CONT 0
+#define CSR_PCER_CSR_HAZARD 0
+#define CSR_PCER_APU_TY_CONF 0
+#define CSR_PCER_APU_CONT 0
+#define CSR_PCER_APU_DEP 0
+#define CSR_PCER_APU_WB 0
+
+#endif
+
+/// @endcond
+
 /**        
  * @ingroup groupCluster       
  */

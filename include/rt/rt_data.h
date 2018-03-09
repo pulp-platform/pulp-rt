@@ -230,6 +230,9 @@ typedef struct rt_event_s {
     struct {
       unsigned int data[3];
     };
+    struct {
+      unsigned int time;
+    };
   };
 } rt_event_t;
 
@@ -370,12 +373,16 @@ typedef struct {
 
 #define RT_PERF_NB_EVENTS (CSR_PCER_NB_EVENTS + 1)
 
+#else
+
+#define RT_PERF_NB_EVENTS 0
+
+#endif
+
 typedef struct {
   unsigned int events;
   unsigned int values[RT_PERF_NB_EVENTS];
 } rt_perf_t;
-
-#endif
 
 
 typedef struct rt_i2s_s rt_i2s_t;
