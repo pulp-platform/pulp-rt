@@ -102,6 +102,7 @@ typedef enum{
   CMD_FRAMEDROP,       /*!< Command for configuring drop the frames. */
   CMD_START,           /*!< Command for enabling the image sensor. */
   CMD_STOP,            /*!< Command for disabling the image sensor. */
+  CMD_PAUSE,           /*!< Command for stop the image transaction. */
 }rt_cam_cmd_e;
 
 
