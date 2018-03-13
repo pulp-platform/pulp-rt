@@ -102,10 +102,10 @@ is_ariane:
   call    __libc_init_array       # Run global initialization functions
 #endif
 
-
+#ifndef __micro_rt__
   /* Do all other initializations from C code */
   jal  x1, __rt_init
-
+#endif
 
 
 
@@ -121,13 +121,14 @@ is_ariane:
   jalr  x1, t2
   mv    s0, a0
 
+#ifndef __micro_rt__
   /* Do all other initializations from C code */
   jal  x1, __rt_deinit
-
 
   /* If program returns from main, call exit routine */
   mv   a0, s0
   jal  x1, exit
+#endif
 
 
 
@@ -147,6 +148,7 @@ _fini:
   jal x0, _start
   jal x0, __rt_illegal_instr
 
+#ifndef __micro_rt__
   // This variable is pointing to the structure containing all information exchanged with
   // the platform loader. It is using a fixed address so that the loader can also find it
   // and then knows the address of the debug structure
@@ -154,5 +156,6 @@ _fini:
   .global __rt_debug_struct_ptr
 __rt_debug_struct_ptr:
   .word __hal_debug_struct
+#endif
 
 #endif

@@ -25,7 +25,9 @@
 __rt_illegal_instr:
     sw   ra, -4(sp)
     sw   a0, -8(sp)
+#ifndef __micro_rt__
     la   a0, __rt_handle_illegal_instr
+#endif
     jal  ra, __rt_call_c_function
     lw   ra, -4(sp)
     lw   a0, -8(sp)
