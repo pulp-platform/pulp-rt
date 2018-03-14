@@ -47,7 +47,13 @@ static uint32_t swap_uint32( uint32_t val )
     return (val << 16) | (val >> 16);
 }
 
-
+void __rt_spim_v0_set_cs(rt_spim_t *spim, int cs)
+{
+  if (spim->cs_gpio != -1)
+  {
+    rt_gpio_set_value(0, 1<<spim->cs_gpio, cs);
+  }
+}
 
 void __rt_spim_v0_receive(
   rt_spim_t *handle, void *buffer, int len, int qspi, rt_spim_cs_e mode, rt_event_t *event)
@@ -60,6 +66,8 @@ void __rt_spim_v0_receive(
   rt_spim_t *spim = (rt_spim_t *)handle;
 
   unsigned int cmd = qspi ? PULP_SPI_CMD_QRD : PULP_SPI_CMD_RD;
+
+  __rt_spim_v0_set_cs(spim, 0);
 
   // Apply the computed divider to get requested SPIM frequency as several devices
   // with different frequencies can be used.
@@ -123,6 +131,10 @@ void __rt_spim_v0_receive(
     size -= iter_size;
     data += nb_elems;
   }
+  
+  if (mode == RT_SPIM_CS_AUTO)  
+    __rt_spim_v0_set_cs(handle, 1);
+
 }
 
 void __rt_spim_v0_send(
@@ -134,6 +146,8 @@ void __rt_spim_v0_send(
   int wordsize = handle->wordsize;
   int big_endian = handle->big_endian;
   rt_spim_t *spim = (rt_spim_t *)handle;
+
+  __rt_spim_v0_set_cs(spim, 0);
 
   // Apply the computed divider to get requested SPIM frequency as several devices
   // with different frequencies can be used.
@@ -219,11 +233,15 @@ void __rt_spim_v0_send(
   }
 
 
-  /// Finally wait until all our elements have been 
+  /// Finally wait until all our elements have been sent
   while ((pulp_spi_status(spiBase) & 0xFFFF) != 1)
   {
     eu_evt_maskWaitAndClr(1<<ARCHI_EVT_SPIM1); 
   }
+
+  if (mode == RT_SPIM_CS_AUTO)  
+    __rt_spim_v0_set_cs(handle, 1);
+
 }
 
 static int __rt_spim_get_div(int spi_freq, int periph_freq)
@@ -271,7 +289,6 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 {
   rt_spim_conf_t def_conf;
 
-
   // Check that the required frequency is correct.
   // It must be below the periph frequency as we can just apply a divider
   // and the divider must fits 8 bits.
@@ -294,7 +311,6 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
       goto error2;
     }
   }
-
 
   // Now that all checks are done, we can start applying the configuration
   open_count++;
