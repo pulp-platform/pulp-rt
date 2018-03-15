@@ -39,6 +39,8 @@ void rt_irq_set_handler(int irq, void (*handler)());
 
 static inline void rt_irq_mask_set(unsigned int mask);
 
+static inline void rt_irq_mask_clr(unsigned int mask);
+
 
 extern void __rt_fc_socevents_handler();
 
@@ -51,6 +53,18 @@ void rt_irq_mask_set(unsigned int mask)
   hal_itc_enable_set(mask);
 #elif defined(EU_VERSION)
   eu_irq_maskSet(mask);
+#endif
+}
+
+void rt_irq_mask_clr(unsigned int mask)
+{
+#if defined(ITC_VERSION) && defined(EU_VERSION)
+  if (rt_is_fc()) hal_itc_enable_clr(mask);
+  else eu_irq_maskClr(mask);
+#elif defined(ITC_VERSION)
+  hal_itc_enable_clr(mask);
+#elif defined(EU_VERSION)
+  eu_irq_maskClr(mask);
 #endif
 }
 
