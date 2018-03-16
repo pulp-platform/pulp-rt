@@ -75,7 +75,8 @@ void __rt_spim_v0_receive(
     rt_spim_send(spim, &workaround_buff, sizeof(workaround_buff)*8, RT_SPIM_CS_NONE, NULL);
   }
 
-  int size = (len + 7) / 8;
+  int full_size = (len + 7) / 8;
+  int size = full_size;
   unsigned int spiBase = pulp_spi_base();
   uint32_t *data = (uint32_t *)buffer;
   int wordsize = handle->wordsize;
@@ -148,7 +149,13 @@ void __rt_spim_v0_receive(
     size -= iter_size;
     data += nb_elems;
   }
-  
+
+  if (wordsize == RT_SPIM_WORDSIZE_8)
+  {
+    uint32_t *last_word_address = (uint32_t*)(buffer+(full_size & ~0x3));
+    *last_word_address = (*last_word_address)>>(((-full_size)&0x03)<<3);
+   }
+
   if (mode == RT_SPIM_CS_AUTO)  
     __rt_spim_v0_set_cs(handle, 1);
 
