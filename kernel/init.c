@@ -54,6 +54,10 @@ void __rt_init()
 {
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
   
+  // We may enter the runtime with some interrupts active for example
+  // if we force the boot to jump to the runtime through jtag.
+  rt_irq_mask_clr(-1);
+
 #ifndef __ariane__
 
 #ifdef FLL_VERSION

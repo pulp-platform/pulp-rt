@@ -32,7 +32,7 @@ unsigned int __rt_fll_set_freq(int fll, unsigned int frequency)
 unsigned int __rt_fll_init(int fll)
 {
   rt_trace(RT_TRACE_INIT, "Initializing FLL (fll: %d, freq: %d)\n", fll, __RT_FLL_DEFAULT_FREQ);
-  
+ 
   fll_set_soc_frequency(__RT_FLL_DEFAULT_FREQ);
 
   return __RT_FLL_DEFAULT_FREQ;
