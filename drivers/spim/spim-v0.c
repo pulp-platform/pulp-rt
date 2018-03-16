@@ -58,16 +58,33 @@ void __rt_spim_v0_set_cs(rt_spim_t *spim, int cs)
 void __rt_spim_v0_receive(
   rt_spim_t *handle, void *buffer, int len, int qspi, rt_spim_cs_e mode, rt_event_t *event)
 {
+  rt_spim_t *spim = (rt_spim_t *)handle;
+
+  // There is a HW issue when we receive after some bits were sent
+  // The HW FIFO still contains the last byte sent and keeps sending it
+  // on the MOSI line while we are receiving.
+  // As this can disturb the master, we push empty data to the FIFO so that
+  // it sent 0.
+  // This can only work with a CS GPIO as we must send these dummy bis with
+  // the CS low and we have no control over the SPI CS.
+  // In case the KEEP cs mode is used, some HW logic must be added to keep
+  // the clock at the same level while these dummy bits are being sent.
+  if (spim->cs_gpio != -1)
+  {
+    int workaround_buff = 0;
+    rt_spim_send(spim, &workaround_buff, sizeof(workaround_buff)*8, RT_SPIM_CS_NONE, NULL);
+  }
+
   int size = (len + 7) / 8;
   unsigned int spiBase = pulp_spi_base();
   uint32_t *data = (uint32_t *)buffer;
   int wordsize = handle->wordsize;
   int big_endian = handle->big_endian;
-  rt_spim_t *spim = (rt_spim_t *)handle;
 
   unsigned int cmd = qspi ? PULP_SPI_CMD_QRD : PULP_SPI_CMD_RD;
 
-  __rt_spim_v0_set_cs(spim, 0);
+  if (mode != RT_SPIM_CS_NONE)
+    __rt_spim_v0_set_cs(spim, 0);
 
   // Apply the computed divider to get requested SPIM frequency as several devices
   // with different frequencies can be used.
@@ -147,7 +164,8 @@ void __rt_spim_v0_send(
   int big_endian = handle->big_endian;
   rt_spim_t *spim = (rt_spim_t *)handle;
 
-  __rt_spim_v0_set_cs(spim, 0);
+  if (mode != RT_SPIM_CS_NONE)
+    __rt_spim_v0_set_cs(spim, 0);
 
   // Apply the computed divider to get requested SPIM frequency as several devices
   // with different frequencies can be used.
