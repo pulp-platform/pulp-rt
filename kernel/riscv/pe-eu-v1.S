@@ -23,4 +23,18 @@
 
     .global __rt_pe_start
 __rt_pe_start:
-    j __rt_pe_start
+
+  la      t1, __rt_stacks_base
+  la      t2, __rt_stacks_size
+
+  lw      sp, 0(t1)
+  lw      t2, 0(t2)
+  csrr    t3, CSR_MHARTID
+  andi    t3, t3, 0x1f
+
+  addi    t3, t3, 1
+  mul     t2, t2, t3
+  add     sp, sp, t2
+
+  j       __rt_pe_entry
+

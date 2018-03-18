@@ -35,6 +35,8 @@
 
 /// @cond IMPLEM
 
+#include "archi/pulp.h"
+
 #ifndef LANGUAGE_ASSEMBLY
 
 #define   likely(x) __builtin_expect(x, 1)
@@ -78,6 +80,9 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #define RT_CL_SYNC_EVENT 1
 #define PLP_RT_NOTIF_EVENT 3    // TODO this is a temp def, should be removed
 
+#if defined(EU_VERSION) && (EU_VERSION == 1)
+#define RT_FORK_EVT 0
+#endif
 
 #ifndef LANGUAGE_ASSEMBLY
 

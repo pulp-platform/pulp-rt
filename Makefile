@@ -64,6 +64,10 @@ endif
 
 PULP_LIB_CL_ASM_SRCS_rt += kernel/$(fc_archi)/pe-eu-v$(event_unit/version).S
 
+ifeq '$(event_unit/version)' '1'
+PULP_LIB_FC_SRCS_rt += kernel/riscv/pe-eu-v1-entry.c
+endif
+
 ifeq '$(pulp_chip_family)' 'wolfe'
 PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif

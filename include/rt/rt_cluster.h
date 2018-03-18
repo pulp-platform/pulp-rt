@@ -178,6 +178,11 @@ void rt_cluster_notif_deinit(rt_notif_t *notif);
 
 #if defined(ARCHI_HAS_CLUSTER)
 
+#if defined(EU_VERSION) && EU_VERSION == 1
+void __rt_cluster_pe_init(void *stacks, int stacks_size);
+#endif
+
+
 extern void __rt_set_slave_stack();
 
 #if defined(PULP_CHIP_FAMILY) && (PULP_CHIP_FAMILY == CHIP_DEVCHIP || PULP_CHIP_FAMILY == CHIP_WOLFE || PULP_CHIP == CHIP_GAP)
