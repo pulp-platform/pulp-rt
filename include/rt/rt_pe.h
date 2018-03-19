@@ -116,12 +116,20 @@ static inline void rt_team_barrier() {
 
 #else
 
-static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) {
-  entry(arg);
+void __rt_team_fork(int nb_cores, void (*entry)(void *), void *arg);
+
+void __rt_team_barrier();
+
+static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
+{
+  __rt_team_fork(nb_cores, entry, arg);
 }
 
-static inline void rt_team_barrier() {
+static inline void rt_team_barrier()
+{
+  __rt_team_barrier();
 }
+
 
 #endif
 
