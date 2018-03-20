@@ -125,6 +125,8 @@ void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
 void __rt_hyper_copy(int channel,
   void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr)
 {
+  int irq = hal_irq_disable();
+
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   rt_periph_copy_t *copy = &call_event->copy;
 
@@ -142,4 +144,6 @@ void __rt_hyper_copy(int channel,
   rt_periph_copy(copy, channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_16, call_event);
 
   __rt_wait_event_check(event, call_event);
+  
+  hal_irq_restore(irq);
 }
