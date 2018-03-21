@@ -32,11 +32,12 @@
 
 /*
  * Authors: Yao ZHANG, GreenWaves Technologies (yao.zhang@greenwaves-technologies.com)
+ *          Francesco PACI, GreenWaves Technologies (francesco.paci@greenwaves-technologies.com)
  */
 
 #include "rt/rt_api.h"
 
-#define ACTIVATE_I2C 1
+//#define ACTIVATE_I2C 1
 
 //TODO: this sequence could be optimized
 static himax_reg_cfg_t himaxRegInit[] = {
@@ -159,7 +160,8 @@ static void _himaxWakeUP (rt_camera_t *cam){
 
 void _himaxReset(rt_camera_t *cam){
     himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
-    while (himaxRegRead(cam, MODE_SELECT) != HIMAX_Standby);
+    while (himaxRegRead(cam, MODE_SELECT) != HIMAX_Standby)
+        himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
 }
 
 void _himaxStandby(rt_camera_t *cam){
