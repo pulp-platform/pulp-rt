@@ -36,7 +36,7 @@
 
 #include "rt/rt_api.h"
 
-#define ACTIVATE_SCCB 1
+#define ACTIVATE_I2C 1
 
 static RT_L2_DATA ov7670_reg_cfg_t _qvga_conf[] = {
     {REG_COM14, 0x19},
@@ -95,33 +95,37 @@ static RT_L2_DATA ov7670_reg_cfg_t _yuv422_conf[] = {
     {REG_BRIGHT, 0xC0}
 };
 
-RT_L2_DATA unsigned char valueRegOV7670;
+RT_L2_DATA unsigned char valRegOV7670;
+RT_L2_DATA unsigned int regAddrOV7670;
 RT_L2_DATA unsigned char __ov7670Inited = 0;
 
 
 void ov7670RegWrite(rt_camera_t *cam, unsigned char addr, unsigned char value, rt_event_t *event){
-#ifdef ACTIVATE_SCCB
+#ifdef ACTIVATE_I2C
+    valRegOV7670 = value;
+    regAddrOV7670 = addr;
     if (event){
-        rt_i2c_write(cam->i2c, (unsigned char*) &addr, 1, &value, 1, event);
+        rt_i2c_write(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, event);
     }else{
         rt_event_t *call_event = rt_event_get_blocking(NULL);
-        rt_i2c_write(cam->i2c, (unsigned char*) &addr, 1, &value, 1, call_event);
+        rt_i2c_write(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, call_event);
         rt_event_wait(call_event);
     }
 #endif
 }
 
 unsigned int ov7670RegRead(rt_camera_t *cam, unsigned char addr, rt_event_t *event){
-#ifdef ACTIVATE_SCCB
+#ifdef ACTIVATE_I2C
+    regAddrOV7670 = addr;
     if (event){
-        rt_i2c_read(cam->i2c, (unsigned char*) &addr, 1, &valueRegOV7670, 1, 1, event);
+        rt_i2c_read(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, 1, event);
     }else{
         rt_event_t *call_event = rt_event_get_blocking(NULL);
-        rt_i2c_read(cam->i2c, (unsigned char*) &addr, 1, &valueRegOV7670, 1, 1, event);
+        rt_i2c_read(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, 1, event);
         rt_event_wait(call_event);
     }
 #endif
-    return valueRegOV7670;
+    return valRegOV7670;
 }
 
 
@@ -272,6 +276,7 @@ void __rt_ov7670_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
             _ov7670ConfigAndEnable(dev_cam);
             break;
         case CMD_STOP:
+        case CMD_PAUSE:
             _camera_stop();
             break;
     }
@@ -294,7 +299,7 @@ rt_camera_t* __rt_ov7670_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*even
     camera->channel = dev->channel & 0xf;
     rt_ov7670_conf_init(camera, cam);
 
-#ifdef ACTIVATE_SCCB
+#ifdef ACTIVATE_I2C
     rt_i2c_conf_init(&camera->i2c_conf);
     camera->i2c_conf.cs = 0x42;
     camera->i2c_conf.id = 1;
