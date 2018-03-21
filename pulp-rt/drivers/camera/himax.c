@@ -32,6 +32,7 @@
 
 /*
  * Authors: Yao ZHANG, GreenWaves Technologies (yao.zhang@greenwaves-technologies.com)
+ *          Francesco PACI, GreenWaves Technologies (francesco.paci@greenwaves-technologies.com)
  */
 
 #include "rt/rt_api.h"
@@ -110,32 +111,36 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x0104, 0x01},
 };
 
-RT_L2_DATA unsigned char valueRegHimax;
+RT_L2_DATA unsigned char valueReg;
+RT_L2_DATA unsigned int regAddr;
 // TODO: write a status var for cam
 RT_FC_DATA unsigned char camera_isAwaked = 0;
 
 void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
 #ifdef ACTIVATE_I2C
-    unsigned char addr_reg[2];
+    valueReg = value;
+    regAddr = addr;
     rt_event_t *call_event = rt_event_get_blocking(NULL);
-    rt_i2c_write(cam->i2c, (unsigned char*) &addr, 2, &value, 1, call_event);
+    rt_i2c_write(cam->i2c, (unsigned char*) &regAddr, 2, &valueReg, 1, call_event);
     rt_event_wait(call_event);
 #endif
 }
 
 unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
 #ifdef ACTIVATE_I2C
+    regAddr = addr;
     rt_event_t *call_event = rt_event_get_blocking(NULL);
-    rt_i2c_read(cam->i2c, (unsigned char*) &addr, 2, &valueRegHimax, 1, 0, call_event);
+    rt_i2c_read(cam->i2c, (unsigned char*) &regAddr, 2, &valueReg, 1, 0, call_event);
     rt_event_wait(call_event);
 #endif
-    return valueRegHimax;
+    return valueReg;
 }
 
 static void _himaxBoot(rt_camera_t *cam){
     unsigned int i;
     for(i=0; i<(sizeof(himaxRegInit)/sizeof(himax_reg_cfg_t)); i++){
         himaxRegWrite(cam, himaxRegInit[i].addr, himaxRegInit[i].data);
+        rt_trace("%x = %x \n", himaxRegInit[i].addr, himaxRegRead(cam, himaxRegInit[i].addr));
     }
     //TODO: Add this one in the Reg Init list!
     himaxRegWrite(cam, PCLK_POLARITY, (0x20|Pclk_falling_edge));
@@ -155,7 +160,8 @@ static void _himaxWakeUP (rt_camera_t *cam){
 
 void _himaxReset(rt_camera_t *cam){
     himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
-    while (himaxRegRead(cam, MODE_SELECT) != HIMAX_Standby);
+    while (himaxRegRead(cam, MODE_SELECT) != HIMAX_Standby)
+        himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
 }
 
 void _himaxStandby(rt_camera_t *cam){
@@ -259,6 +265,9 @@ void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
         case CMD_START:
             _himaxWakeUP(dev_cam);
             _himaxConfigAndEnable(&dev_cam->conf);
+            break;
+        case CMD_PAUSE:
+            _camera_stop();
             break;
         case CMD_STOP:
             _himaxStandby(dev_cam);
