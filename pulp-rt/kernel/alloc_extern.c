@@ -180,8 +180,6 @@ void *rt_extern_alloc_align(rt_extern_alloc_t *a, int size, int align)
 int __attribute__((noinline)) rt_extern_free(rt_extern_alloc_t *a, void *addr, int size)
 
 {
-
-
   rt_alloc_chunk_extern_t *chunk;
   rt_alloc_chunk_extern_t *next = a->first_free, *prev = 0, *new;
   size = ALIGN_UP(size, MIN_CHUNK_SIZE);
@@ -190,7 +188,7 @@ int __attribute__((noinline)) rt_extern_free(rt_extern_alloc_t *a, void *addr, i
     prev = next; next = next->next; 
   }
 
-  if (((char *)addr + size) == (char *)next->addr) {
+  if (next && ((char *)addr + size) == (char *)next->addr) {
     /* Coalesce with next */
     next->size = size + next->size;
     next->addr = (unsigned int)addr;
@@ -215,5 +213,6 @@ int __attribute__((noinline)) rt_extern_free(rt_extern_alloc_t *a, void *addr, i
   } else {
     a->first_free = chunk;
   }
+
   return 0;
 }

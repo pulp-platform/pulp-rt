@@ -63,9 +63,4 @@ static inline unsigned int plp_ctrl_bootaddr_get() {
   return pulp_read32(ARCHI_CLUSTER_CTRL_ADDR + 0x40);
 }
 
-
-static inline void eoc_fetch_enable_fc(unsigned int mask) {
-  eoc_fetch_enable_base(0x50200000, mask);
-}
-
 #endif

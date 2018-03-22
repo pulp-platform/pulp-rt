@@ -53,7 +53,11 @@ void __rt_putc_debug_bridge(char c);
 void __rt_init()
 {
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
-  
+
+  // We may enter the runtime with some interrupts active for example
+  // if we force the boot to jump to the runtime through jtag.
+  rt_irq_mask_clr(-1);
+
 #ifndef __ariane__
 
 #ifdef FLL_VERSION
@@ -207,6 +211,9 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
     eu_dispatch_push((unsigned int)__rt_set_slave_stack | 1);
     eu_dispatch_push((unsigned int)rt_stack_size_get());
     eu_dispatch_push((unsigned int)stacks);
+#else
+    __rt_cluster_pe_init(stacks, rt_stack_size_get());
+    eoc_fetch_enable_remote(0, (1<<rt_nb_active_pe()) - 1);
 #endif
 
     cluster_start(NULL);
