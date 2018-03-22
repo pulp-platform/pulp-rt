@@ -111,29 +111,29 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x0104, 0x01},
 };
 
-RT_L2_DATA unsigned char valueReg;
-RT_L2_DATA unsigned int regAddr;
+RT_L2_DATA unsigned char valRegHimax;
+RT_L2_DATA unsigned int regAddrHimax;
 // TODO: write a status var for cam
 RT_FC_DATA unsigned char camera_isAwaked = 0;
 
 void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
 #ifdef ACTIVATE_I2C
-    valueReg = value;
-    regAddr = addr;
+    valRegHimax = value;
+    regAddrHimax = addr;
     rt_event_t *call_event = rt_event_get_blocking(NULL);
-    rt_i2c_write(cam->i2c, (unsigned char*) &regAddr, 2, &valueReg, 1, call_event);
+    rt_i2c_write(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, call_event);
     rt_event_wait(call_event);
 #endif
 }
 
 unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
 #ifdef ACTIVATE_I2C
-    regAddr = addr;
+    regAddrHimax = addr;
     rt_event_t *call_event = rt_event_get_blocking(NULL);
-    rt_i2c_read(cam->i2c, (unsigned char*) &regAddr, 2, &valueReg, 1, 0, call_event);
+    rt_i2c_read(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, 0, call_event);
     rt_event_wait(call_event);
 #endif
-    return valueReg;
+    return valRegHimax;
 }
 
 static void _himaxBoot(rt_camera_t *cam){

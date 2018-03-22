@@ -95,20 +95,20 @@ static RT_L2_DATA ov7670_reg_cfg_t _yuv422_conf[] = {
     {REG_BRIGHT, 0xC0}
 };
 
-RT_L2_DATA unsigned char valueReg;
-RT_L2_DATA unsigned int regAddr;
+RT_L2_DATA unsigned char valRegOV7670;
+RT_L2_DATA unsigned int regAddrOV7670;
 RT_L2_DATA unsigned char __ov7670Inited = 0;
 
 
 void ov7670RegWrite(rt_camera_t *cam, unsigned char addr, unsigned char value, rt_event_t *event){
 #ifdef ACTIVATE_I2C
-    valueReg = value;
-    regAddr = addr;
+    valRegOV7670 = value;
+    regAddrOV7670 = addr;
     if (event){
-        rt_i2c_write(cam->i2c, (unsigned char*) &regAddr, 1, &valueReg, 1, event);
+        rt_i2c_write(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, event);
     }else{
         rt_event_t *call_event = rt_event_get_blocking(NULL);
-        rt_i2c_write(cam->i2c, (unsigned char*) &regAddr, 1, &valueReg, 1, call_event);
+        rt_i2c_write(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, call_event);
         rt_event_wait(call_event);
     }
 #endif
@@ -116,16 +116,16 @@ void ov7670RegWrite(rt_camera_t *cam, unsigned char addr, unsigned char value, r
 
 unsigned int ov7670RegRead(rt_camera_t *cam, unsigned char addr, rt_event_t *event){
 #ifdef ACTIVATE_I2C
-    regAddr = addr;
+    regAddrOV7670 = addr;
     if (event){
-        rt_i2c_read(cam->i2c, (unsigned char*) &regAddr, 1, &valueReg, 1, 1, event);
+        rt_i2c_read(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, 1, event);
     }else{
         rt_event_t *call_event = rt_event_get_blocking(NULL);
-        rt_i2c_read(cam->i2c, (unsigned char*) &regAddr, 1, &valueReg, 1, 1, event);
+        rt_i2c_read(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, 1, event);
         rt_event_wait(call_event);
     }
 #endif
-    return valueReg;
+    return valRegOV7670;
 }
 
 
