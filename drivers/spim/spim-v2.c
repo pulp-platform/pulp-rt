@@ -67,8 +67,6 @@ static int __rt_spi_get_div(int spi_freq)
     if (div & 1) div += 1;
     div >>= 1;
 
-    printf("COMPUTE DIV %d periph %d spi_freq %d\n", div, __rt_freq_periph_get(), spi_freq);
-
     return div;
   }
 }
