@@ -51,13 +51,26 @@ static inline int __rt_spim_id(int periph_id)
 
 static int __rt_spi_get_div(int spi_freq)
 {
-  // Round-up the divider to obtain an SPI frequency which is below the maximum
-  int div = (__rt_freq_periph_get() + spi_freq - 1)/ spi_freq;
-  // The SPIM always divide by 2 once we activate the divider, thus increase by 1
-  // in case it is even to not go avove the max frequency.
-  if (div & 1) div += 1;
-  div >>= 1;
-  return div;
+  int periph_freq = __rt_freq_periph_get();
+
+  if (spi_freq >= periph_freq)
+  {
+    return 0;
+  }
+  else
+  {
+    // Round-up the divider to obtain an SPI frequency which is below the maximum
+    int div = (__rt_freq_periph_get() + spi_freq - 1)/ spi_freq;
+
+    // The SPIM always divide by 2 once we activate the divider, thus increase by 1
+    // in case it is even to not go avove the max frequency.
+    if (div & 1) div += 1;
+    div >>= 1;
+
+    printf("COMPUTE DIV %d periph %d spi_freq %d\n", div, __rt_freq_periph_get(), spi_freq);
+
+    return div;
+  }
 }
 
 static inline int __rt_spim_get_byte_align(int wordsize, int big_endian)
