@@ -149,7 +149,15 @@ int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_fr
 
 #if PULP_CHIP == CHIP_GAP
 
-    unsigned int lcm_val = lcm(freq, __rt_periph_lcm);
+    unsigned int lcm_val;
+    if (__rt_periph_lcm == 0)
+    {
+      lcm_val = freq;
+    }
+    else
+    {
+      lcm_val = lcm(freq, __rt_periph_lcm);
+    }
 
     // On gap, as there is no divider between fll and fc clock, the fc frequency must
     // be exactly the lcm. ALso check that the required frequency is allowed.
