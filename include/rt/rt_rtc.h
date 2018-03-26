@@ -176,7 +176,7 @@ void rt_rtc_close(rt_rtc_t *handle, rt_event_t *event);
  *
  * This function is used to control and configure the RTC device.
  * \param handle    The handle of the device camera which returned when the device was opened.
- * \param cmd       The command for controlling or configuring the camera. Check the description of rt_rtc_cmd_e for further information.
+ * \param rtc_cmd       The command for controlling or configuring the camera. Check the description of rt_rtc_cmd_e for further information.
  * \param *arg      A pointer to the arguments of the command.
  * \param event     The event used for managing termination.
  */
