@@ -40,7 +40,7 @@ static rt_i2s_t *__rt_i2s_first[ARCHI_UDMA_NB_I2S];
 
 static inline int __rt_i2s_id(rt_i2s_t *i2s)
 {
-  return ARCHI_UDMA_I2S_ID(i2s->i2s) - ARCHI_UDMA_I2S_ID(0);
+  return ARCHI_UDMA_I2S_ID(i2s->i2s_id) - ARCHI_UDMA_I2S_ID(0);
 }
 
 void rt_i2s_conf_init(rt_i2s_conf_t *conf)
@@ -183,7 +183,7 @@ static void __rt_i2s_close(rt_i2s_t *dev, rt_event_t*event)
   // In case this was the last device using I2S, deactivate I2S
   if (__rt_i2s_first[i2s_id] == NULL)
   {
-    plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_I2S_ID(dev->i2s)));
+    plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_I2S_ID(dev->i2s_id)));
   }
 }
 

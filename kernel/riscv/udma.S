@@ -189,6 +189,7 @@ repeat_transfer:
 #endif
   add     x10, x10, x12
   sw      x10, HYPER_EXT_ADDR_CHANNEL_CUSTOM_OFFSET(x9)
+  sw      x10, RT_PERIPH_COPY_T_HYPER_ADDR(x8)
 
   lw      x10, RT_PERIPH_COPY_T_ADDR(x8)
   lw      x9, RT_PERIPH_COPY_T_HYPER_REPEAT_SIZE(x8)
