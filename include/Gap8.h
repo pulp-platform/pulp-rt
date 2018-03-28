@@ -1,5 +1,3 @@
-Hello World.
-Hello World.
 #ifndef __GAP8_H__
 
 #define __GAP8_H__
