@@ -98,11 +98,14 @@ void __rt_pmu_voltage_apply(unsigned int new_voltage)
 {
   int new_state = __rt_pmu_get_scu_state(new_voltage);
 
+  // First apply the new voltage
   PMU_ChangeDCDCSetting(
     __rt_pmu_get_regu_state(new_voltage),
     mVtoDCDCSetting(new_voltage)
   );
 
+  // And change the PMU state so that it is taken into account.
+  // The caller must make sure we go to a different state
   __rt_pmu_change_regu_state(new_state);
 
   __rt_current_voltage = new_voltage;
@@ -110,11 +113,15 @@ void __rt_pmu_voltage_apply(unsigned int new_voltage)
 
 
 
-int rt_voltage_set(rt_voltage_domain_e domain, unsigned int new_voltage)
+int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_event_t *event)
 {
+  int irq = hal_irq_disable();
+
   int current_state = __rt_pmu_get_scu_state(__rt_current_voltage);
   int new_state = __rt_pmu_get_scu_state(new_voltage);
 
+  // Be careful, the PMU can apply the new voltage only if the PMU state is
+  // changed. In case it is the same, we have to insert a dummy transition.
   if (current_state == new_state)
   {
     int stub_voltage = current_state == SCU_SOC_HP ? 1100 : 1200;
@@ -122,6 +129,10 @@ int rt_voltage_set(rt_voltage_domain_e domain, unsigned int new_voltage)
   }
 
   __rt_pmu_voltage_apply(new_voltage);
+
+  if (event) __rt_event_enqueue(event);
+
+  hal_irq_restore(irq);
 
   return 0;
 }
@@ -134,6 +145,28 @@ void __rt_pmu_cluster_power_down()
   {
     // On the FPGA the only thing to manage is the cluster isolation
     PMU_IsolateCluster(1);
+  }
+  else
+  {
+    PMU_BypassT Bypass;
+    Bypass.Raw = GetPMUBypass();
+
+    /* Clock gate FLL cluster */
+    Bypass.Fields.ClusterClockGate = 1; SetPMUBypass(Bypass.Raw);
+
+    /* Wait for FLL lock */
+    __rt_periph_wait_event(ARCHI_SOC_EVENT_ICU_DELAYED, 1);
+
+    /* Isolate Cluster */
+    PMU_IsolateCluster(1);
+    /* Turn off power */
+    Bypass.Fields.ClusterState = 0; SetPMUBypass(Bypass.Raw);
+
+    /* Assert Reset Cluster, this is needed for proper behaviour of fll cluster when waking up */
+    Bypass.Fields.ClusterReset = 1; SetPMUBypass(Bypass.Raw);
+
+    /* Wait for TRC OK event */
+    __rt_periph_wait_event(ARCHI_SOC_EVENT_CLUSTER_ON_OFF, 1);
   }
 }
 

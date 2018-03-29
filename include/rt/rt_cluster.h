@@ -97,8 +97,6 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event);
  */
 int rt_cluster_call(rt_cluster_call_t *call, int cid, void (*entry)(void *arg), void *arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event);
 
-int rt_cluster_fetch_all(int cid);
-
 
 /** \brief Can be used to trigger a notification to all cluster cores */
 #define RT_TRIGGER_ALL_CORE 0
@@ -175,6 +173,8 @@ void rt_cluster_notif_deinit(rt_notif_t *notif);
 
 
 /// @cond IMPLEM
+
+int rt_cluster_fetch_all(int cid);
 
 #if defined(ARCHI_HAS_CLUSTER)
 

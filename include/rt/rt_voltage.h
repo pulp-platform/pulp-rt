@@ -39,7 +39,7 @@ typedef enum {
   RT_VOLTAGE_DOMAIN_MAIN     = 0,
 } rt_voltage_domain_e;
 
-int rt_voltage_set(rt_voltage_domain_e domain, unsigned int new_voltage);
+int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_event_t *event);
 
 /// @endcond
 
