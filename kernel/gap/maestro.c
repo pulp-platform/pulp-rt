@@ -38,6 +38,96 @@
 #include "rt/rt_api.h"
 #include "stdio.h"
 
+static RT_FC_TINY_DATA unsigned int __rt_current_voltage;
+
+
+
+static int __rt_pmu_get_scu_state(unsigned int voltage)
+{
+  if (voltage > 1100)
+    return SCU_SOC_HP;
+  else
+    return SCU_SOC_LP;
+}
+
+
+
+static int __rt_pmu_get_regu_state(unsigned int voltage)
+{
+  if (voltage > 1100)
+    return REGU_NV;
+  else
+    return REGU_LV;
+}
+
+
+
+static int __rt_pmu_dcdc_operpoint(int state)
+{
+  if (state == REGU_NV)
+    return DCDC_Nominal*8;
+  else
+    return DCDC_Low*8;
+}
+
+
+static void PMU_ChangeDCDCSetting(RegulatorStateT DCDC_OperPoint, unsigned int Value)
+{
+  unsigned int *ConfigReg = (unsigned int *) PMU_DCDC_CONFIG_REG;
+  *ConfigReg = __builtin_bitinsert_r(*ConfigReg, Value, DCDC_RANGE, __rt_pmu_dcdc_operpoint(DCDC_OperPoint));
+}
+
+
+
+
+static void __rt_pmu_change_regu_state(int state)
+{
+  PMU_Write(PCTRL, ((1<<state)<<16)|(0x3<<1)|(1));
+  __rt_periph_wait_event(ARCHI_SOC_EVENT_SCU_OK, 1);
+
+  unsigned int TheIrqs = PMU_Read(DLC_IFR);
+  if (TheIrqs & MAESTRO_EVENT_ICU_OK)       PMU_Read(DLC_IOIFR);
+  if (TheIrqs & MAESTRO_EVENT_ICU_DELAYED)  PMU_Read(DLC_IDIFR);
+  if (TheIrqs & MAESTRO_EVENT_MODE_CHANGED) PMU_Read(DLC_IMCIFR);
+  if (TheIrqs & (MAESTRO_EVENT_PICL_OK|MAESTRO_EVENT_SCU_OK)) PMU_Write(DLC_IFR, TheIrqs & (MAESTRO_EVENT_PICL_OK|MAESTRO_EVENT_SCU_OK));
+}
+
+
+
+void __rt_pmu_voltage_apply(unsigned int new_voltage)
+{
+  int new_state = __rt_pmu_get_scu_state(new_voltage);
+
+  PMU_ChangeDCDCSetting(
+    __rt_pmu_get_regu_state(new_voltage),
+    mVtoDCDCSetting(new_voltage)
+  );
+
+  __rt_pmu_change_regu_state(new_state);
+
+  __rt_current_voltage = new_voltage;
+}
+
+
+
+int rt_voltage_set(rt_voltage_domain_e domain, unsigned int new_voltage)
+{
+  int current_state = __rt_pmu_get_scu_state(__rt_current_voltage);
+  int new_state = __rt_pmu_get_scu_state(new_voltage);
+
+  if (current_state == new_state)
+  {
+    int stub_voltage = current_state == SCU_SOC_HP ? 1100 : 1200;
+    __rt_pmu_voltage_apply(stub_voltage);
+  }
+
+  __rt_pmu_voltage_apply(new_voltage);
+
+  return 0;
+}
+
+
+
 void __rt_pmu_cluster_power_down()
 {
   if (rt_platform() == ARCHI_PLATFORM_FPGA)
@@ -101,6 +191,8 @@ static void __attribute__((constructor)) __rt_pmu_init()
     Bypass.Fields.Bypass = 1; 
     Bypass.Fields.BypassClock = 1;
     SetPMUBypass(Bypass.Raw);
+
+    __rt_current_voltage = 1200;
 
     /* Disable all Maestro interrupts but PICL_OK and SCU_OK */
     PMU_Write(DLC_IMR, 0x7);
