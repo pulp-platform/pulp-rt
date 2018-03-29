@@ -229,8 +229,10 @@ static inline void rt_perf_cl_reset(rt_perf_t *perf)
 
 static inline void rt_perf_fc_reset(rt_perf_t *perf)
 {
+#ifdef ARCHI_HAS_FC
   hal_timer_reset(hal_timer_fc_addr(0, 0));
   cpu_perf_setall(0);
+#endif
 }
 
 static inline void rt_perf_reset(rt_perf_t *perf)
@@ -249,8 +251,10 @@ static inline void rt_perf_cl_start(rt_perf_t *perf)
 
 static inline void rt_perf_fc_start(rt_perf_t *perf)
 {
+#ifdef ARCHI_HAS_FC
   hal_timer_start(hal_timer_fc_addr(0, 0));
   cpu_perf_conf(PCMR_ACTIVE | PCMR_SATURATE);
+#endif
 }
 
 static inline void rt_perf_start(rt_perf_t *perf)
@@ -269,8 +273,10 @@ static inline void rt_perf_cl_stop(rt_perf_t *perf)
 
 static inline void rt_perf_fc_stop(rt_perf_t *perf)
 {
+#ifdef ARCHI_HAS_FC
   hal_timer_conf(hal_timer_fc_addr(0, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   cpu_perf_conf(0);
+#endif
 }
 
 static inline void rt_perf_stop(rt_perf_t *perf)
@@ -300,6 +306,7 @@ static inline unsigned int rt_perf_cl_read(int event)
 
 static inline unsigned int rt_perf_fc_read(int event)
 {
+#ifdef ARCHI_HAS_FC
   if (event == RT_PERF_CYCLES)
   {
     return hal_timer_count_get(hal_timer_fc_addr(0, 0));
@@ -308,6 +315,9 @@ static inline unsigned int rt_perf_fc_read(int event)
   {
     return cpu_perf_get(event);
   }
+#else
+  return 0;
+#endif
 }
 
 static inline unsigned int rt_perf_read(int event)
