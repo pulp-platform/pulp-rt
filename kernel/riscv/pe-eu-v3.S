@@ -85,10 +85,12 @@ __rt_master_loop:
     lw      t3, RT_CLUSTER_CALL_T_NB_PE(s0)
     beq     t3, x0, __rt_master_sleep
 
+#ifdef ARCHI_HAS_CLUSTER_CLK_GATE
     // Deactivate automatic cluster clock-gating
     // Due to a HW bug, it can not work when the cluster is doing something
     li      a0, ARCHI_CLUSTER_PERIPHERALS_ADDR
     sw      x0, ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE(a0)
+#endif
 
     // Reads entry point information
     lw      a0, RT_CLUSTER_CALL_T_ARG(s0)
@@ -136,11 +138,13 @@ __rt_master_no_reset:
 
 
 __rt_master_sleep:
+#ifdef ARCHI_HAS_CLUSTER_CLK_GATE
     // Reactivate automatic cluster clock-gating
     // Due to a HW bug, it can not work when the cluster is doing something
     li      a0, ARCHI_CLUSTER_PERIPHERALS_ADDR
     li      a1, 1
     sw      a1, ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE(a0)
+#endif
 
     sw      s4, EU_CORE_MASK_OR(s3)
     p.elw   x0, EU_CORE_EVENT_WAIT_CLEAR(s3)

@@ -79,7 +79,9 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
 #endif
 
     /* Activate cluster top level clock gating */
+#ifdef ARCHI_HAS_CLUSTER_CLK_GATE
     IP_WRITE(ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(cid), ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE, 1);
+#endif
 
     // Initialize cluster global variables
     __rt_init_cluster_data(cid);
