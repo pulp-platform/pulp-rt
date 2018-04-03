@@ -36,7 +36,7 @@
 
 #include "rt/rt_api.h"
 
-#define ACTIVATE_I2C 1
+//#define ACTIVATE_I2C 1
 
 static RT_L2_DATA ov7670_reg_cfg_t _qvga_conf[] = {
     {REG_COM14, 0x19},
