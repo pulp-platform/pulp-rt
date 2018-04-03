@@ -77,7 +77,7 @@ typedef enum {
  * This will for example make sure the corresponding pad is configured for this
  * GPIO.
  *
- * \param group  GPIO group. Must always be 0 for now. 
+ * \param group  GPIO group. Must always be 0 for now.
  * \param gpio   GPIO number. This is an integer between 0 and 31 identifying the GPIO to init.
  */
 void rt_gpio_init(uint8_t group, int gpio);
@@ -89,7 +89,7 @@ void rt_gpio_init(uint8_t group, int gpio);
  * This function will undo all initializations which were done when rt_gpio_init
  * was called for this GPIO.
  *
- * \param group  GPIO group. Must always be 0 for now. 
+ * \param group  GPIO group. Must always be 0 for now.
  * \param gpio   GPIO number. This is an integer between 0 and 31 identifying the GPIO to deinit.
  */
 void rt_gpio_deinit(uint8_t group, int gpio);
@@ -102,11 +102,12 @@ void rt_gpio_deinit(uint8_t group, int gpio);
  * An input GPIO will allow sending data from the chip to another device while
  * an input will allow receiving data.
  *
- * \param group  GPIO group. Must always be 0 for now. 
- * \param mask   A mask of GPIOs for which to set the direction. 
+ * \param group  GPIO group. Must always be 0 for now.
+ * \param mask   A mask of GPIOs for which to set the direction.
  *               There is one bit per GPIO, bit 0 is GPIO 0 and bit 31 GPIO 31.
  *               The direction will be configured for all GPIOs which have their
  *               corresponding bit set to 1.
+ * \param is_out A flag for choosing the direction of the gpio
  */
 static inline void rt_gpio_set_dir(uint8_t group, uint32_t mask, rt_gpio_dir_e is_out);
 
@@ -116,8 +117,8 @@ static inline void rt_gpio_set_dir(uint8_t group, uint32_t mask, rt_gpio_dir_e i
  *
  * This function can be used to change the value of a group of GPIO outputs.
  *
- * \param group  GPIO group. Must always be 0 for now. 
- * \param mask   A mask of GPIOs for which to set the value. 
+ * \param group  GPIO group. Must always be 0 for now.
+ * \param mask   A mask of GPIOs for which to set the value.
  *               There is one bit per GPIO, bit 0 is GPIO 0 and bit 31 GPIO 31.
  *               The value will be set for all GPIOs which have their
  *               corresponding bit set to 1.
@@ -132,7 +133,7 @@ static inline void rt_gpio_set_value(uint8_t group, uint32_t mask, uint8_t value
  *
  * This function can be used to get the value of a group of GPIO inputs.
  *
- * \param group  GPIO group. Must always be 0 for now. 
+ * \param group  GPIO group. Must always be 0 for now.
  * \return       The values for the whole group.
  *               There is one bit per GPIO, bit 0 is GPIO 0 and bit 31 GPIO 31.
  */
@@ -156,7 +157,7 @@ static inline uint8_t rt_gpio_get_pin_value(uint8_t group, uint8_t gpio);
  *
  * This function can be used to change the value of a single GPIO.
  *
- * \param group  GPIO group. Must always be 0 for now. 
+ * \param group  GPIO group. Must always be 0 for now.
  * \param gpio   The GPIO number. Must be between 0 and 31.
  * \param value  The value to be set. This can be be either 0 or 1.
  */
