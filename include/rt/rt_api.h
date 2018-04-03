@@ -71,5 +71,6 @@
 #ifdef GPIO_VERSION
 #include "rt/rt_gpio.h"
 #endif
+#include "rt/rt_voltage.h"
 
 #endif

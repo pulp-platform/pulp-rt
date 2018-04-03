@@ -111,7 +111,15 @@ static inline void hal_timer_cmp_set(unsigned int addr, unsigned int cmp)
   pulp_write32(addr + PLP_TIMER_CMP_LO, cmp);
 }
 
+static inline void hal_timer_reset(unsigned int addr)
+{
+  pulp_write32(addr + PLP_TIMER_RESET_LOW, 1);
+}
 
+static inline void hal_timer_start(unsigned int addr)
+{
+  pulp_write32(addr + PLP_TIMER_START_LOW, 1);
+}
 
 
 

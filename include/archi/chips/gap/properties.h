@@ -26,6 +26,7 @@
 #define ARCHI_HAS_L1                   1
 #define ARCHI_HAS_FC_TCDM              1
 
+#define ARCHI_L1_SIZE                  65536
 
 
 /*
@@ -58,8 +59,9 @@
  * CLUSTER
  */
 
-#define ARCHI_HAS_CLUSTER   1
-#define ARCHI_L1_TAS_BIT    20
+#define ARCHI_HAS_CLUSTER          1
+#define ARCHI_L1_TAS_BIT           20
+#define ARCHI_HAS_CLUSTER_CLK_GATE 1
 
 
 
