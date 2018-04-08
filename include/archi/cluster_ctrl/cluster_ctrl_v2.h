@@ -29,7 +29,7 @@
 #define ARCHI_CLUSTER_CTRL_CLUSTER_CFG              0x18
 #define ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE         0x20
 #define ARCHI_CLUSTER_CTRL_DBG_STATUS               0x28
-#define ARCHI_CLUSTER_CTRL_HALT_MASK                0x38
+#define ARCHI_CLUSTER_CTRL_DBG_HALT_MASK            0x38
 #define ARCHI_CLUSTER_CTRL_BOOTADDR(core)          (0x40 + 4*(core))
 #define ARCHI_CLUSTER_CTRL_BOOTADDR_COREID(offset) (((offset) - ARCHI_CLUSTER_CTRL_BOOTADDR(0)) >> 2)
 
