@@ -60,7 +60,7 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x3059, 0x1E},
     {0x3064, 0x00},
     {0x3065, 0x04},             //  pad pull 0
-    
+
     {BLC_CFG, 0x43},            //  BLC_on, IIR
 
     {0x1001, 0x43},             //  BLC dithering en
@@ -68,7 +68,7 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x0350, 0x00},             //  Dgain Control
     {BLI_EN, 0x01},             //  BLI enable
     {0x1003, 0x00},             //  BLI Target [Def: 0x20]
-    
+
     {DPC_CTRL, 0x01},           //  DPC option 0: DPC off   1 : mono   3 : bayer1   5 : bayer2
     {0x1009, 0xA0},             //  cluster hot pixel th
     {0x100A, 0x60},             //  cluster cold pixel th
@@ -92,9 +92,9 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x2100, 0x01},     //Automatic Exposure Gain Control
     {0x2101, 0xB0},     //AE target mean [Def: 0x3C]
     {0x2102, 0x0A},     //AE target mean [Def: 0x0A]
-    
+
     {0x210D, 0x10},     //Damping Factor [Def: 0x20]
-    
+
     {0x0205, 0x00},     //Analog Global Gain
     {0x020E, 0x50},     //Digital Gain High
     {0x020F, 0x00},     //Digital Gain Low
@@ -103,12 +103,12 @@ static himax_reg_cfg_t himaxRegInit[] = {
 
     {0x2104, 0x05},
     {0x2105, 0x01},
-    
+
     {0x2106, 0x54},
 
     {0x2108, 0x03},
     {0x2109, 0x04},
-    
+
     {0x210B, 0xC0},
     {0x210E, 0x00}, //Flicker Control KEEP IT AT 0!!!!!!!!!!!!!!!!
     {0x210F, 0x00},
@@ -183,7 +183,8 @@ void _himaxReset(rt_camera_t *cam){
     himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
     while (himaxRegRead(cam, MODE_SELECT) != HIMAX_Standby){
         himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
-        rt_time_wait_us(50);
+        //rt_time_wait_us(50);
+        for (volatile int i=0; i<5000000; i++);
     }
 }
 
