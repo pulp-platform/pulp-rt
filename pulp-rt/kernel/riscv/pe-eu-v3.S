@@ -26,7 +26,7 @@
 #include "archi/eu/eu_v3.h"
 #include "archi/cluster_ctrl/cluster_ctrl_v2.h"
 
-//    .section .cluster.text
+    .section .cluster.text
 
   .global __rt_pe_start
 __rt_pe_start:
