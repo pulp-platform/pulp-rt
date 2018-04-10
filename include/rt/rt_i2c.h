@@ -119,7 +119,7 @@ void rt_i2c_freq_set(rt_i2c_t *handle, unsigned int frequency, rt_event_t *event
  * \param handle        The handler of the device which was returned when the device was opened.
  * \param addr          A pointer for the address specified in the I2C deveice.
  * \param addr_len      The size in byte of this address above.
- * \param rx_data       The address in the chip where the received data must be written.
+ * \param rx_buff       The address in the chip where the received data must be written.
  * \param length        The size in bytes of the copy
  * \param stop          Stop to be generated after the tx part is done, it will be followed by a Start for the rx part
  * \param event         The event used for managing termination.

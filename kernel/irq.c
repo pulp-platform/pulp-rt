@@ -30,7 +30,7 @@
  * limitations under the License.
  */
 
-/* 
+/*
  * Authors: Eric Flamand, GreenWaves Technologies (eric.flamand@greenwaves-technologies.com)
  *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
@@ -49,7 +49,7 @@ static unsigned int __rt_get_itvec(unsigned int ItBaseAddr, unsigned int ItIndex
   unsigned int S = ((unsigned int) ItHandler - (ItBaseAddr+ItIndex*4));
   unsigned int R = 0x6F; /* Jal opcode with x0 as target, eg no return */
 
-  /* Forge JAL x0, Address: with Address = S => Bin[31:0] = [S20 
+  /* Forge JAL x0, Address: with Address = S => Bin[31:0] = [S20
   | S10:1 | S11 | S19:12 | 00000 01101111] */
 
   R = __BITINSERT(R, __BITEXTRACT(S,  1, 20),  1, 31);
@@ -75,7 +75,7 @@ void rt_irq_set_handler(int irq, void (*handler)())
 #if defined(PLP_FC_HAS_ICACHE)
   flush_all_icache_banks_common(plp_icache_fc_base());
 #endif
-  
+
 }
 
 #else
@@ -103,11 +103,14 @@ void __rt_handle_illegal_instr()
 #endif
 }
 
-RT_BOOT_CODE void __attribute__((constructor)) __rt_irq_init()
+void __rt_irq_init()
 {
+  // We may enter the runtime with some interrupts active for example
+  // if we force the boot to jump to the runtime through jtag.
+  rt_irq_mask_clr(-1);
 
 #if defined(ARCHI_HAS_FC)
-  // As the FC code may not be at the beginning of the L2, set the 
+  // As the FC code may not be at the beginning of the L2, set the
   // vector base to get proper interrupt handlers
   __rt_set_fc_vector_base((int)rt_irq_vector_base());
 #endif
