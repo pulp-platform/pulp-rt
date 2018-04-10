@@ -35,6 +35,7 @@
 
 /// @cond IMPLEM
 
+void __rt_irq_init();
 void rt_irq_set_handler(int irq, void (*handler)());
 
 static inline void rt_irq_mask_set(unsigned int mask);
