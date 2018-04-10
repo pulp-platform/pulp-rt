@@ -37,7 +37,6 @@
 
 #include "rt/rt_api.h"
 
-#define ACTIVATE_I2C 1
 
 //TODO: this sequence could be optimized
 static himax_reg_cfg_t himaxRegInit[] = {
@@ -138,22 +137,22 @@ RT_L2_DATA unsigned int regAddrHimax;
 RT_FC_DATA unsigned char camera_isAwaked = 0;
 
 void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
-#ifdef ACTIVATE_I2C
-    valRegHimax = value;
-    regAddrHimax = addr;
-    rt_event_t *call_event = rt_event_get_blocking(NULL);
-    rt_i2c_write(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, call_event);
-    rt_event_wait(call_event);
-#endif
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        valRegHimax = value;
+        regAddrHimax = addr;
+        rt_event_t *call_event = rt_event_get_blocking(NULL);
+        rt_i2c_write(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, call_event);
+        rt_event_wait(call_event);
+    }
 }
 
 unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
-#ifdef ACTIVATE_I2C
-    regAddrHimax = addr;
-    rt_event_t *call_event = rt_event_get_blocking(NULL);
-    rt_i2c_read(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, 0, call_event);
-    rt_event_wait(call_event);
-#endif
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        regAddrHimax = addr;
+        rt_event_t *call_event = rt_event_get_blocking(NULL);
+        rt_i2c_read(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, 0, call_event);
+        rt_event_wait(call_event);
+    }
     return valRegHimax;
 }
 
@@ -183,8 +182,7 @@ void _himaxReset(rt_camera_t *cam){
     himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
     while (himaxRegRead(cam, MODE_SELECT) != HIMAX_Standby){
         himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
-        //rt_time_wait_us(50);
-        for (volatile int i=0; i<5000000; i++);
+        rt_time_wait_us(50);
     }
 }
 
@@ -249,9 +247,8 @@ qvga:
 void __rt_himax_close(rt_camera_t *dev_cam, rt_event_t *event){
     int irq = hal_irq_disable();
     _camera_stop();
-#ifdef ACTIVATE_I2C
-    rt_i2c_close(dev_cam->i2c, NULL);
-#endif
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD)
+        rt_i2c_close(dev_cam->i2c, NULL);
     rt_free(RT_ALLOC_FC_DATA, (void*)dev_cam, sizeof(rt_camera_t));
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
     if (event) __rt_event_enqueue(event);
@@ -320,16 +317,16 @@ rt_camera_t* __rt_himax_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*event
     camera->channel = dev->channel & 0xf;
     __rt_camera_conf_init(camera, cam);
 
-#ifdef ACTIVATE_I2C
-    rt_i2c_conf_init(&camera->i2c_conf);
-    camera->i2c_conf.cs = 0x48;
-    camera->i2c_conf.id = 1;
-    camera->i2c_conf.max_baudrate = 200000;
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        rt_i2c_conf_init(&camera->i2c_conf);
+        camera->i2c_conf.cs = 0x48;
+        camera->i2c_conf.id = 1;
+        camera->i2c_conf.max_baudrate = 200000;
 
-    camera->i2c = rt_i2c_open(NULL, &camera->i2c_conf, NULL);
-    if (camera->i2c == NULL) printf ("Filed to open I2C\n");
-    // the I2C of Himax freq: 400kHz max.
-#endif
+        camera->i2c = rt_i2c_open(NULL, &camera->i2c_conf, NULL);
+        if (camera->i2c == NULL) printf ("Filed to open I2C\n");
+        // the I2C of Himax freq: 400kHz max.
+    }
 
     soc_eu_fcEventMask_setEvent(ARCHI_UDMA_CAM_ID(0)*2);
     _himaxReset(camera);

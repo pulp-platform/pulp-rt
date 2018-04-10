@@ -39,9 +39,6 @@
 
 #if defined(RISCV_VERSION)
 
-RT_FC_DATA static unsigned char __irqIsInited = 0;
-RT_BOOT_CODE void __attribute__((constructor)) __rt_irq_init();
-
 static unsigned int __rt_get_itvec(unsigned int ItBaseAddr, unsigned int ItIndex, unsigned int ItHandler)
 
 {
@@ -65,8 +62,6 @@ static unsigned int __rt_get_itvec(unsigned int ItBaseAddr, unsigned int ItIndex
 
 void rt_irq_set_handler(int irq, void (*handler)())
 {
-  if (!__irqIsInited) __rt_irq_init();
-
   unsigned int base = __rt_get_fc_vector_base();
 
   unsigned int jmpAddr = base + 0x4 * irq;
@@ -108,8 +103,11 @@ void __rt_handle_illegal_instr()
 #endif
 }
 
-RT_BOOT_CODE void __attribute__((constructor)) __rt_irq_init()
+void __rt_irq_init()
 {
+  // We may enter the runtime with some interrupts active for example
+  // if we force the boot to jump to the runtime through jtag.
+  rt_irq_mask_clr(-1);
 
 #if defined(ARCHI_HAS_FC)
   // As the FC code may not be at the beginning of the L2, set the
@@ -122,5 +120,4 @@ RT_BOOT_CODE void __attribute__((constructor)) __rt_irq_init()
   // Activate all events to wake-up for every incoming interrupts
   eu_evt_maskSet(0xffffffff);
 #endif
-  __irqIsInited = 1;
 }
