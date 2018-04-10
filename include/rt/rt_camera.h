@@ -94,6 +94,7 @@ rt_camera_t* rt_camera_open(char *dev_name, rt_cam_conf_t *conf, rt_event_t *eve
  *    CMD_FRAMEDROP  |     unsigned int
  *    CMD_START      |     NULL
  *    CMD_STOP       |     NULL
+ *    CMD_PAUSE      |     NULL
  * Can only be called from fabric-controller side.
  *
  * \param handle    The handle of the device camera which returned when the device was opened.

@@ -36,8 +36,6 @@
 
 #include "rt/rt_api.h"
 
-#define ACTIVATE_SCCB 1
-
 static RT_L2_DATA ov7670_reg_cfg_t _qvga_conf[] = {
     {REG_COM14, 0x19},
     {0x70, 0x4A},
@@ -95,33 +93,37 @@ static RT_L2_DATA ov7670_reg_cfg_t _yuv422_conf[] = {
     {REG_BRIGHT, 0xC0}
 };
 
-RT_L2_DATA unsigned char valueReg;
+RT_L2_DATA unsigned char valRegOV7670;
+RT_L2_DATA unsigned int regAddrOV7670;
 RT_L2_DATA unsigned char __ov7670Inited = 0;
 
 
 void ov7670RegWrite(rt_camera_t *cam, unsigned char addr, unsigned char value, rt_event_t *event){
-#ifdef ACTIVATE_SCCB
-    if (event){
-        rt_i2c_write(cam->i2c, (unsigned char*) &addr, 1, &value, 1, event);
-    }else{
-        rt_event_t *call_event = rt_event_get_blocking(NULL);
-        rt_i2c_write(cam->i2c, (unsigned char*) &addr, 1, &value, 1, call_event);
-        rt_event_wait(call_event);
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        valRegOV7670 = value;
+        regAddrOV7670 = addr;
+        if (event){
+            rt_i2c_write(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, event);
+        }else{
+            rt_event_t *call_event = rt_event_get_blocking(NULL);
+            rt_i2c_write(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, call_event);
+            rt_event_wait(call_event);
+        }
     }
-#endif
 }
 
 unsigned int ov7670RegRead(rt_camera_t *cam, unsigned char addr, rt_event_t *event){
-#ifdef ACTIVATE_SCCB
-    if (event){
-        rt_i2c_read(cam->i2c, (unsigned char*) &addr, 1, &valueReg, 1, 1, event);
-    }else{
-        rt_event_t *call_event = rt_event_get_blocking(NULL);
-        rt_i2c_read(cam->i2c, (unsigned char*) &addr, 1, &valueReg, 1, 1, event);
-        rt_event_wait(call_event);
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        regAddrOV7670 = addr;
+        if (event){
+            rt_i2c_read(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, 1, event);
+        }else{
+            rt_event_t *call_event = rt_event_get_blocking(NULL);
+            rt_i2c_read(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, 1, event);
+            rt_event_wait(call_event);
+        }
     }
-#endif
-    return valueReg;
+    return valRegOV7670;
 }
 
 
@@ -272,6 +274,7 @@ void __rt_ov7670_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
             _ov7670ConfigAndEnable(dev_cam);
             break;
         case CMD_STOP:
+        case CMD_PAUSE:
             _camera_stop();
             break;
     }
@@ -294,15 +297,15 @@ rt_camera_t* __rt_ov7670_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*even
     camera->channel = dev->channel & 0xf;
     rt_ov7670_conf_init(camera, cam);
 
-#ifdef ACTIVATE_SCCB
-    rt_i2c_conf_init(&camera->i2c_conf);
-    camera->i2c_conf.cs = 0x42;
-    camera->i2c_conf.id = 1;
-    camera->i2c_conf.max_baudrate = 200000;
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        rt_i2c_conf_init(&camera->i2c_conf);
+        camera->i2c_conf.cs = 0x42;
+        camera->i2c_conf.id = 1;
+        camera->i2c_conf.max_baudrate = 200000;
 
-    camera->i2c = rt_i2c_open(NULL, &camera->i2c_conf, NULL);
-    if (camera->i2c == NULL) printf ("Filed to open I2C\n");
-#endif
+        camera->i2c = rt_i2c_open(NULL, &camera->i2c_conf, NULL);
+        if (camera->i2c == NULL) printf ("Filed to open I2C\n");
+    }
 
     soc_eu_fcEventMask_setEvent(ARCHI_UDMA_CAM_ID(0)*2);
     _ov7670RegInit(camera);
