@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* 
+/*
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
@@ -54,10 +54,6 @@ void __rt_init()
 {
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
 
-  // We may enter the runtime with some interrupts active for example
-  // if we force the boot to jump to the runtime through jtag.
-  rt_irq_mask_clr(-1);
-
 #ifndef __ariane__
 
 #ifdef FLL_VERSION
@@ -77,7 +73,8 @@ void __rt_init()
 #endif
   }
 
-  // Initialize first the memory allocators and the utils so that they are 
+  __rt_irq_init();
+  // Initialize first the memory allocators and the utils so that they are
   // available for constructors, especially to let them declare
   // callbacks
   __rt_utils_init();
@@ -133,7 +130,7 @@ void __rt_deinit()
   __rt_cbsys_exec(RT_CBSYS_STOP);
 
 #endif
-  
+
   /* Call global and static destructors */
   do_dtors();
 }
@@ -169,7 +166,7 @@ static void cluster_start(void *arg)
     }
     else
     {
-      rt_team_fork(rt_nb_active_pe(), cluster_pe_start, NULL);      
+      rt_team_fork(rt_nb_active_pe(), cluster_pe_start, NULL);
     }
   }
   else
@@ -218,7 +215,7 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
 
     cluster_start(NULL);
   }
-  
+
   return 0;
 }
 
@@ -255,7 +252,7 @@ static int __rt_check_clusters_start()
         exit(retval);
       }
     }
-    else 
+    else
       return cluster_master_start(NULL);
   } else if (!rt_is_fc()) {
     // Otherwise just check cluster 0, in case we are running on it
