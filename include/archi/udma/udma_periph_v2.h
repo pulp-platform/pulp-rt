@@ -585,7 +585,7 @@
 #define SPI_CMD_RX_CHECK_VALUE_WIDTH 		16
 
 #define SPI_CMD_RX_CHECK_SIZE_OFFSET       	16
-#define SPI_CMD_RX_CHECK_SIZE_WIDTH  		8
+#define SPI_CMD_RX_CHECK_SIZE_WIDTH  		4
 
 #define SPI_CMD_RX_CHECK_MODE_OFFSET      	24
 #define SPI_CMD_RX_CHECK_MODE_WIDTH 		2
@@ -614,7 +614,15 @@
 #define SPI_CMD_RX_DATA(bits,qpi,byte_align)         ((SPI_CMD_RX_DATA_ID<<SPI_CMD_ID_OFFSET) | ((qpi)<<SPI_CMD_RX_DATA_QPI_OFFSET) | (((bits)-1) << SPI_CMD_RX_DATA_SIZE_OFFSET) | ((byte_align)<<SPI_CMD_RX_DATA_BYTE_ALIGN_OFFSET))
 #define SPI_CMD_RPT(iter)                 ((SPI_CMD_RPT_ID<<SPI_CMD_ID_OFFSET) | ((iter)<<SPI_CMD_RPT_NB_OFFSET))
 #define SPI_CMD_EOT(evt)                  ((SPI_CMD_EOT_ID<<SPI_CMD_ID_OFFSET) | ((evt)<<SPI_CMD_EOT_GEN_EVT_OFFSET))
-#define SPI_CMD_RX_CHECK(mode,bits,value,qpi,byte_align) ((SPI_CMD_RX_CHECK_ID<<SPI_CMD_ID_OFFSET) | ((mode) << SPI_CMD_RX_CHECK_MODE_OFFSET) | (((bits)-1) << SPI_CMD_RX_CHECK_SIZE_OFFSET) | ((byte_align)<<SPI_CMD_RX_CHECK_BYTE_ALIGN_OFFSET) | ((qpi)<<SPI_CMD_RX_CHECK_QPI_OFFSET))
+
+#define SPI_CMD_RX_CHECK(mode,bits,value,qpi,byte_align) \
+  ((SPI_CMD_RX_CHECK_ID<<SPI_CMD_ID_OFFSET) | \
+  ((value) << SPI_CMD_RX_CHECK_VALUE_OFFSET) | \
+  ((mode) << SPI_CMD_RX_CHECK_MODE_OFFSET) | \
+  (((bits)-1) << SPI_CMD_RX_CHECK_SIZE_OFFSET) | \
+  ((byte_align)<<SPI_CMD_RX_CHECK_BYTE_ALIGN_OFFSET) | \
+  ((qpi)<<SPI_CMD_RX_CHECK_QPI_OFFSET))
+
 #define SPI_CMD_WAIT(event)               ((SPI_CMD_WAIT_ID<<SPI_CMD_ID_OFFSET) | ((event) << SPI_CMD_WAIT_EVENT_OFFSET))
 #define SPI_CMD_RPT_END()                 ((SPI_CMD_RPT_END_ID<<SPI_CMD_ID_OFFSET))
 #define SPI_CMD_FUL(bits,byte_align)      ((SPI_CMD_FUL_ID<<SPI_CMD_ID_OFFSET) | (((bits)-1) << SPI_CMD_FUL_SIZE_OFFSET) | ((byte_align)<<SPI_CMD_FUL_BYTE_ALIGN_OFFSET))
