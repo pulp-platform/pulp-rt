@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* 
+/*
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
@@ -22,6 +22,7 @@
 #include "rt/rt_api.h"
 
 static char __rt_padframe_is_init = 0;
+extern int __rt_nb_profile;
 
 void __rt_padframe_init()
 {
@@ -39,3 +40,31 @@ void __rt_padframe_init()
     __rt_padframe_is_init = 1;
   }
 }
+
+static inline int __rt_pad_nb_profiles()
+{
+  return __rt_nb_profile;
+}
+
+rt_padframe_profile_t *rt_pad_profile_get(char *profile_string) {
+
+  for (int i=0; i<__rt_pad_nb_profiles(); i++) {
+    rt_padframe_profile_t *prof = &__rt_padframe_profiles[i];
+    if (strcmp(profile_string, prof->name) == 0) return prof;
+  }
+  return NULL;
+}
+
+void rt_padframe_set(rt_padframe_profile_t *profile) {
+
+    unsigned int *config = profile->config;
+
+    for (int i=0; i<ARCHI_APB_SOC_PADFUN_NB; i++)
+    {
+      rt_trace(RT_TRACE_INIT, "Initializing pads function (id: %d, config: 0x%x)\n", i, config[i]);
+      hal_apb_soc_padfun_set(i, config[i]);
+    }
+
+}
+
+
