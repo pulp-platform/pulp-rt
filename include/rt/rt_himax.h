@@ -130,7 +130,7 @@
 /*
  * Useful value of Himax registers
  */
-#define         HIMAX_RESET         0x01
+#define         HIMAX_RESET         0x00
 #define         Pclk_rising_edge    0x00
 #define         Pclk_falling_edge   0x01
 
