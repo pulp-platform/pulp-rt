@@ -54,9 +54,12 @@ void __rt_init()
 {
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
 
+#if defined(ARCHI_HAS_FC)
   // Deactivate all soc events as they are active by default
   soc_eu_eventMask_set(SOC_FC_MASK_LSB, 0xFFFFFFFF);
   soc_eu_eventMask_set(SOC_FC_MASK_MSB, 0xFFFFFFFF);
+#endif
+
 
 #ifndef __ariane__
 
