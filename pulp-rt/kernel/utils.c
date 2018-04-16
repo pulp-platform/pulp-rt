@@ -186,7 +186,7 @@ void __rt_fc_cluster_lock(rt_fc_lock_t *lock, rt_fc_lock_req_t *req)
   req->done = 0;
   req->req_lock = 1;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_fc_cluster_lock_req, (void *)req);
-  __rt_cluster_push_fc_event(&req->event);
+  __rt_cluster_push_fc_irq_event(&req->event);
 }
 
 void __rt_fc_cluster_unlock(rt_fc_lock_t *lock, rt_fc_lock_req_t *req)
@@ -196,7 +196,7 @@ void __rt_fc_cluster_unlock(rt_fc_lock_t *lock, rt_fc_lock_req_t *req)
   req->done = 0;
   req->req_lock = 0;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_fc_cluster_lock_req, (void *)req);
-  __rt_cluster_push_fc_event(&req->event);
+  __rt_cluster_push_fc_irq_event(&req->event);
 }
 
 #else

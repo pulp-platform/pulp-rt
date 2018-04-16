@@ -160,7 +160,7 @@ static void _himaxBoot(rt_camera_t *cam){
     unsigned int i;
     for(i=0; i<(sizeof(himaxRegInit)/sizeof(himax_reg_cfg_t)); i++){
         himaxRegWrite(cam, himaxRegInit[i].addr, himaxRegInit[i].data);
-        rt_trace("%x = %x \n", himaxRegInit[i].addr, himaxRegRead(cam, himaxRegInit[i].addr));
+        rt_trace(RT_TRACE_CAM, "%x = %x \n", himaxRegInit[i].addr, himaxRegRead(cam, himaxRegInit[i].addr));
     }
     //TODO: Add this one in the Reg Init list!
     himaxRegWrite(cam, PCLK_POLARITY, (0x20|Pclk_falling_edge));

@@ -215,6 +215,11 @@ static inline rt_event_sched_t *__rt_cluster_sched_get()
 
 void __rt_cluster_push_fc_event(rt_event_t *event);
 
+static inline void __rt_cluster_push_fc_irq_event(rt_event_t *event)
+{
+  __rt_cluster_push_fc_event((rt_event_t *)(((unsigned int)event) | 0x1));
+}
+
 static inline void __rt_cluster_notif_req_done(int cid)
 {
   eu_evt_trig(eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT), 0);
