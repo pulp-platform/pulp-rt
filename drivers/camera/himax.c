@@ -289,10 +289,12 @@ void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
             break;
         case CMD_PAUSE:
             _camera_stop();
+            camera_isAwaked = 0;
             break;
         case CMD_STOP:
             _himaxStandby(dev_cam);
             _camera_stop();
+            camera_isAwaked = 0;
             break;
         default:
             rt_warning("[CAM] This Command %d is not disponible for Himax camera\n", cmd);
