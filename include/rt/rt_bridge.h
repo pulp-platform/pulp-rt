@@ -67,7 +67,7 @@
  * Can only be called from fabric controller.
  * This operation is asynchronous and its termination can be managed through an event.
  *
- * \param event     The event used for managing termination.
+ * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
  */
 void rt_bridge_connect(rt_event_t *event);
 
@@ -96,7 +96,7 @@ void rt_bridge_disconnect(rt_event_t *event);
  * \param name      The path to the file on the workstation. If it is a relative path, it will be relative to the platform working directory.
  * \param flags     The access modes, see the documentation of open on the workstation for more details.
  * \param mode      Access rights for file creation, see the documentation of open on the workstation for more details.
- * \param event     The event used for managing termination.
+ * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
  * \return          If the event parameter is NULL, this returns the return value of the call to open, otherwise it is undefined.
  */
 int rt_bridge_open(const char* name, int flags, int mode, rt_event_t *event);
@@ -122,7 +122,7 @@ int rt_bridge_open_wait(rt_event_t *event);
  * This operation is asynchronous and its termination can be managed through an event.
  *
  * \param file      The file descriptor returned when the file was opened.
- * \param event     The event used for managing termination.
+ * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
  * \return          If the event parameter is NULL, this returns the return value of the call to close, otherwise it is undefined.
  */
 int rt_bridge_close(int file, rt_event_t *event);
@@ -150,7 +150,7 @@ int rt_bridge_close_wait(rt_event_t *event);
  * \param file      The file descriptor returned when the file was opened.
  * \param ptr       The address in the chip where the data read from the file must be written.
  * \param len       The number of bytes which must be read from the file.
- * \param event     The event used for managing termination.
+ * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
  * \return          If the event parameter is NULL, this returns the return value of the call to read, otherwise it is undefined.
  */
 int rt_bridge_read(int file, void* ptr, int len, rt_event_t *event);
@@ -178,7 +178,7 @@ int rt_bridge_read_wait(rt_event_t *event);
  * \param file      The file descriptor returned when the file was opened.
  * \param ptr       The address in the chip where the data to be written to the file must be read.
  * \param len       The number of bytes which must be written to the file.
- * \param event     The event used for managing termination.
+ * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
  * \return          If the event parameter is NULL, this returns the return value of the call to write, otherwise it is undefined.
  */
 int rt_bridge_write(int file, void* ptr, int len, rt_event_t *event);
