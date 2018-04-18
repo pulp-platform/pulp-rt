@@ -29,6 +29,7 @@ RT_L1_TINY_DATA rt_event_sched_t *__rt_cluster_sched_current;
 
 void __rt_enqueue_event();
 void __rt_remote_enqueue_event();
+void __rt_bridge_enqueue_event();
 
 extern char _l1_preload_start_inL2[];
 extern char _l1_preload_start[];
@@ -253,6 +254,9 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
   rt_irq_set_handler(RT_FC_ENQUEUE_EVENT, __rt_remote_enqueue_event);
   rt_irq_mask_set(1<<RT_FC_ENQUEUE_EVENT);
 
+  rt_irq_set_handler(RT_BRIDGE_ENQUEUE_EVENT, __rt_bridge_enqueue_event);
+  rt_irq_mask_set(1<<RT_BRIDGE_ENQUEUE_EVENT);
+
   return 0;
 }
 
@@ -325,6 +329,11 @@ void rt_cluster_notif_deinit(rt_notif_t *notif)
 #if !defined(RISCV_VERSION) || RISCV_VERSION < 4
 
 void __rt_remote_enqueue_event()
+{
+
+}
+
+void __rt_bridge_enqueue_event()
 {
 
 }

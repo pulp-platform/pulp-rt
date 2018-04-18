@@ -20,6 +20,7 @@ endif
 PULP_CFLAGS += -Os -g -fno-jump-tables -fno-tree-loop-distribute-patterns -Werror
 
 INSTALL_FILES += $(shell find include -name *.h)
+WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
 INSTALL_TARGETS += $(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o
 
 ifneq '$(host/archi)' ''
@@ -37,8 +38,9 @@ PULP_LIB_HOST_SRCS_bench   += libs/bench/bench.c
 
 else
 
-PULP_LIB_FC_SRCS_rt     += kernel/init.c kernel/alloc.c kernel/alloc_extern.c kernel/thread.c \
-  kernel/events.c kernel/dev.c kernel/irq.c kernel/debug.c kernel/time.c kernel/time_irq.c kernel/utils.c kernel/error.c
+PULP_LIB_FC_SRCS_rt     += kernel/init.c kernel/alloc.c kernel/alloc_extern.c \
+  kernel/thread.c kernel/events.c kernel/dev.c kernel/irq.c kernel/debug.c \
+  kernel/time.c kernel/time_irq.c kernel/utils.c kernel/error.c kernel/bridge.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/crt0.S kernel/$(fc_archi)/thread.S
 
 ifneq '$(fc_archi)' 'or1k'
