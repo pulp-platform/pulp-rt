@@ -120,8 +120,12 @@ void rt_bridge_connect(rt_event_t *event)
   bridge->notif_req_addr = ARCHI_FC_ITC_ADDR + ARCHI_ITC_STATUS_SET;
   bridge->notif_req_value = 1<<RT_BRIDGE_ENQUEUE_EVENT;
 #else
+#if defined(EU_VERSION) && EU_VERSION >= 3
+#if defined(ARCHI_HAS_FC)
   bridge->notif_req_addr = ARCHI_FC_GLOBAL_ADDR + ARCHI_FC_PERIPHERALS_OFFSET + ARCHI_FC_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (RT_BRIDGE_ENQUEUE_EVENT << 2);
   bridge->notif_req_value = 1;
+#endif
+#endif
 #endif
 
   rt_bridge_req_t *req = &call_event->bridge_req;
