@@ -74,6 +74,33 @@ __rt_handle_special_event:
 
 
 
+    // This interrupt handler is triggered by the external bridge when it wants
+    // to enqueue an event to the FC scheduler.
+
+    .global __rt_bridge_enqueue_event
+__rt_bridge_enqueue_event:
+
+    sw  x8, -4(sp)
+    sw  x9, -8(sp)
+    sw  a0, -12(sp)
+    sw  a1, -16(sp)
+    sw  a2, -20(sp)
+
+    // Everything is done from C code
+    la      x12, __rt_bridge_handle_notif
+    jal     x9, __rt_call_external_c_function
+
+    lw  x8, -4(sp)
+    lw  x9, -8(sp)
+    lw  a0, -12(sp)
+    lw  a1, -16(sp)
+    lw  a2, -20(sp)
+
+    mret
+
+
+
+
 #if defined(ARCHI_HAS_CLUSTER)
     // This interrupt handler is triggered by cluster for pushing
     // remotly an event
