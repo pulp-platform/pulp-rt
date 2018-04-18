@@ -72,5 +72,6 @@
 #include "rt/rt_gpio.h"
 #endif
 #include "rt/rt_voltage.h"
+#include "rt/rt_bridge.h"
 
 #endif

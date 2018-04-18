@@ -80,6 +80,9 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #define RT_CL_SYNC_EVENT 1
 #define PLP_RT_NOTIF_EVENT 3    // TODO this is a temp def, should be removed
 
+// This event is used by the external debug bridge to enqueue tasks to pulp
+#define RT_BRIDGE_ENQUEUE_EVENT 4
+
 #if defined(EU_VERSION) && (EU_VERSION == 1)
 #define RT_FORK_EVT 0
 #endif
@@ -143,6 +146,8 @@ struct rt_thread_s;
 struct rt_event_sched_s;
 struct rt_event_s;
 struct rt_thread_s;
+
+#include "rt/data/rt_data_bridge.h"
 
 typedef struct rt_alloc_block_s {
   int                      size;
@@ -238,6 +243,7 @@ typedef struct rt_event_s {
     struct {
       unsigned int time;
     };
+    rt_bridge_req_t bridge_req;
   };
 } rt_event_t;
 
