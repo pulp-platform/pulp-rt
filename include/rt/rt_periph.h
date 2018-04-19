@@ -37,52 +37,6 @@
 
 #define RT_PERIPH_COPY_L2   0
 
-#if PULP_CHIP == CHIP_DEVCHIP || PULP_CHIP == CHIP_PULP || PULP_CHIP == CHIP_WOLFE || PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_PULPINO || PULP_CHIP == CHIP_VIVOSOC3
-#define RT_PERIPH_SPIM0_RX   0
-#define RT_PERIPH_SPIM0_TX   1
-#define RT_PERIPH_SPIM1_RX   2
-#define RT_PERIPH_SPIM1_TX   3
-#define RT_PERIPH_UART_RX    6
-#define RT_PERIPH_UART_TX    7
-#define RT_PERIPH_I2C0_DATA  8
-#define RT_PERIPH_I2C0_CMD   9
-#define RT_PERIPH_I2C1_DATA  10
-#define RT_PERIPH_I2C1_CMD   11
-#define RT_PERIPH_I2S0       12
-#define RT_PERIPH_I2S1       13
-#define RT_PERIPH_CAM        14
-#elif PULP_CHIP == CHIP_PULPISSIMO
-#define RT_PERIPH_SPIM0_RX   0
-#define RT_PERIPH_SPIM0_TX   1
-#define RT_PERIPH_SPIM1_RX   2
-#define RT_PERIPH_SPIM1_TX   3
-#define RT_PERIPH_UART_RX    6
-#define RT_PERIPH_UART_TX    7
-#define RT_PERIPH_I2C0_DATA  8
-#define RT_PERIPH_I2C0_CMD   9
-#define RT_PERIPH_I2C1_DATA  10
-#define RT_PERIPH_I2C1_CMD   11
-#define RT_PERIPH_I2S0       12
-#define RT_PERIPH_I2S1       13
-#define RT_PERIPH_CAM        14
-#elif PULP_CHIP == CHIP_GAP
-#define RT_PERIPH_LVDS0_RX   0
-#define RT_PERIPH_LVDS0_TX   1
-#define RT_PERIPH_SPIM0_RX   2
-#define RT_PERIPH_SPIM0_TX   3
-#define RT_PERIPH_SPIM1_RX   4
-#define RT_PERIPH_SPIM1_TX   5
-#define RT_PERIPH_UART_RX    8
-#define RT_PERIPH_UART_TX    9
-#define RT_PERIPH_I2C0_DATA  10
-#define RT_PERIPH_I2C0_CMD   11
-#define RT_PERIPH_I2C1_DATA  12
-#define RT_PERIPH_I2C1_CMD   13
-#define RT_PERIPH_I2S0       14
-#define RT_PERIPH_I2S1       15
-#define RT_PERIPH_CAM        16
-#endif
-
 static inline void rt_periph_copy_init(rt_periph_copy_t *copy, int flags);
 
 void rt_periph_copy(rt_periph_copy_t *copy, int channel, unsigned int addr, int size,

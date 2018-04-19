@@ -423,7 +423,7 @@ int rt_fs_read(rt_file_t *file, void *buffer, size_t size, rt_event_t *event)
     real_size = file->size - file->offset;
   }
 
-  rt_trace(RT_TRACE_FS, "[FS] File read (file: %p, buffer: %p, size: 0x%lx, real_size: 0x%x, offset: 0x%x, addr: 0x%x)\n", file, buffer, size, real_size, file->offset, file->addr + file->offset);
+  rt_trace(RT_TRACE_FS, "[FS] File read (file: %p, buffer: %p, size: 0x%xx, real_size: 0x%x, offset: 0x%x, addr: 0x%x)\n", file, buffer, (int)size, real_size, file->offset, file->addr + file->offset);
 
   // If the user specified an event, we must do all intermediate steps
   // asynchronously with another event, otherwise just do everything

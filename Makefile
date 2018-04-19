@@ -78,6 +78,10 @@ ifeq '$(pulp_chip_family)' 'devchip'
 PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
+ifeq '$(pulp_chip_family)' 'vega'
+PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
+endif
+
 ifeq '$(pulp_chip)' 'gap'
 PULP_LIB_FC_SRCS_rt += kernel/gap/maestro.c
 endif

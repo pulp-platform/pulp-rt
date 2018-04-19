@@ -252,14 +252,6 @@ static inline void rt_hyperram_cluster_wait(rt_hyperram_req_t *req);
 
 /// @cond IMPLEM
 
-#if PULP_CHIP == CHIP_DEVCHIP || PULP_CHIP == CHIP_WOLFE || PULP_CHIP == CHIP_QUENTIN
-#define RT_PERIPH_HYPERRAM_RX   4
-#define RT_PERIPH_HYPERRAM_TX   5
-#elif PULP_CHIP == CHIP_GAP
-#define RT_PERIPH_HYPERRAM_RX   6
-#define RT_PERIPH_HYPERRAM_TX   7
-#endif
-
 #if defined(ARCHI_UDMA_HAS_HYPER)
 
 
