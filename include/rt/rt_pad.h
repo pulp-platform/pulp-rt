@@ -34,6 +34,7 @@
 
 #include "rt/rt_api.h"
 
+#if defined(APB_SOC_VERSION)
 
 /// @cond IMPLEM
 
@@ -83,7 +84,7 @@ static inline void rt_pad_set_power(int pad_id, int is_on)
 #endif
 }
 
-
+#endif
 
 /// @endcond
 

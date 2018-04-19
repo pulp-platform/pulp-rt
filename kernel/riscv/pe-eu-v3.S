@@ -28,6 +28,17 @@
 
     .section .cluster.text
 
+
+#ifdef RV_ISA_RV32
+  .global __rt_pe_start
+__rt_pe_start:
+
+
+  .global __rt_set_slave_stack
+__rt_set_slave_stack:
+
+#else
+
   .global __rt_pe_start
 __rt_pe_start:
 
@@ -214,3 +225,4 @@ __rt_set_slave_stack:
     add     sp, a0, t0
     ret
 
+#endif

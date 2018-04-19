@@ -381,8 +381,12 @@ void exit(int status)
 
 void exit(int status)
 {
+#if defined(ARCHI_L2_ADDR)
   *(volatile int*)(ARCHI_L2_ADDR) = status;
+#endif
+#if defined(ARCHI_CLUSTER_CTRL_ADDR)
   *(volatile int*)(ARCHI_CLUSTER_CTRL_ADDR) = 1;
+#endif
   __rt_exit_debug_bridge(status);
   __wait_forever();
 }

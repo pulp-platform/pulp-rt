@@ -47,9 +47,11 @@ void rt_perf_save(rt_perf_t *perf)
     int event = __FL1(mask);
     mask &= ~(1<<event);
 
+#ifdef ARCHI_HAS_FC
     if (hal_is_fc())
       perf->values[event] += rt_perf_fc_read(event);
     else
+#endif
       perf->values[event] += rt_perf_cl_read(event);
   }
 }

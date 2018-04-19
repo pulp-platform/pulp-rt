@@ -549,7 +549,9 @@ static inline unsigned int __rt_get_fc_vector_base()
   else
   {
 #if defined(ARCHI_HAS_CLUSTER)
+#if defined(ARCHI_CLUSTER_CTRL_ADDR)
     return plp_ctrl_bootaddr_get();
+#endif
 #endif
   }
 #endif
@@ -571,7 +573,9 @@ static inline void __rt_set_fc_vector_base(unsigned int base)
   else
   {
 #if defined(ARCHI_HAS_CLUSTER)
+#if defined(ARCHI_CLUSTER_CTRL_ADDR)
     plp_ctrl_bootaddr_set(base);
+#endif
 #endif
   }
 #endif
