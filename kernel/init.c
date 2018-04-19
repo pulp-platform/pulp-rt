@@ -216,8 +216,11 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
     eu_dispatch_push((unsigned int)rt_stack_size_get());
     eu_dispatch_push((unsigned int)stacks);
 #else
+#if defined(__riscv__)
     __rt_cluster_pe_init(stacks, rt_stack_size_get());
     eoc_fetch_enable_remote(0, (1<<rt_nb_active_pe()) - 1);
+#else
+#endif
 #endif
 
     cluster_start(NULL);
