@@ -62,9 +62,9 @@ char *__rt_fs_error_str(int error)
 //
 static inline void __rt_fs_abort(rt_event_t *event, int error, void *object)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   __rt_error_report(event, __rt_error(RT_ERROR_FS, error), object);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 // Can be called to register an error for a synchronous call
@@ -169,12 +169,12 @@ error:
 
 void rt_fs_unmount(rt_fs_t *fs, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   __rt_fs_free(fs);
   if (event) __rt_event_enqueue(event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 
@@ -451,7 +451,7 @@ int rt_fs_read(rt_file_t *file, void *buffer, size_t size, rt_event_t *event)
 int rt_fs_direct_read(rt_file_t *file, void *buffer, size_t size, rt_event_t *event)
 {
   // Mask interrupt to update file current position and get information
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
 
   int real_size = size;
   unsigned int addr = file->addr + file->offset;
@@ -460,7 +460,7 @@ int rt_fs_direct_read(rt_file_t *file, void *buffer, size_t size, rt_event_t *ev
   }
   file->offset += real_size;
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   rt_flash_read(file->fs->flash, (void *)buffer, (void *)addr, real_size, event);
 

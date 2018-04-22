@@ -511,6 +511,7 @@ static inline int rt_fc_tcdm_size()
 #endif
 }
 
+#ifdef __riscv__
 static inline void rt_wait_for_interrupt()
 {
 #if !defined(ARCHI_HAS_FC) || defined(ARCHI_HAS_FC_EU)
@@ -519,6 +520,9 @@ static inline void rt_wait_for_interrupt()
   hal_itc_wait_for_interrupt();
 #endif
 }
+#else
+void rt_wait_for_interrupt();
+#endif
 
 static inline void rt_compiler_barrier() {
   __asm__ __volatile__ ("" : : : "memory");

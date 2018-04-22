@@ -65,18 +65,18 @@ static int __rt_i2c_get_div(int i2c_freq)
 
 static void __rt_i2c_write_data(__i2c_arg_t *i2c_arg)
 {
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
 
     rt_periph_copy(i2c_arg->copy, i2c_arg->dev_i2c->channel + 1 , (unsigned int) i2c_arg->data, i2c_arg->len, UDMA_CHANNEL_CFG_EN, NULL);
 
     _i2c_seq[seq_index++] = I2C_CMD_STOP;
     _i2c_seq[seq_index++] = I2C_CMD_WAIT;
     _i2c_seq[seq_index++] = 0x1;
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *addr, char addr_len, unsigned char *data, int length, rt_event_t *event){
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
     __i2c_arg_t i2c_write_arg;
 
     _i2c_seq[seq_index++] = I2C_CMD_START;
@@ -101,19 +101,19 @@ void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *addr, char addr_len, unsigne
 
     rt_periph_copy(&call_event->copy, dev_i2c->channel + 1 , (unsigned int) &_i2c_seq, seq_index, UDMA_CHANNEL_CFG_EN, rt_event_get(NULL, (void *)__rt_i2c_write_data, &i2c_write_arg));
     seq_index = 0;
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 
     rt_event_execute(NULL, 1);
 
-    irq = hal_irq_disable();
+    irq = rt_irq_disable();
     rt_periph_copy(&call_event->copy, dev_i2c->channel + 1 , (unsigned int) &_i2c_seq, seq_index, UDMA_CHANNEL_CFG_EN, call_event);
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
     __rt_wait_event_check(event, call_event);
     seq_index = 0;
 }
 
 void rt_i2c_read(rt_i2c_t *dev_i2c, unsigned char *addr, char addr_len, unsigned char *rx_buff, int length, unsigned char stop, rt_event_t *event){
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
     _i2c_seq[seq_index++] = I2C_CMD_START;
     _i2c_seq[seq_index++] = I2C_CMD_WR;
     _i2c_seq[seq_index++] = dev_i2c->cs;
@@ -139,12 +139,12 @@ void rt_i2c_read(rt_i2c_t *dev_i2c, unsigned char *addr, char addr_len, unsigned
     __rt_wait_event_check(event, call_event);
 
     seq_index = 0;
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 void rt_i2c_freq_set(rt_i2c_t *dev_i2c, unsigned int frequency, rt_event_t *event)
 {
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
 
     dev_i2c->div = __rt_i2c_get_div(frequency);
     _i2c_seq[seq_index++] = I2C_CMD_CFG;
@@ -156,12 +156,12 @@ void rt_i2c_freq_set(rt_i2c_t *dev_i2c, unsigned int frequency, rt_event_t *even
     rt_periph_copy(&call_event->copy, dev_i2c->channel + 1 , (unsigned int) &_i2c_seq, seq_index, UDMA_CHANNEL_CFG_EN, call_event);
     __rt_wait_event_check(event, call_event);
     seq_index = 0;
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 rt_i2c_t *rt_i2c_open(char *dev_name, rt_i2c_conf_t *i2c_conf, rt_event_t *event)
 {
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
 
     __rt_padframe_init();
 
@@ -212,7 +212,7 @@ rt_i2c_t *rt_i2c_open(char *dev_name, rt_i2c_conf_t *i2c_conf, rt_event_t *event
     }else{
         rt_i2c_freq_set(i2c, i2c->max_baudrate, event);
     }
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 
     return i2c;
 

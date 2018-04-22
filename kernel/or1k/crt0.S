@@ -24,6 +24,9 @@
   .global _start
 _start:
 
+#define REDZONE 128
+#define RT_EXCEPTION_FRAME (REDZONE + 0x44)
+
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
 
@@ -39,6 +42,10 @@ _start:
   .section .vectors, "ax"
   .org 0x00
   l.j   reset_handler
+  l.nop
+
+  .org 0x38
+  l.j   __rt_trap_handler
   l.nop
 
   // This variable is pointed to the structure containing all information exchanged with
@@ -94,3 +101,90 @@ zero_loop_end:
   l.addi   r3, r10, 0
   l.jal    exit
   l.nop
+
+
+__rt_trap_handler:
+  l.addi  r1, r1, -RT_EXCEPTION_FRAME;
+
+  l.sw    0x18(r1),r9;
+
+  LOAD_SYMBOL_2_GPR(r9, __rt_irq_handle)
+  l.j      __rt_call_external_c_function;
+  l.nop;
+
+
+
+// r9 must be saved before calling store_regs, as otherwise its content is already overwritten by l.jal
+__rt_call_external_c_function:
+  l.sw    0x00(r1),  r3
+  l.sw    0x04(r1),  r4
+  l.sw    0x08(r1),  r5
+  l.sw    0x0c(r1),  r6
+  l.sw    0x10(r1),  r7
+  l.sw    0x14(r1),  r8
+  l.sw    0x1c(r1), r11
+  l.sw    0x20(r1), r12
+  l.sw    0x24(r1), r13
+  l.sw    0x28(r1), r15
+  l.sw    0x2c(r1), r17
+  l.sw    0x30(r1), r19
+  l.sw    0x34(r1), r21
+  l.sw    0x38(r1), r23
+  l.sw    0x3c(r1), r25
+  l.sw    0x40(r1), r27
+  l.jalr  r9
+  l.nop
+
+__rt_trap_end_except:   // load back registers from stack
+  l.lwz   r3,  0x00(r1)
+  l.lwz   r4,  0x04(r1)
+  l.lwz   r5,  0x08(r1)
+  l.lwz   r6,  0x0c(r1)
+  l.lwz   r7,  0x10(r1)
+  l.lwz   r8,  0x14(r1)
+  l.lwz   r9,  0x18(r1)
+  l.lwz   r11, 0x1c(r1)
+  l.lwz   r12, 0x20(r1)
+  l.lwz   r13, 0x24(r1)
+  l.lwz   r15, 0x28(r1)
+  l.lwz   r17, 0x2c(r1)
+  l.lwz   r19, 0x30(r1)
+  l.lwz   r21, 0x34(r1)
+  l.lwz   r23, 0x38(r1)
+  l.lwz   r25, 0x3c(r1)
+  l.lwz   r27, 0x40(r1)
+  l.rfe                                // recover SR register and prior PC (jumps back to program)
+  l.addi  r1, r1, RT_EXCEPTION_FRAME // free stack places
+
+
+
+  // TODO try to work-around the interrupt board
+
+#ifdef SR_BUG_WORKAROUND
+  // Work-around for HW bug
+  // We save by hands the SR to restore it when leaving as the HW
+  // saved the wrong one due to pipeline sync issue
+  l.mfspr  r20, r0, SPR_SR
+  l.sw     8(r1), r20
+#endif
+
+
+
+
+#ifdef SR_BUG_WORKAROUND
+
+  // The only way to work-around the HW bug is to emulate in SW the rfe instruction
+  // Read status register saved by hands when entering the handler
+  l.lw        r30, 8(r1)
+
+  // Get the address where you to jump back when we emulate rfe
+  l.mfspr     r31, r0, SPR_EPCR_BASE
+
+  l.addi      r1, r1, REDZONE+12
+
+  // And finally emulate return to interrupted pc
+  // Use delay slot to restore interrupt enable and condition flag
+  l.jr        r31
+  l.mtspr     r0, r30, SPR_SR
+
+#endif

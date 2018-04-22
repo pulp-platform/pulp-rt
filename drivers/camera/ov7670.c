@@ -229,19 +229,19 @@ qvga:
 }
 
 void __rt_ov7670_close(rt_camera_t *dev_cam, rt_event_t *event){
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
     _camera_stop();
     rt_camera_t *cam = (rt_camera_t *) dev_cam;
     rt_free(RT_ALLOC_FC_DATA, (void*)dev_cam, sizeof(rt_camera_t));
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
     __ov7670Inited = 0;
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 void __rt_ov7670_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
     rt_trace(RT_TRACE_DEV_CTRL, "[CAM] Control command (cmd: %d)\n", cmd);
     unsigned int *arg = (unsigned int *)_arg;
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
     switch (cmd){
         case CMD_RESOL:
             dev_cam->conf.resolution = *arg;
@@ -278,7 +278,7 @@ void __rt_ov7670_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
             _camera_stop();
             break;
     }
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 static void rt_ov7670_conf_init(rt_camera_t *dev_cam, rt_cam_conf_t* cam){
@@ -317,7 +317,7 @@ void __rt_ov7670_capture(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, r
 {
     rt_trace(RT_TRACE_CAM, "[CAM OV7670] Capture (buffer: %p, size: 0x%x)\n", buffer, bufferlen);
 
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
 
     rt_event_t *call_event = __rt_wait_event_prepare(event);
 
@@ -327,7 +327,7 @@ void __rt_ov7670_capture(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, r
 
     __rt_wait_event_check(event, call_event);
 
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 rt_cam_dev_t ov7670_desc = {

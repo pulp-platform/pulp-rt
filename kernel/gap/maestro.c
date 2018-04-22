@@ -115,7 +115,7 @@ void __rt_pmu_voltage_apply(unsigned int new_voltage)
 
 int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   int current_state = __rt_pmu_get_scu_state(__rt_current_voltage);
   int new_state = __rt_pmu_get_scu_state(new_voltage);
@@ -132,7 +132,7 @@ int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_ev
 
   if (event) __rt_event_enqueue(event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return 0;
 }

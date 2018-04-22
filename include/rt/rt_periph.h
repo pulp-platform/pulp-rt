@@ -50,9 +50,9 @@ static inline void rt_periph_dual_copy(rt_periph_copy_t *copy, int rx_channel_id
   unsigned int cfg, rt_event_t *event)
 {
   copy->event = event;
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_periph_dual_copy_safe(copy, rx_channel_id, tx_addr, tx_size, rx_addr, rx_size, cfg);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void __rt_periph_dual_copy_noshadow_safe(rt_periph_copy_t *copy, int rx_channel_id, unsigned int tx_addr, int tx_size, unsigned int rx_addr, int rx_size,
@@ -70,10 +70,10 @@ static inline void rt_periph_dual_copy_noshadow(rt_periph_copy_t *copy, int rx_c
   unsigned int tx_addr, int tx_size, unsigned int rx_addr, int rx_size,
   unsigned int cfg, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_periph_dual_copy_noshadow_safe(copy, rx_channel_id, tx_addr, tx_size,
     rx_addr, rx_size, cfg, event);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 
@@ -125,6 +125,13 @@ static inline rt_periph_channel_t *__rt_periph_channel(int channel) {
 void __rt_periph_wait_event(int event, int clear);
 
 void __rt_periph_clear_event(int event);
+
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+
+void rt_periph_copy_spi(rt_periph_copy_t *copy, int channel_id, unsigned int addr, int size, int len,
+  unsigned int cfg, unsigned int spi_status, rt_event_t *event);
+  
+#endif
 
 /// @endcond
 

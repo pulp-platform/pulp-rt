@@ -47,7 +47,7 @@ void __rt_freq_init()
 
 int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   int err = 0;
 
   __rt_freq_next_domains[domain] = freq;
@@ -66,7 +66,7 @@ int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_fr
 
   __rt_cbsys_exec(RT_CBSYS_PERIPH_SETFREQ_AFTER);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return err;
 }

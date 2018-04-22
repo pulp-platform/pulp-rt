@@ -97,7 +97,7 @@ void __rt_init()
   rt_irq_mask_set(1<<ARCHI_FC_EVT_SOC_EVT);
 #endif
 
-  hal_irq_enable();
+  rt_irq_enable();
 
   // Now do individual modules initializations.
   if (__rt_cbsys_exec(RT_CBSYS_START)) goto error;
@@ -154,7 +154,7 @@ RT_L2_DATA void *__rt_cluster_entry_arg;
 
 static void cluster_pe_start(void *arg)
 {
-  hal_irq_enable();
+  rt_irq_enable();
   retval = main();
 }
 
