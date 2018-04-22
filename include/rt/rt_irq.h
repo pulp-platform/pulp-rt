@@ -63,7 +63,7 @@ static inline void rt_irq_enable()
 static inline void rt_irq_mask_set(unsigned int mask)
 {
 #if defined(ITC_VERSION) && defined(EU_VERSION)
-  if (rt_is_fc()) hal_itc_enable_set(mask);
+  if (hal_is_fc()) hal_itc_enable_set(mask);
   else eu_irq_maskSet(mask);
 #elif defined(ITC_VERSION)
   hal_itc_enable_set(mask);
@@ -75,7 +75,7 @@ static inline void rt_irq_mask_set(unsigned int mask)
 static inline void rt_irq_mask_clr(unsigned int mask)
 {
 #if defined(ITC_VERSION) && defined(EU_VERSION)
-  if (rt_is_fc()) hal_itc_enable_clr(mask);
+  if (hal_is_fc()) hal_itc_enable_clr(mask);
   else eu_irq_maskClr(mask);
 #elif defined(ITC_VERSION)
   hal_itc_enable_clr(mask);
