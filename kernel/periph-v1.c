@@ -153,7 +153,6 @@ RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()
   rt_irq_mask_set((1<<ARCHI_EVT_UDMA0) | (1<<ARCHI_EVT_UDMA1) | (1<<ARCHI_EVT_UDMA2) | (1<<ARCHI_EVT_UDMA3)
    | (1<<ARCHI_EVT_UDMA4) | (1<<ARCHI_EVT_UDMA5) | (1<<ARCHI_EVT_UDMA6) | (1<<ARCHI_EVT_UDMA7)
    | (1<<ARCHI_EVT_UDMA8) | (1<<ARCHI_EVT_UDMA9) | (1<<ARCHI_EVT_UDMA10));
-#endif
 
   rt_irq_set_handler(ARCHI_EVT_UDMA0, __rt_spim0_tx_handler);
   rt_irq_set_handler(ARCHI_EVT_UDMA1, __rt_spim0_rx_handler);
@@ -165,7 +164,22 @@ RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()
   rt_irq_set_handler(ARCHI_EVT_UDMA7, __rt_adc3_handler);
   rt_irq_set_handler(ARCHI_EVT_UDMA8, __rt_spim1_tx_handler);
   rt_irq_set_handler(ARCHI_EVT_UDMA9, __rt_spim1_rx_handler);
-  rt_irq_set_handler(ARCHI_EVT_UDMA10, __rt_i2c_tx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA10, __rt_i2c_rx_handler);
+
+#elif PULP_CHIP_FAMILY == CHIP_FULMINE
+  udma_mapAllEvents(ARCHI_UDMA_EVT_SPIM_TX, ARCHI_UDMA_EVT_SPIM_RX, ARCHI_UDMA_EVT_UART_TX, ARCHI_UDMA_EVT_UART_RX, ARCHI_UDMA_EVT_I2C_RX, ARCHI_UDMA_EVT_I2C_TX, 0, 0);
+  
+  rt_irq_mask_set((1<<ARCHI_EVT_UDMA0) | (1<<ARCHI_EVT_UDMA1) | (1<<ARCHI_EVT_UDMA2) | (1<<ARCHI_EVT_UDMA3)
+   | (1<<ARCHI_EVT_UDMA4) | (1<<ARCHI_EVT_UDMA5));
+
+  rt_irq_set_handler(ARCHI_EVT_UDMA0, __rt_spim0_tx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA1, __rt_spim0_rx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA2, __rt_uart_tx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA3, __rt_uart_rx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA4, __rt_i2c_rx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA5, __rt_i2c_tx_handler);
+
+#endif
 
 }
 
