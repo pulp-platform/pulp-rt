@@ -37,7 +37,6 @@
 
 #include "rt/rt_api.h"
 
-
 //TODO: this sequence could be optimized
 static himax_reg_cfg_t himaxRegInit[] = {
     {SW_RESET, 0x00},
