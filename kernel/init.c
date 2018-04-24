@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* 
+/*
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
@@ -53,7 +53,14 @@ void __rt_putc_debug_bridge(char c);
 void __rt_init()
 {
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
-  
+
+#if defined(ARCHI_HAS_FC)
+  // Deactivate all soc events as they are active by default
+  soc_eu_eventMask_set(SOC_FC_MASK_LSB, 0xFFFFFFFF);
+  soc_eu_eventMask_set(SOC_FC_MASK_MSB, 0xFFFFFFFF);
+#endif
+
+
 #ifndef __ariane__
 
 #ifdef FLL_VERSION
@@ -73,7 +80,8 @@ void __rt_init()
 #endif
   }
 
-  // Initialize first the memory allocators and the utils so that they are 
+  __rt_irq_init();
+  // Initialize first the memory allocators and the utils so that they are
   // available for constructors, especially to let them declare
   // callbacks
   __rt_utils_init();
@@ -89,7 +97,7 @@ void __rt_init()
   rt_irq_mask_set(1<<ARCHI_FC_EVT_SOC_EVT);
 #endif
 
-  hal_irq_enable();
+  rt_irq_enable();
 
   // Now do individual modules initializations.
   if (__rt_cbsys_exec(RT_CBSYS_START)) goto error;
@@ -129,7 +137,7 @@ void __rt_deinit()
   __rt_cbsys_exec(RT_CBSYS_STOP);
 
 #endif
-  
+
   /* Call global and static destructors */
   do_dtors();
 }
@@ -146,7 +154,7 @@ RT_L2_DATA void *__rt_cluster_entry_arg;
 
 static void cluster_pe_start(void *arg)
 {
-  hal_irq_enable();
+  rt_irq_enable();
   retval = main();
 }
 
@@ -165,7 +173,7 @@ static void cluster_start(void *arg)
     }
     else
     {
-      rt_team_fork(rt_nb_active_pe(), cluster_pe_start, NULL);      
+      rt_team_fork(rt_nb_active_pe(), cluster_pe_start, NULL);
     }
   }
   else
@@ -183,7 +191,7 @@ static int cluster_master_start(void *arg)
   return retval;
 }
 
-static int __rt_check_cluster_start(int cid)
+static int __rt_check_cluster_start(int cid, rt_event_t *event)
 {
   if (rt_cluster_id() != cid)
   {
@@ -192,7 +200,7 @@ static int __rt_check_cluster_start(int cid)
     void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*rt_nb_active_pe());
     if (stacks == NULL) return -1;
 
-    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, rt_stack_size_get(), rt_stack_size_get(), rt_nb_active_pe(), NULL)) return -1;
+    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, rt_stack_size_get(), rt_stack_size_get(), rt_nb_active_pe(), event)) return -1;
 
   }
   else
@@ -207,11 +215,17 @@ static int __rt_check_cluster_start(int cid)
     eu_dispatch_push((unsigned int)__rt_set_slave_stack | 1);
     eu_dispatch_push((unsigned int)rt_stack_size_get());
     eu_dispatch_push((unsigned int)stacks);
+#else
+#if defined(__riscv__)
+    __rt_cluster_pe_init(stacks, rt_stack_size_get());
+    eoc_fetch_enable_remote(0, (1<<rt_nb_active_pe()) - 1);
+#else
+#endif
 #endif
 
     cluster_start(NULL);
   }
-  
+
   return 0;
 }
 
@@ -219,17 +233,40 @@ static int __rt_check_clusters_start()
 {
   if (__rt_config_cluster_start() || !rt_is_fc()) {
     // All fetch mode, starts all cluster
+
+    if (rt_event_alloc(NULL, rt_nb_cluster())) return -1;
+
+    rt_event_t *events[rt_nb_cluster()];
+
     for (int cid=0; cid<rt_nb_cluster(); cid++)
     {
-      if (__rt_check_cluster_start(cid)) return -1;
+      events[cid] = rt_event_get_blocking(NULL);
+      if (__rt_check_cluster_start(cid, events[cid])) return -1;
     }
-    if (rt_is_fc())
-      exit(retval);
-    else 
+    if (rt_is_fc()) {
+      if (__rt_config_fc_start())
+      {
+        int fc_retval = main();
+        for (int cid=0; cid<rt_nb_cluster(); cid++)
+        {
+          rt_event_wait(events[cid]);
+        }
+        exit(retval != 0 || fc_retval != 0);
+      }
+      else
+      {
+        for (int cid=0; cid<rt_nb_cluster(); cid++)
+        {
+          rt_event_wait(events[cid]);
+        }
+        exit(retval);
+      }
+    }
+    else
       return cluster_master_start(NULL);
   } else if (!rt_is_fc()) {
     // Otherwise just check cluster 0, in case we are running on it
-    if (__rt_check_cluster_start(0)) return -1;
+    if (__rt_check_cluster_start(0, NULL)) return -1;
   }
   return 0;
 }

@@ -131,7 +131,7 @@ static int __rt_freq_set_periph_freq(unsigned int freq, int fll, int domain, uns
 
 int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   int err = 0;
 
   rt_trace(RT_TRACE_FREQ, "Setting domain frequency (domain: %d, freq: %d)\n", domain, freq);
@@ -149,7 +149,15 @@ int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_fr
 
 #if PULP_CHIP == CHIP_GAP
 
-    unsigned int lcm_val = lcm(freq, __rt_periph_lcm);
+    unsigned int lcm_val;
+    if (__rt_periph_lcm == 0)
+    {
+      lcm_val = freq;
+    }
+    else
+    {
+      lcm_val = lcm(freq, __rt_periph_lcm);
+    }
 
     // On gap, as there is no divider between fll and fc clock, the fc frequency must
     // be exactly the lcm. ALso check that the required frequency is allowed.
@@ -192,7 +200,7 @@ int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_fr
   }
 
 end:
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return err;
 }

@@ -34,11 +34,13 @@
 
 #include "rt/rt_api.h"
 
+#if defined(APB_SOC_VERSION)
 
 /// @cond IMPLEM
 
 void __rt_padframe_init();
-
+rt_padframe_profile_t *rt_pad_profile_get(char *profile_string) ;
+void rt_padframe_set(rt_padframe_profile_t *profile) ;
 
 void rt_pad_apply(int pad);
 
@@ -82,7 +84,7 @@ static inline void rt_pad_set_power(int pad_id, int is_on)
 #endif
 }
 
-
+#endif
 
 /// @endcond
 

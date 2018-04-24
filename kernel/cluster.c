@@ -29,6 +29,7 @@ RT_L1_TINY_DATA rt_event_sched_t *__rt_cluster_sched_current;
 
 void __rt_enqueue_event();
 void __rt_remote_enqueue_event();
+void __rt_bridge_enqueue_event();
 
 extern char _l1_preload_start_inL2[];
 extern char _l1_preload_start[];
@@ -78,11 +79,19 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
     }
 #endif
 
+    /* Activate cluster top level clock gating */
+#ifdef ARCHI_HAS_CLUSTER_CLK_GATE
+    IP_WRITE(ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(cid), ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE, 1);
+#endif
+
     // Initialize cluster global variables
     __rt_init_cluster_data(cid);
 
     // Initialize cluster L1 memory allocator
     __rt_alloc_init_l1(cid);
+
+    // Initialize FC data for this cluster
+    __rt_fc_cluster_data[cid].call_head = 0;
 
     // Activate icache
     hal_icache_cluster_enable(cid);
@@ -146,7 +155,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
 
 void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_fc_cluster_data_t *cluster = &__rt_fc_cluster_data[cid];
 
@@ -156,7 +165,7 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
   if (cluster->mount_count == 0) __rt_cluster_unmount(cid, flags, event);
   else if (cluster->mount_count == 1) __rt_cluster_mount(cid, flags, event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 
@@ -164,7 +173,8 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
 int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg), void *arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event)
 {
   int retval = 0;
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
+
   __rt_cluster_call_t *call;
   rt_fc_cluster_data_t *cluster = &__rt_fc_cluster_data[cid];
 
@@ -224,7 +234,7 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
   if (rt_is_fc()) __rt_wait_event_check(event, call_event);
 
 end:
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
   return retval;
 }
 
@@ -243,6 +253,9 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
 
   rt_irq_set_handler(RT_FC_ENQUEUE_EVENT, __rt_remote_enqueue_event);
   rt_irq_mask_set(1<<RT_FC_ENQUEUE_EVENT);
+
+  rt_irq_set_handler(RT_BRIDGE_ENQUEUE_EVENT, __rt_bridge_enqueue_event);
+  rt_irq_mask_set(1<<RT_BRIDGE_ENQUEUE_EVENT);
 
   return 0;
 }
@@ -320,6 +333,11 @@ void __rt_remote_enqueue_event()
 
 }
 
+void __rt_bridge_enqueue_event()
+{
+
+}
+
 #endif
 
 
@@ -329,7 +347,7 @@ extern int main();
 
 static void cluster_pe_start(void *arg)
 {
-  hal_irq_enable();
+  rt_irq_enable();
   main();
 }
 

@@ -120,7 +120,7 @@ static void __rt_spiflash_read(rt_flash_t *_dev, void *data, void *addr, size_t 
 {
   rt_trace(RT_TRACE_FLASH, "[UDMA] Enqueueing SPI flash read (dev: %p, data: %p, addr: %p, size 0x%x, event: %p)\n", _dev, data, addr, size, event);
 
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_spiflash_t *flash = (rt_spiflash_t *)_dev;
 
@@ -165,7 +165,7 @@ static void __rt_spiflash_read(rt_flash_t *_dev, void *data, void *addr, size_t 
 
 __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 rt_flash_dev_t spiflash_desc = {

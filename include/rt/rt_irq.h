@@ -35,17 +35,35 @@
 
 /// @cond IMPLEM
 
-void rt_irq_set_handler(int irq, void (*handler)());
+#include "hal/pulp.h"
 
-static inline void rt_irq_mask_set(unsigned int mask);
+void __rt_irq_init();
+void rt_irq_set_handler(int irq, void (*handler)());
 
 
 extern void __rt_fc_socevents_handler();
 
-void rt_irq_mask_set(unsigned int mask)
+#ifdef __riscv__
+
+static inline int rt_irq_disable()
+{
+  return hal_irq_disable();
+}
+
+static inline void rt_irq_restore(int irq)
+{
+  hal_irq_restore(irq);
+}
+
+static inline void rt_irq_enable()
+{
+  hal_irq_enable();
+}
+
+static inline void rt_irq_mask_set(unsigned int mask)
 {
 #if defined(ITC_VERSION) && defined(EU_VERSION)
-  if (rt_is_fc()) hal_itc_enable_set(mask);
+  if (hal_is_fc()) hal_itc_enable_set(mask);
   else eu_irq_maskSet(mask);
 #elif defined(ITC_VERSION)
   hal_itc_enable_set(mask);
@@ -54,6 +72,58 @@ void rt_irq_mask_set(unsigned int mask)
 #endif
 }
 
+static inline void rt_irq_mask_clr(unsigned int mask)
+{
+#if defined(ITC_VERSION) && defined(EU_VERSION)
+  if (hal_is_fc()) hal_itc_enable_clr(mask);
+  else eu_irq_maskClr(mask);
+#elif defined(ITC_VERSION)
+  hal_itc_enable_clr(mask);
+#elif defined(EU_VERSION)
+  eu_irq_maskClr(mask);
+#endif
+}
+
+#else
+
+int rt_irq_disable();
+
+void rt_irq_restore(int irq);
+
+void rt_irq_enable();
+
+void rt_irq_mask_set(unsigned int mask);
+
+void rt_irq_mask_clr(unsigned int mask);
+
+#endif
+
+#if 0
+static inline int rt_irq_disable()
+{
+  int core_id = hal_core_id();
+  int state = pulp_irq_mask_low_read(core_id);
+  pulp_irq_mask_low_set(core_id, 0);
+  // As we are deactivating the interrupts in a peripheral,
+  // we have to put some nops to make sure interrupts are really inactive
+  // when we execute the next code.
+  __asm__ volatile ("l.nop" :  :  : "memory");
+  __asm__ volatile ("l.nop" :  :  : "memory");
+  __asm__ volatile ("l.nop" :  :  : "memory");
+  __asm__ volatile ("l.nop" :  :  : "memory");
+  __asm__ volatile ("l.nop" :  :  : "memory");
+  return state;
+}
+
+static inline void rt_irq_restore(int state)
+{
+  pulp_irq_mask_low_set(hal_core_id(), state);
+}
+
+static inline void rt_irq_enable()
+{
+}
+#endif
 
 /// @endcond
 

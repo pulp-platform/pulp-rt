@@ -33,6 +33,37 @@
 #ifndef __RT_RT_PERF_H__
 #define __RT_RT_PERF_H__
 
+/// @cond IMPLEM
+
+#ifndef __riscv__
+
+#define CSR_PCER_NB_EVENTS 0
+#define CSR_PCER_CYCLES 0
+#define CSR_PCER_INSTR 0
+#define CSR_PCER_LD_STALL 0
+#define CSR_PCER_JMP_STALL 0
+#define CSR_PCER_IMISS 0
+#define CSR_PCER_LD 0
+#define CSR_PCER_ST 0
+#define CSR_PCER_JUMP 0
+#define CSR_PCER_BRANCH 0
+#define CSR_PCER_TAKEN_BRANCH 0
+#define CSR_PCER_RVC 0
+#define CSR_PCER_LD_EXT 0
+#define CSR_PCER_ST_EXT 0
+#define CSR_PCER_LD_EXT_CYC 0
+#define CSR_PCER_ST_EXT_CYC 0
+#define CSR_PCER_TCDM_CONT 0
+#define CSR_PCER_CSR_HAZARD 0
+#define CSR_PCER_APU_TY_CONF 0
+#define CSR_PCER_APU_CONT 0
+#define CSR_PCER_APU_DEP 0
+#define CSR_PCER_APU_WB 0
+
+#endif
+
+/// @endcond
+
 /**        
  * @ingroup groupCluster       
  */
@@ -116,7 +147,8 @@ void rt_perf_conf(rt_perf_t *perf, unsigned events);
 /** \brief Reset all hardware performance counters.
  *
  * All hardware performance counters are set to 0.
- * Note that this does not modifiy the value of the counters in the specified structure.
+ * Note that this does not modify the value of the counters in the specified structure,
+ * this must be done by calling rt_perf_init.
  *
  * \param perf  A pointer to the performance structure.
  */
@@ -149,7 +181,9 @@ static inline void rt_perf_stop(rt_perf_t *perf);
  * This loads the performance counters values and adds them inside the performance structure. 
  * This is useful when reconfiguring the events in order to aggregate all the events together into the performance structure.
  * Note that the values are cumulated inside the performance structure so that several portion
- * of code can be cumulated together.
+ * of code can be cumulated together. Don't forget to reset the HW counters with rt_perf_reset
+ * or the the counters in the structure with rt_perf_init if you don't want to cumulate
+ * the values.
  *
  * \param perf  A pointer to the performance structure.
  */
@@ -187,22 +221,70 @@ static inline unsigned int rt_perf_read(int id);
 
 #if defined(TIMER_VERSION) && TIMER_VERSION >= 2
 
+static inline void rt_perf_cl_reset(rt_perf_t *perf)
+{
+  hal_timer_reset(hal_timer_addr(0, 0));
+  cpu_perf_setall(0);
+}
+
+static inline void rt_perf_fc_reset(rt_perf_t *perf)
+{
+#ifdef ARCHI_HAS_FC
+  hal_timer_reset(hal_timer_fc_addr(0, 0));
+  cpu_perf_setall(0);
+#endif
+}
+
 static inline void rt_perf_reset(rt_perf_t *perf)
 {
-  plp_timer_raw_conf_low(plp_timer_raw_conf_low_get() | (1<<PLP_TIMER_RESET_BIT));
-  cpu_perf_setall(0);
+  if (hal_is_fc())
+    rt_perf_fc_reset(perf);
+  else
+    rt_perf_cl_reset(perf);
+}
+
+static inline void rt_perf_cl_start(rt_perf_t *perf)
+{
+  hal_timer_start(hal_timer_addr(0, 0));
+  cpu_perf_conf(PCMR_ACTIVE | PCMR_SATURATE);
+}
+
+static inline void rt_perf_fc_start(rt_perf_t *perf)
+{
+#ifdef ARCHI_HAS_FC
+  hal_timer_start(hal_timer_fc_addr(0, 0));
+  cpu_perf_conf(PCMR_ACTIVE | PCMR_SATURATE);
+#endif
 }
 
 static inline void rt_perf_start(rt_perf_t *perf)
 {
-  plp_timer_conf_low(1, 0, 0, 0, 0, 0, 0, 0, 0);
-  cpu_perf_conf(PCMR_ACTIVE | PCMR_SATURATE);
+  if (hal_is_fc())
+    rt_perf_fc_start(perf);
+  else
+    rt_perf_cl_start(perf);
+}
+
+static inline void rt_perf_cl_stop(rt_perf_t *perf)
+{
+  hal_timer_conf(hal_timer_addr(0, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  cpu_perf_conf(0);
+}
+
+static inline void rt_perf_fc_stop(rt_perf_t *perf)
+{
+#ifdef ARCHI_HAS_FC
+  hal_timer_conf(hal_timer_fc_addr(0, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  cpu_perf_conf(0);
+#endif
 }
 
 static inline void rt_perf_stop(rt_perf_t *perf)
 {
-  plp_timer_conf_low(0, 0, 0, 0, 0, 0, 0, 0, 0);
-  cpu_perf_conf(0);
+  if (hal_is_fc())
+    rt_perf_fc_stop(perf);
+  else
+    rt_perf_cl_stop(perf);
 }
 
 static inline unsigned int rt_perf_get(rt_perf_t *perf, int id)
@@ -210,16 +292,40 @@ static inline unsigned int rt_perf_get(rt_perf_t *perf, int id)
   return perf->values[id];
 }
 
-static inline unsigned int rt_perf_read(int event)
+static inline unsigned int rt_perf_cl_read(int event)
 {
   if (event == RT_PERF_CYCLES)
   {
-    return plp_timer_get_count_low();
+    return hal_timer_count_get(hal_timer_addr(0, 0));
   }
   else
   {
     return cpu_perf_get(event);
   }
+}
+
+static inline unsigned int rt_perf_fc_read(int event)
+{
+#ifdef ARCHI_HAS_FC
+  if (event == RT_PERF_CYCLES)
+  {
+    return hal_timer_count_get(hal_timer_fc_addr(0, 0));
+  }
+  else
+  {
+    return cpu_perf_get(event);
+  }
+#else
+  return 0;
+#endif
+}
+
+static inline unsigned int rt_perf_read(int event)
+{
+  if (hal_is_fc())
+    return rt_perf_fc_read(event);
+  else
+    return rt_perf_cl_read(event);
 }
 
 #endif

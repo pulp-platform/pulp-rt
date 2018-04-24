@@ -212,7 +212,7 @@ void illegal_insn_handler_c(void)
 #ifdef __riscv__
   asm("csrr %0, 0x341" : "=r" (exception_address) : );
 #else
-  exception_address = or1k_mfspr(SPR_EPCR_BASE);
+  exception_address = hal_spr_read(SPR_EPCR_BASE);
 #endif
   insn = *((unsigned int*)(exception_address));
   printf("Illegal instruction encountered at address 0x%08X: %X\n", exception_address, insn);

@@ -97,8 +97,6 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event);
  */
 int rt_cluster_call(rt_cluster_call_t *call, int cid, void (*entry)(void *arg), void *arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event);
 
-int rt_cluster_fetch_all(int cid);
-
 
 /** \brief Can be used to trigger a notification to all cluster cores */
 #define RT_TRIGGER_ALL_CORE 0
@@ -176,11 +174,18 @@ void rt_cluster_notif_deinit(rt_notif_t *notif);
 
 /// @cond IMPLEM
 
+int rt_cluster_fetch_all(int cid);
+
 #if defined(ARCHI_HAS_CLUSTER)
+
+#if defined(EU_VERSION) && EU_VERSION == 1
+void __rt_cluster_pe_init(void *stacks, int stacks_size);
+#endif
+
 
 extern void __rt_set_slave_stack();
 
-#if defined(PULP_CHIP_FAMILY) && (PULP_CHIP_FAMILY == CHIP_DEVCHIP || PULP_CHIP_FAMILY == CHIP_WOLFE || PULP_CHIP == CHIP_GAP)
+#if defined(PULP_CHIP_FAMILY) && (PULP_CHIP_FAMILY == CHIP_VEGA || PULP_CHIP_FAMILY == CHIP_DEVCHIP || PULP_CHIP_FAMILY == CHIP_WOLFE || PULP_CHIP == CHIP_GAP)
 
 void __rt_pmu_cluster_power_up();
 
@@ -209,6 +214,11 @@ static inline rt_event_sched_t *__rt_cluster_sched_get()
 
 
 void __rt_cluster_push_fc_event(rt_event_t *event);
+
+static inline void __rt_cluster_push_fc_irq_event(rt_event_t *event)
+{
+  __rt_cluster_push_fc_event((rt_event_t *)(((unsigned int)event) | 0x1));
+}
 
 static inline void __rt_cluster_notif_req_done(int cid)
 {

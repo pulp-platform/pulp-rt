@@ -55,7 +55,7 @@ unsigned long long rt_time_get_us()
 
 void rt_event_push_delayed(rt_event_t *event, int us)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   int set_irq = 0;
   rt_event_t *current = first_delayed, *prev=NULL;
@@ -108,7 +108,7 @@ void rt_event_push_delayed(rt_event_t *event, int us)
     );
   }
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 

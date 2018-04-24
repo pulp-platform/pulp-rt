@@ -130,6 +130,7 @@ typedef enum {
 typedef enum {
   RT_SPIM_CS_AUTO     = 0,    /*!< Handles the chip select automatically. It is set low just before the transfer is started and set back high when the transfer is finished. */
   RT_SPIM_CS_KEEP     = 1,    /*!< Handle the chip select manually. It is set low just before the transfer is started and is kept low until the next transfer. */
+  RT_SPIM_CS_NONE     = 2,    /*!< Don't do anything with the chip select. */
 } rt_spim_cs_e;
 
 

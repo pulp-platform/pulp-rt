@@ -47,19 +47,45 @@ static uint32_t swap_uint32( uint32_t val )
     return (val << 16) | (val >> 16);
 }
 
-
+void __rt_spim_v0_set_cs(rt_spim_t *spim, int cs)
+{
+  if (spim->cs_gpio != -1)
+  {
+    rt_gpio_set_value(0, 1<<spim->cs_gpio, cs);
+  }
+}
 
 void __rt_spim_v0_receive(
   rt_spim_t *handle, void *buffer, int len, int qspi, rt_spim_cs_e mode, rt_event_t *event)
 {
-  int size = (len + 7) / 8;
+  rt_spim_t *spim = (rt_spim_t *)handle;
+
+  // There is a HW issue when we receive after some bits were sent
+  // The HW FIFO still contains the last byte sent and keeps sending it
+  // on the MOSI line while we are receiving.
+  // As this can disturb the master, we push empty data to the FIFO so that
+  // it sent 0.
+  // This can only work with a CS GPIO as we must send these dummy bis with
+  // the CS low and we have no control over the SPI CS.
+  // In case the KEEP cs mode is used, some HW logic must be added to keep
+  // the clock at the same level while these dummy bits are being sent.
+  if (spim->cs_gpio != -1)
+  {
+    int workaround_buff = 0;
+    rt_spim_send(spim, &workaround_buff, sizeof(workaround_buff)*8, RT_SPIM_CS_NONE, NULL);
+  }
+
+  int full_size = (len + 7) / 8;
+  int size = full_size;
   unsigned int spiBase = pulp_spi_base();
   uint32_t *data = (uint32_t *)buffer;
   int wordsize = handle->wordsize;
   int big_endian = handle->big_endian;
-  rt_spim_t *spim = (rt_spim_t *)handle;
 
   unsigned int cmd = qspi ? PULP_SPI_CMD_QRD : PULP_SPI_CMD_RD;
+
+  if (mode != RT_SPIM_CS_NONE)
+    __rt_spim_v0_set_cs(spim, 0);
 
   // Apply the computed divider to get requested SPIM frequency as several devices
   // with different frequencies can be used.
@@ -123,6 +149,16 @@ void __rt_spim_v0_receive(
     size -= iter_size;
     data += nb_elems;
   }
+
+  if (wordsize == RT_SPIM_WORDSIZE_8)
+  {
+    uint32_t *last_word_address = (uint32_t*)(buffer+(full_size & ~0x3));
+    *last_word_address = (*last_word_address)>>(((-full_size)&0x03)<<3);
+   }
+
+  if (mode == RT_SPIM_CS_AUTO)  
+    __rt_spim_v0_set_cs(handle, 1);
+
 }
 
 void __rt_spim_v0_send(
@@ -134,6 +170,9 @@ void __rt_spim_v0_send(
   int wordsize = handle->wordsize;
   int big_endian = handle->big_endian;
   rt_spim_t *spim = (rt_spim_t *)handle;
+
+  if (mode != RT_SPIM_CS_NONE)
+    __rt_spim_v0_set_cs(spim, 0);
 
   // Apply the computed divider to get requested SPIM frequency as several devices
   // with different frequencies can be used.
@@ -219,11 +258,15 @@ void __rt_spim_v0_send(
   }
 
 
-  /// Finally wait until all our elements have been 
+  /// Finally wait until all our elements have been sent
   while ((pulp_spi_status(spiBase) & 0xFFFF) != 1)
   {
     eu_evt_maskWaitAndClr(1<<ARCHI_EVT_SPIM1); 
   }
+
+  if (mode == RT_SPIM_CS_AUTO)  
+    __rt_spim_v0_set_cs(handle, 1);
+
 }
 
 static int __rt_spim_get_div(int spi_freq, int periph_freq)
@@ -271,7 +314,6 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 {
   rt_spim_conf_t def_conf;
 
-
   // Check that the required frequency is correct.
   // It must be below the periph frequency as we can just apply a divider
   // and the divider must fits 8 bits.
@@ -294,7 +336,6 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
       goto error2;
     }
   }
-
 
   // Now that all checks are done, we can start applying the configuration
   open_count++;

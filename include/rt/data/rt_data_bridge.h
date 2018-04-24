@@ -30,43 +30,24 @@
  * limitations under the License.
  */
 
-/* 
- * Authors: Eric Flamand, GreenWaves Technologies (eric.flamand@greenwaves-technologies.com)
- *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
- */
+#ifndef __RT_RT_DATA_BRIDGE_H__
+#define __RT_RT_DATA_BRIDGE_H__
 
-#include "rt/rt_api.h"
+/// @cond IMPLEM
 
-int __rt_freq_domains[RT_FREQ_NB_DOMAIN];
-int __rt_freq_next_domains[RT_FREQ_NB_DOMAIN];
+#ifndef LANGUAGE_ASSEMBLY
 
-void __rt_freq_init()
-{
-  __rt_freq_domains[RT_FREQ_DOMAIN_CL] = __rt_fll_init(0);
-}
+#include <stdint.h>
 
-int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
-{
-  int irq = rt_irq_disable();
-  int err = 0;
+#include "hal/debug_bridge/debug_bridge.h"
 
-  __rt_freq_next_domains[domain] = freq;
+typedef struct rt_bridge_req_s {
+  hal_bridge_req_t header;
+  rt_event_t *event;
+} rt_bridge_req_t;
 
-  if (__rt_cbsys_exec(RT_CBSYS_PERIPH_SETFREQ_BEFORE))
-  {
-    // In case we get an error, this means a driver is not happy with the new
-    // frequency. just go on with the same frequency as before.
-    freq = __rt_freq_domains[RT_FREQ_DOMAIN_CL];
-    err = -1;
-  }
+#endif
 
-  __rt_fll_set_freq(0, freq);
+/// @endcond
 
-  __rt_freq_domains[RT_FREQ_DOMAIN_CL] = freq;
-
-  __rt_cbsys_exec(RT_CBSYS_PERIPH_SETFREQ_AFTER);
-
-  rt_irq_restore(irq);
-
-  return err;
-}
+#endif

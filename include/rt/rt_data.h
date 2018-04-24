@@ -35,6 +35,8 @@
 
 /// @cond IMPLEM
 
+#include "archi/pulp.h"
+
 #ifndef LANGUAGE_ASSEMBLY
 
 #define   likely(x) __builtin_expect(x, 1)
@@ -78,6 +80,12 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #define RT_CL_SYNC_EVENT 1
 #define PLP_RT_NOTIF_EVENT 3    // TODO this is a temp def, should be removed
 
+// This event is used by the external debug bridge to enqueue tasks to pulp
+#define RT_BRIDGE_ENQUEUE_EVENT 4
+
+#if defined(EU_VERSION) && (EU_VERSION == 1)
+#define RT_FORK_EVT 0
+#endif
 
 #ifndef LANGUAGE_ASSEMBLY
 
@@ -138,6 +146,8 @@ struct rt_thread_s;
 struct rt_event_sched_s;
 struct rt_event_s;
 struct rt_thread_s;
+
+#include "rt/data/rt_data_bridge.h"
 
 typedef struct rt_alloc_block_s {
   int                      size;
@@ -233,6 +243,7 @@ typedef struct rt_event_s {
     struct {
       unsigned int time;
     };
+    rt_bridge_req_t bridge_req;
   };
 } rt_event_t;
 
@@ -373,12 +384,16 @@ typedef struct {
 
 #define RT_PERF_NB_EVENTS (CSR_PCER_NB_EVENTS + 1)
 
+#else
+
+#define RT_PERF_NB_EVENTS 0
+
+#endif
+
 typedef struct {
   unsigned int events;
   unsigned int values[RT_PERF_NB_EVENTS];
 } rt_perf_t;
-
-#endif
 
 
 typedef struct rt_i2s_s rt_i2s_t;

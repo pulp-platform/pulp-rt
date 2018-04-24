@@ -47,6 +47,7 @@
 #define is_fc rt_is_fc
 #define plp_isFc rt_is_fc
 #define get_core_id rt_core_id
+#define get_core_num rt_nb_pe
 #define plp_clusterId rt_cluster_id
 #define get_cluster_id rt_cluster_id
 

@@ -131,7 +131,7 @@ static int __rt_uart_setfreq_after(void *arg)
 
 rt_uart_t* __rt_uart_open(int channel, rt_uart_conf_t *conf, rt_event_t *event, char *name)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   int baudrate = __RT_UART_BAUDRATE;
   if (conf) baudrate = conf->baudrate;
@@ -165,7 +165,7 @@ rt_uart_t* __rt_uart_open(int channel, rt_uart_conf_t *conf, rt_event_t *event, 
 
   rt_trace(RT_TRACE_DEV_CTRL, "[UART] Successfully opened uart device (handle: %p)\n", uart);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return uart;
 }
@@ -208,7 +208,7 @@ error:
 
 void rt_uart_close(rt_uart_t *uart, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_trace(RT_TRACE_DEV_CTRL, "[UART] Closing uart device (handle: %p)\n", uart);
 
@@ -224,30 +224,30 @@ void rt_uart_close(rt_uart_t *uart, rt_event_t *event)
       plp_udma_cg_set(plp_udma_cg_get() & ~(1<<uart->channel));
   }
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void __rt_uart_cluster_req_done(void *_req)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_uart_req_t *req = _req;
   req->done = 1;
 #if defined(ARCHI_HAS_CLUSTER)
   __rt_cluster_notif_req_done(req->cid);
 #endif
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 #if defined(ARCHI_HAS_CLUSTER)
 
 static void __rt_uart_cluster_req(void *_req)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_uart_req_t *req = _req;
   rt_event_t *event = &req->event;
   __rt_init_event(event, event->sched, __rt_uart_cluster_req_done, (void *)req);
   rt_uart_write(req->uart, req->buffer, req->size, event);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void rt_uart_cluster_write(rt_uart_t *handle, void *buffer, size_t size, rt_uart_req_t *req)

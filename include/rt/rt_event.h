@@ -252,9 +252,9 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait);
 
 static inline void rt_event_execute(rt_event_sched_t *sched, int wait)
 {
-  hal_irq_disable();
+  rt_irq_disable();
   __rt_event_execute(sched, wait);
-  hal_irq_enable();
+  rt_irq_enable();
 }
 
 static inline rt_event_sched_t *rt_event_internal_sched()
@@ -277,9 +277,9 @@ static inline void __rt_wait_event_check(rt_event_t *event, rt_event_t *call_eve
 
 static inline void __rt_wait_event_check_irq(rt_event_t *event, rt_event_t *call_event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   if (event == NULL) __rt_wait_event(call_event);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 static inline rt_event_t *__rt_wait_event_prepare(rt_event_t *event)
@@ -315,9 +315,38 @@ static inline void __rt_event_enqueue(rt_event_t *event)
 void __rt_event_unblock(rt_event_t *event);
 
 static inline void rt_event_enqueue(rt_event_t *event) {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   __rt_event_enqueue(event);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
+}
+
+static inline __attribute__((always_inline)) void __rt_enqueue_event_to_sched(rt_event_sched_t *sched, rt_event_t *event)
+{
+  event->next = NULL;
+  if (sched->first == NULL) {
+    sched->first = event;
+  } else {
+    sched->last->next = event;
+  }
+  sched->last = event;
+}
+
+static inline __attribute__((always_inline)) void __rt_wakeup_thread(rt_event_sched_t *sched)
+{
+  rt_thread_t *thread = sched->waiting;
+  if (thread) {
+    sched->waiting = NULL;
+    __rt_thread_enqueue_ready_check(thread);
+  }
+}
+
+static inline __attribute__((always_inline)) void __rt_push_event(rt_event_sched_t *sched, rt_event_t *event)
+{
+  // Enqueue the event into the scheduler tail
+  __rt_enqueue_event_to_sched(sched, event);
+
+  // Then maybe wakeup a waiting thread
+  __rt_wakeup_thread(sched);
 }
 
 static inline __attribute__((always_inline)) void __rt_enqueue_event_to_sched(rt_event_sched_t *sched, rt_event_t *event)

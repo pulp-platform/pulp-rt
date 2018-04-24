@@ -32,11 +32,10 @@
 
 /*
  * Authors: Yao ZHANG, GreenWaves Technologies (yao.zhang@greenwaves-technologies.com)
+ *          Francesco PACI, GreenWaves Technologies (francesco.paci@greenwaves-technologies.com)
  */
 
 #include "rt/rt_api.h"
-
-//#define ACTIVATE_I2C 1
 
 //TODO: this sequence could be optimized
 static himax_reg_cfg_t himaxRegInit[] = {
@@ -59,11 +58,15 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x3059, 0x1E},
     {0x3064, 0x00},
     {0x3065, 0x04},             //  pad pull 0
+
     {BLC_CFG, 0x43},            //  BLC_on, IIR
+
     {0x1001, 0x43},             //  BLC dithering en
     {0x1002, 0x43},             //  blc_darkpixel_thd
-    {0x0350, 0x7F},             //  Dgain Control
+    {0x0350, 0x00},             //  Dgain Control
     {BLI_EN, 0x01},             //  BLI enable
+    {0x1003, 0x00},             //  BLI Target [Def: 0x20]
+
     {DPC_CTRL, 0x01},           //  DPC option 0: DPC off   1 : mono   3 : bayer1   5 : bayer2
     {0x1009, 0xA0},             //  cluster hot pixel th
     {0x100A, 0x60},             //  cluster cold pixel th
@@ -83,17 +86,34 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x2014, 0x58},
     {0x2017, 0x00},
     {0x2018, 0x9B},
-    {0x2100, 0x01},
-    {0x2104, 0x07},
-    {0x2105, 0x02},
-    {0x2106, 0x14},
+
+    {0x2100, 0x01},     //Automatic Exposure Gain Control
+    {0x2101, 0xB0},     //AE target mean [Def: 0x3C]
+    {0x2102, 0x0A},     //AE target mean [Def: 0x0A]
+
+    {0x210D, 0x10},     //Damping Factor [Def: 0x20]
+
+    {0x0205, 0x00},     //Analog Global Gain
+    {0x020E, 0x50},     //Digital Gain High
+    {0x020F, 0x00},     //Digital Gain Low
+    {0x0202, 0x03},     //Integration H [Def: 0x01]
+    {0x0203, 0x08},     //Integration L [Def: 0x08]
+
+    {0x2104, 0x05},
+    {0x2105, 0x01},
+
+    {0x2106, 0x54},
+
     {0x2108, 0x03},
-    {0x2109, 0x03},
-    {0x210B, 0x80},
+    {0x2109, 0x04},
+
+    {0x210B, 0xC0},
+    {0x210E, 0x00}, //Flicker Control KEEP IT AT 0!!!!!!!!!!!!!!!!
     {0x210F, 0x00},
-    {0x2110, 0x85},
+    {0x2110, 0x3C},
     {0x2111, 0x00},
-    {0x2112, 0xA0},
+    {0x2112, 0x32},
+
     {0x2150, 0x30},
     {0x0340, 0x02},
     {0x0341, 0x16},
@@ -106,36 +126,40 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x3011, 0x70},
     {0x3059, 0x02},
     {0x3060, 0x01},
-    {IMG_ORIENTATION, 0x03}, // change the orientation
-    {0x0104, 0x01},
+    {IMG_ORIENTATION, 0x01}, // change the orientation
+    {0x0104, 0x01}
 };
 
-RT_L2_DATA unsigned char valueReg;
+RT_L2_DATA unsigned char valRegHimax;
+RT_L2_DATA unsigned int regAddrHimax;
 // TODO: write a status var for cam
 RT_FC_DATA unsigned char camera_isAwaked = 0;
 
 void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
-#ifdef ACTIVATE_I2C
-    unsigned char addr_reg[2];
-    rt_event_t *call_event = rt_event_get_blocking(NULL);
-    rt_i2c_write(cam->i2c, (unsigned char*) &addr, 2, &value, 1, call_event);
-    rt_event_wait(call_event);
-#endif
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        valRegHimax = value;
+        regAddrHimax = addr;
+        rt_event_t *call_event = rt_event_get_blocking(NULL);
+        rt_i2c_write(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, call_event);
+        rt_event_wait(call_event);
+    }
 }
 
 unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
-#ifdef ACTIVATE_I2C
-    rt_event_t *call_event = rt_event_get_blocking(NULL);
-    rt_i2c_read(cam->i2c, (unsigned char*) &addr, 2, &valueReg, 1, 0, call_event);
-    rt_event_wait(call_event);
-#endif
-    return valueReg;
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        regAddrHimax = addr;
+        rt_event_t *call_event = rt_event_get_blocking(NULL);
+        rt_i2c_read(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, 0, call_event);
+        rt_event_wait(call_event);
+    }
+    return valRegHimax;
 }
 
 static void _himaxBoot(rt_camera_t *cam){
     unsigned int i;
     for(i=0; i<(sizeof(himaxRegInit)/sizeof(himax_reg_cfg_t)); i++){
         himaxRegWrite(cam, himaxRegInit[i].addr, himaxRegInit[i].data);
+        rt_trace(RT_TRACE_CAM, "%x = %x \n", himaxRegInit[i].addr, himaxRegRead(cam, himaxRegInit[i].addr));
     }
     //TODO: Add this one in the Reg Init list!
     himaxRegWrite(cam, PCLK_POLARITY, (0x20|Pclk_falling_edge));
@@ -155,7 +179,10 @@ static void _himaxWakeUP (rt_camera_t *cam){
 
 void _himaxReset(rt_camera_t *cam){
     himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
-    while (himaxRegRead(cam, MODE_SELECT) != HIMAX_Standby);
+    while (himaxRegRead(cam, MODE_SELECT) != HIMAX_Standby){
+        himaxRegWrite(cam, SW_RESET, HIMAX_RESET);
+        rt_time_wait_us(50);
+    }
 }
 
 void _himaxStandby(rt_camera_t *cam){
@@ -217,21 +244,20 @@ qvga:
 }
 
 void __rt_himax_close(rt_camera_t *dev_cam, rt_event_t *event){
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
     _camera_stop();
-#ifdef ACTIVATE_I2C
-    rt_i2c_close(dev_cam->i2c, NULL);
-#endif
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD)
+        rt_i2c_close(dev_cam->i2c, NULL);
     rt_free(RT_ALLOC_FC_DATA, (void*)dev_cam, sizeof(rt_camera_t));
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
     if (event) __rt_event_enqueue(event);
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
     rt_trace(RT_TRACE_DEV_CTRL, "[CAM] Control command (cmd: %d)\n", cmd);
     unsigned int *arg = (unsigned int *)_arg;
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
     switch (cmd){
         case CMD_RESOL:
             dev_cam->conf.resolution = *arg;
@@ -260,6 +286,9 @@ void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
             _himaxWakeUP(dev_cam);
             _himaxConfigAndEnable(&dev_cam->conf);
             break;
+        case CMD_PAUSE:
+            _camera_stop();
+            break;
         case CMD_STOP:
             _himaxStandby(dev_cam);
             _camera_stop();
@@ -268,7 +297,7 @@ void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
             rt_warning("[CAM] This Command %d is not disponible for Himax camera\n", cmd);
             break;
     }
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 static void __rt_camera_conf_init(rt_camera_t *dev, rt_cam_conf_t* cam){
@@ -287,16 +316,16 @@ rt_camera_t* __rt_himax_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*event
     camera->channel = dev->channel & 0xf;
     __rt_camera_conf_init(camera, cam);
 
-#ifdef ACTIVATE_I2C
-    rt_i2c_conf_init(&camera->i2c_conf);
-    camera->i2c_conf.cs = 0x48;
-    camera->i2c_conf.id = 1;
-    camera->i2c_conf.max_baudrate = 200000;
+    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+        rt_i2c_conf_init(&camera->i2c_conf);
+        camera->i2c_conf.cs = 0x48;
+        camera->i2c_conf.id = 1;
+        camera->i2c_conf.max_baudrate = 200000;
 
-    camera->i2c = rt_i2c_open(NULL, &camera->i2c_conf, NULL);
-    if (camera->i2c == NULL) printf ("Filed to open I2C\n");
-    // the I2C of Himax freq: 400kHz max.
-#endif
+        camera->i2c = rt_i2c_open(NULL, &camera->i2c_conf, NULL);
+        if (camera->i2c == NULL) printf ("Filed to open I2C\n");
+        // the I2C of Himax freq: 400kHz max.
+    }
 
     soc_eu_fcEventMask_setEvent(ARCHI_UDMA_CAM_ID(0)*2);
     _himaxReset(camera);
@@ -310,7 +339,7 @@ void __rt_himax_capture(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, rt
 {
     rt_trace(RT_TRACE_CAM, "[CAM HIMAX] Capture (buffer: %p, size: 0x%x)\n", buffer, bufferlen);
 
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
 
     rt_event_t *call_event = __rt_wait_event_prepare(event);
 
@@ -320,7 +349,7 @@ void __rt_himax_capture(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, rt
 
     __rt_wait_event_check(event, call_event);
 
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 rt_cam_dev_t himax_desc = {

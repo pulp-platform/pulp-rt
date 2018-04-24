@@ -54,7 +54,7 @@ void rt_periph_copy(rt_periph_copy_t *copy, int channel_id, unsigned int addr, i
 {
   rt_trace(RT_TRACE_UDMA_COPY, "[UDMA] Enqueueing UDMA copy (node: 0x%x, l2Addr: 0x%x, size: 0x%x, channelId: %d)\n", (int)copy, addr, size, channel_id);
 
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_periph_channel_t *channel = __rt_periph_channel(channel_id);
   unsigned int base = hal_udma_channel_base(channel_id);
@@ -88,7 +88,7 @@ void rt_periph_copy(rt_periph_copy_t *copy, int channel_id, unsigned int addr, i
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void rt_periph_dual_copy_safe(rt_periph_copy_t *copy, int rx_channel_id,
@@ -172,7 +172,7 @@ void __rt_periph_dual_copy_noshadow_safe(rt_periph_copy_t *copy, int rx_channel_
 
 void __rt_periph_wait_event(int event, int clear)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   int index = 0;
   if (event >= 32)
@@ -184,18 +184,18 @@ void __rt_periph_wait_event(int event, int clear)
   while(!((__rt_socevents_status[index] >> event) & 1))
   {
     rt_wait_for_interrupt();
-    hal_irq_enable();
-    hal_irq_disable();
+    rt_irq_enable();
+    rt_irq_disable();
   }
 
   if (clear) __rt_socevents_status[index] &= ~(1<<event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void __rt_periph_clear_event(int event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   int index = 0;
   if (event >= 32)
@@ -206,7 +206,7 @@ void __rt_periph_clear_event(int event)
 
   __rt_socevents_status[index] &= ~(1<<event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()

@@ -167,6 +167,25 @@ static inline int rt_nb_pe();
 #define RT_CL_SHORT_DATA __attribute__((section(".data_tiny_l1")))
 
 
+
+/** \brief Gives the start address of the runtime cluster code
+ *
+ * The runtime code used by the cluster is put into a specific section so that
+ * it can be better controlled. This function can be used to get the start
+ * address of this section.
+ */
+static inline void *rt_section_cluster_text_start();
+
+
+
+/** \brief Gives the size of the runtime cluster code
+ *
+ * The runtime code used by the cluster is put into a specific section so that
+ * it can be better controlled. This function can be used to get the size
+ * of this section.
+ */
+static inline int rt_section_cluster_text_size();
+
 //!@}
 
 /**        
@@ -179,6 +198,11 @@ static inline int rt_nb_pe();
 /// @cond IMPLEM
 
 #include "hal/pulp.h"
+
+extern unsigned char __cluster_text_start;
+extern unsigned char __cluster_text_size;
+static inline void *rt_section_cluster_text_start() { return (void *)&__cluster_text_start; }
+static inline int rt_section_cluster_text_size() { return (int)&__cluster_text_size; }
 
 extern unsigned char __rt_cl_master_stack_size;
 extern unsigned char __rt_cl_slave_stack_size;
@@ -487,6 +511,7 @@ static inline int rt_fc_tcdm_size()
 #endif
 }
 
+#ifdef __riscv__
 static inline void rt_wait_for_interrupt()
 {
 #if !defined(ARCHI_HAS_FC) || defined(ARCHI_HAS_FC_EU)
@@ -495,6 +520,9 @@ static inline void rt_wait_for_interrupt()
   hal_itc_wait_for_interrupt();
 #endif
 }
+#else
+void rt_wait_for_interrupt();
+#endif
 
 static inline void rt_compiler_barrier() {
   __asm__ __volatile__ ("" : : : "memory");
@@ -525,7 +553,9 @@ static inline unsigned int __rt_get_fc_vector_base()
   else
   {
 #if defined(ARCHI_HAS_CLUSTER)
+#if defined(ARCHI_CLUSTER_CTRL_ADDR)
     return plp_ctrl_bootaddr_get();
+#endif
 #endif
   }
 #endif
@@ -547,7 +577,9 @@ static inline void __rt_set_fc_vector_base(unsigned int base)
   else
   {
 #if defined(ARCHI_HAS_CLUSTER)
+#if defined(ARCHI_CLUSTER_CTRL_ADDR)
     plp_ctrl_bootaddr_set(base);
+#endif
 #endif
   }
 #endif

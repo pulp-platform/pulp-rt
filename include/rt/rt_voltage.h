@@ -30,43 +30,17 @@
  * limitations under the License.
  */
 
-/* 
- * Authors: Eric Flamand, GreenWaves Technologies (eric.flamand@greenwaves-technologies.com)
- *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
- */
+#ifndef __RT_RT_VOLTAGE_H__
+#define __RT_RT_VOLTAGE_H__
 
-#include "rt/rt_api.h"
+/// @cond IMPLEM
 
-int __rt_freq_domains[RT_FREQ_NB_DOMAIN];
-int __rt_freq_next_domains[RT_FREQ_NB_DOMAIN];
+typedef enum {
+  RT_VOLTAGE_DOMAIN_MAIN     = 0,
+} rt_voltage_domain_e;
 
-void __rt_freq_init()
-{
-  __rt_freq_domains[RT_FREQ_DOMAIN_CL] = __rt_fll_init(0);
-}
+int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_event_t *event);
 
-int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
-{
-  int irq = rt_irq_disable();
-  int err = 0;
+/// @endcond
 
-  __rt_freq_next_domains[domain] = freq;
-
-  if (__rt_cbsys_exec(RT_CBSYS_PERIPH_SETFREQ_BEFORE))
-  {
-    // In case we get an error, this means a driver is not happy with the new
-    // frequency. just go on with the same frequency as before.
-    freq = __rt_freq_domains[RT_FREQ_DOMAIN_CL];
-    err = -1;
-  }
-
-  __rt_fll_set_freq(0, freq);
-
-  __rt_freq_domains[RT_FREQ_DOMAIN_CL] = freq;
-
-  __rt_cbsys_exec(RT_CBSYS_PERIPH_SETFREQ_AFTER);
-
-  rt_irq_restore(irq);
-
-  return err;
-}
+#endif

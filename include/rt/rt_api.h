@@ -34,6 +34,7 @@
 #define __RT_RT_API_H__
 
 #include "rt/rt_data.h"
+#include "rt/rt_irq.h"
 #include "rt/rt_utils.h"
 #include "rt/rt_extern_alloc.h"
 #include "rt/rt_thread.h"
@@ -41,7 +42,6 @@
 #include "rt/rt_flash.h"
 #include "rt/rt_dev.h"
 #include "rt/rt_periph.h"
-#include "rt/rt_irq.h"
 #include "rt/rt_cluster.h"
 #include "rt/rt_hyper.h"
 #include "rt/rt_alloc.h"
@@ -71,5 +71,7 @@
 #ifdef GPIO_VERSION
 #include "rt/rt_gpio.h"
 #endif
+#include "rt/rt_voltage.h"
+#include "rt/rt_bridge.h"
 
 #endif
