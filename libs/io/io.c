@@ -29,7 +29,7 @@
 #define __RT_USE_UART 1
 #endif
 
-static rt_fc_lock_t __rt_io_fc_lock;
+static RT_FC_DATA rt_fc_lock_t __rt_io_fc_lock;
 
 #if defined(__RT_USE_UART)
 static rt_uart_t *_rt_io_uart = NULL;
@@ -136,7 +136,7 @@ static void __rt_putc_stdout(char c)
 
 static void __rt_io_uart_wait_req(void *_req)
 {
-  int irq = rt_irq_disable();
+  int irq = hal_irq_disable();
   if (__rt_io_event_current)
   {
     rt_event_wait(__rt_io_event_current);
@@ -145,7 +145,7 @@ static void __rt_io_uart_wait_req(void *_req)
   rt_io_wait_req_t *req = _req;
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
-  rt_irq_restore(irq);
+  hal_irq_restore(irq);
 }
 
 #endif
@@ -386,7 +386,7 @@ void exit(int status)
 #endif
 #if defined(ARCHI_CLUSTER_CTRL_ADDR)
   *(volatile int*)(ARCHI_CLUSTER_CTRL_ADDR) = 1;
-#endif
+#endif  
   __rt_exit_debug_bridge(status);
   __wait_forever();
 }

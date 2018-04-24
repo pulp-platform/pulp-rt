@@ -208,6 +208,50 @@ extern unsigned char __rt_cl_master_stack_size;
 extern unsigned char __rt_cl_slave_stack_size;
 extern unsigned char __rt_stack_size;
 
+static inline unsigned int __rt_tas_addr(unsigned int addr) {
+  return addr | (1<<ARCHI_L1_TAS_BIT);
+}
+
+static inline int rt_tas_lock_8(unsigned int addr) {
+  __asm__ __volatile__ ("" : : : "memory");
+  int result = *(volatile unsigned char *)__rt_tas_addr(addr);
+  __asm__ __volatile__ ("" : : : "memory");
+  return result;
+}
+
+static inline void rt_tas_unlock_8(unsigned int addr, unsigned char value) {
+  __asm__ __volatile__ ("" : : : "memory");
+  *(volatile unsigned char *)addr = value;
+  __asm__ __volatile__ ("" : : : "memory");
+}
+
+static inline int rt_tas_lock_16(unsigned int addr) {
+  __asm__ __volatile__ ("" : : : "memory");
+  int result = *(volatile unsigned short *)__rt_tas_addr(addr);
+  __asm__ __volatile__ ("" : : : "memory");
+  return result;
+}
+
+static inline void rt_tas_unlock_16(unsigned int addr, unsigned short value) {
+  __asm__ __volatile__ ("" : : : "memory");
+  *(volatile unsigned short *)addr = value;
+  __asm__ __volatile__ ("" : : : "memory");
+}
+
+static inline int rt_tas_lock_32(unsigned int addr) {
+  __asm__ __volatile__ ("" : : : "memory");
+  int result = *(volatile unsigned int *)__rt_tas_addr(addr);
+  __asm__ __volatile__ ("" : : : "memory");
+  return result;
+}
+
+static inline void rt_tas_unlock_32(unsigned int addr, unsigned int value) {
+  __asm__ __volatile__ ("" : : : "memory");
+  *(volatile unsigned int *)addr = value;
+  __asm__ __volatile__ ("" : : : "memory");
+}
+
+
 static inline int rt_cl_master_stack_size_get()
 {
   return (int)(long)&__rt_cl_master_stack_size;
@@ -623,9 +667,13 @@ void __rt_fc_cluster_unlock(rt_fc_lock_t *lock, rt_fc_lock_req_t *req);
 
 static inline void __rt_fc_lock_init(rt_fc_lock_t *lock)
 {
+#if defined(ARCHI_HAS_FC)
   lock->waiting = NULL;
   lock->locked = 0;
   lock->fc_wait = NULL;
+#else
+  lock->lock = 0;
+#endif
 }
 
 #if defined(ARCHI_HAS_CLUSTER)
