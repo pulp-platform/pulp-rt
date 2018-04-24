@@ -136,7 +136,7 @@ static void __rt_putc_stdout(char c)
 
 static void __rt_io_uart_wait_req(void *_req)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   if (__rt_io_event_current)
   {
     rt_event_wait(__rt_io_event_current);
@@ -145,7 +145,7 @@ static void __rt_io_uart_wait_req(void *_req)
   rt_io_wait_req_t *req = _req;
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 #endif
