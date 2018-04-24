@@ -208,6 +208,8 @@ extern unsigned char __rt_cl_master_stack_size;
 extern unsigned char __rt_cl_slave_stack_size;
 extern unsigned char __rt_stack_size;
 
+#if defined(ARCHI_HAS_CLUSTER)
+
 static inline unsigned int __rt_tas_addr(unsigned int addr) {
   return addr | (1<<ARCHI_L1_TAS_BIT);
 }
@@ -251,6 +253,7 @@ static inline void rt_tas_unlock_32(unsigned int addr, unsigned int value) {
   __asm__ __volatile__ ("" : : : "memory");
 }
 
+#endif
 
 static inline int rt_cl_master_stack_size_get()
 {
