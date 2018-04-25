@@ -55,6 +55,12 @@
 
 /**@{*/
 
+/// @cond IMPLEM
+
+#define __RT_I2C_CTRL_SET_MAX_BAUDRATE_BIT 0
+
+/// @endcond
+
 /** \struct rt_i2c_conf_t
  * \brief I2C master configuration structure.
  *
@@ -65,7 +71,15 @@ typedef struct{
     signed char id;               /*!< If it is different from -1, this specifies on which I2C interface the device is connected. */
     signed char cs;               /*!< i2c slave address (7 bits on MSB), the runtime will take care of the LSB of READ and Write. */
     unsigned int  max_baudrate;     /*!< Maximum baudrate for the I2C bitstream which can be used with the opened device . */
-}rt_i2c_conf_t;
+} rt_i2c_conf_t;
+
+
+
+typedef enum {
+  RT_I2C_CTRL_SET_MAX_BAUDRATE  = 1 << __RT_I2C_CTRL_SET_MAX_BAUDRATE_BIT, /*!< Change maximum baudrate. */
+} rt_i2c_control_e;
+
+
 
 /** \brief Open an I2C device.
  *
@@ -99,6 +113,19 @@ void rt_i2c_conf_init(rt_i2c_conf_t *conf);
  */
 void rt_i2c_close (rt_i2c_t *handle, rt_event_t *event);
 
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+
+/** \brief Dynamically change the device configuration.
+ *
+ * This function can be called to change part of the device configuration after it has been opened.
+ *
+ * \param handle    The handle of the I2C device which was returned when the device was opened.
+ * \param cmd       The command which specifies which parameters of the driver to modify and for some of them also their values.
+ * \param arg       An additional value which is required for some parameters when they are set.
+ */
+static inline void rt_i2c_control(rt_i2c_t *handle, rt_i2c_control_e cmd, uint32_t arg);
+
+#else
 /** \brief Configure the I2C interface.
  *
  * This function can be called to configure the frequency of an opened I2C interface.
@@ -109,6 +136,8 @@ void rt_i2c_close (rt_i2c_t *handle, rt_event_t *event);
  * \param event         The event used for managing termination.
  */
 void rt_i2c_freq_set(rt_i2c_t *handle, unsigned int frequency, rt_event_t *event);
+
+#endif
 
 /** \brief Enqueue a burst read copy from the I2C (from I2C device to chip).
  *
@@ -124,7 +153,11 @@ void rt_i2c_freq_set(rt_i2c_t *handle, unsigned int frequency, rt_event_t *event
  * \param stop          Stop to be generated after the tx part is done, it will be followed by a Start for the rx part
  * \param event         The event used for managing termination.
  */
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+void rt_i2c_read(rt_i2c_t *handle, unsigned char *rx_buff, int length, int xfer_pending, rt_event_t *event);
+#else
 void rt_i2c_read(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned char *rx_buff, int length, unsigned char stop, rt_event_t *event);
+#endif
 
 /** \brief Enqueue a burst write copy to the I2C (from chip to I2C device).
  *
@@ -139,14 +172,32 @@ void rt_i2c_read(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned 
  * \param length        The size in bytes of the copy
  * \param event         The event used for managing termination.
  */
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+void rt_i2c_write(rt_i2c_t *handle, unsigned char *tx_data, int length, int xfer_pending, rt_event_t *event);
+#else
 void rt_i2c_write(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned char *tx_data, int length, rt_event_t *event);
-
+#endif
 
 //!@}
 
 /**
  * @}
  */
+
+
+
+/// @cond IMPLEM
+
+void __rt_i2c_control(rt_i2c_t *handle, rt_i2c_control_e cmd, uint32_t arg);
+
+static inline void rt_i2c_control(rt_i2c_t *handle, rt_i2c_control_e cmd, uint32_t arg)
+{
+  __rt_i2c_control(handle, cmd, arg);
+}
+
+/// @endcond
+
+
 #endif
 
 

@@ -204,6 +204,9 @@ typedef struct rt_periph_copy_s {
   unsigned int cfg;
   unsigned int ctrl;
   unsigned int enqueue_callback;
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+  unsigned int end_callback;
+#endif
   struct rt_periph_copy_s *next;
   struct rt_event_s *event;
   union {
@@ -219,8 +222,17 @@ typedef struct rt_periph_copy_s {
     struct {
       unsigned int val[4];
     } raw;
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+    struct {
+      unsigned char *data;
+      int size;
+      uint32_t base;
+      short div;
+      short xfer_pending;
+    } i2c;
+#endif
   } u;
-#if PULP_CHIP == CHIP_GAP
+#if PULP_CHIP == CHIP_GAP || !defined(ARCHI_HAS_FC)
   char *periph_data;
 #else
   char periph_data[RT_PERIPH_COPY_PERIPH_DATA_SIZE];

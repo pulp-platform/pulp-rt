@@ -24,6 +24,57 @@
 RT_FC_TINY_DATA rt_periph_channel_t periph_channels[ARCHI_NB_PERIPH*2];
 
 
+static inline __attribute__((always_inline)) void __rt_channel_enqueue_i2c(rt_periph_channel_t *channel, rt_periph_copy_t *copy, int addr, int size, int cfg, int div)
+{
+  copy->addr = addr;
+  copy->size = size;
+  copy->cfg = cfg;
+  copy->u.i2c.div = div;
+}
+
+static inline void __rt_udma_enqueue_i2c(unsigned base, unsigned int periph_base, unsigned int addr, unsigned int size, unsigned int cfg, int div)
+{
+    hal_udma_i2c_setup_set(periph_base, hal_udma_i2c_setup_compute(1, div));
+    plp_udma_enqueue(base, addr, size, cfg);
+}
+
+void rt_periph_copy_i2c(rt_periph_copy_t *copy, int channel_id, unsigned int addr, int size,
+  unsigned int cfg, int div, rt_event_t *event)
+{
+  rt_trace(RT_TRACE_UDMA_COPY, "[UDMA] Enqueueing UDMA copy (node: 0x%x, l2Addr: 0x%x, size: 0x%x, channelId: %d)\n", (int)copy, addr, size, channel_id);
+
+  int irq = rt_irq_disable();
+
+  rt_periph_channel_t *channel = __rt_periph_channel(channel_id);
+
+  unsigned int base = hal_udma_channel_base(channel_id);
+
+  cfg |= UDMA_CHANNEL_CFG_EN;
+  copy->size = size;
+  copy->event = event;
+
+  int is_first = !channel->first;
+
+  __rt_channel_push(channel, copy);
+
+
+  printf("%s %d\n", __FILE__, __LINE__);
+
+  // Only 1 transfer can be enqueued to the I2C channel, due to the global registers.
+  // If no transfer is present, we can directly enqueue it
+  // Otherwise enqueue it in the SW queue, it will be handled later on by the interrupt handler
+  if (is_first) {
+  printf("%s %d\n", __FILE__, __LINE__);
+
+    __rt_udma_enqueue_i2c(base, hal_udma_periph_base(channel_id/2), addr, size, cfg, div);
+  } else {
+  printf("%s %d\n", __FILE__, __LINE__);
+
+    __rt_channel_enqueue_i2c(channel, copy, addr, size, cfg, div);
+  }
+
+  rt_irq_restore(irq);
+}
 
 void rt_periph_copy_spi(rt_periph_copy_t *copy, int channel_id, unsigned int addr, int size, int len,
   unsigned int cfg, unsigned int spi_status, rt_event_t *event)
@@ -54,13 +105,12 @@ void rt_periph_copy_spi(rt_periph_copy_t *copy, int channel_id, unsigned int add
   plp_spi_disable(periph_base + 0x0);
   plp_spi_disable(periph_base + 0x10);
 
-  // Only 1 transfer can be enqueued to the SPI channel, due to the lobal registers.
+  // Only 1 transfer can be enqueued to the SPI channel, due to the global registers.
   // If no transfer is present, we can directly enqueue it
   // Otherwise enqueue it in the SW queue, it will be handled later on by the interrupt handler
   if (is_first) {
     hal_udma_spim_enqueue(periph_base, base, spi_status, addr, size, cfg, len);
   } else {
-    copy->enqueue_callback = 0;
     __rt_channel_enqueue(channel, copy, addr, size, cfg);
   }
 
@@ -73,8 +123,50 @@ static void __rt_handle_transfer_end(int channel_id)
 {
   rt_periph_channel_t *channel = __rt_periph_channel(channel_id);
   rt_periph_copy_t *copy = channel->first;
-  channel->first = copy->next;
-  __rt_push_event(copy->event->sched, copy->event);
+  if (copy->end_callback)
+  {
+    ((void (*)(rt_periph_copy_t *copy))copy->end_callback)(copy);
+  }
+  else
+  {
+    channel->first = copy->next;
+    if (copy->event)
+      __rt_push_event(copy->event->sched, copy->event);
+  }
+}
+
+static void __rt_handle_transfer_end_i2c(int channel_id)
+{
+  rt_periph_channel_t *channel = __rt_periph_channel(channel_id);
+  rt_periph_copy_t *copy = channel->first;
+
+  // First check if the copy has a termination callback, in which case
+  // the callback will handle the end. This may keep the copy in the queue head
+  // and directly reenqueue a UDMA transfer.
+
+  if (copy->end_callback)
+  {
+    ((void (*)(rt_periph_copy_t *copy))copy->end_callback)(copy);
+  }
+  else
+  {
+    // Otherwise, update the queue
+    rt_periph_copy_t *next = copy->next;
+    channel->first = next;
+
+    // And check if there is a pending copy to enqueue to the UDMA
+    if (next)
+    {
+      __rt_udma_enqueue_i2c(hal_udma_channel_base(channel_id), hal_udma_periph_base(channel_id/2),
+        next->addr, next->size, next->cfg, next->u.i2c.div);
+    }
+
+    // And finally push the copy event to the scheduler in order to handle
+    // the copy termination
+    if (copy->event) {
+      __rt_push_event(copy->event->sched, copy->event);
+    }
+  }
 }
 
 static void __rt_spim0_tx_handler()
@@ -129,12 +221,12 @@ static void __rt_spim1_rx_handler()
 
 static void __rt_i2c_tx_handler()
 {
-  __rt_handle_transfer_end(2*ARCHI_UDMA_I2C_ID(0) + 1);
+  __rt_handle_transfer_end_i2c(2*ARCHI_UDMA_I2C_ID(0) + 1);
 }
 
 static void __rt_i2c_rx_handler()
 {
-  __rt_handle_transfer_end(2*ARCHI_UDMA_I2C_ID(0));
+  __rt_handle_transfer_end_i2c(2*ARCHI_UDMA_I2C_ID(0));
 }
 
 RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()
@@ -164,7 +256,7 @@ RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()
   rt_irq_set_handler(ARCHI_EVT_UDMA7, __rt_adc3_handler);
   rt_irq_set_handler(ARCHI_EVT_UDMA8, __rt_spim1_tx_handler);
   rt_irq_set_handler(ARCHI_EVT_UDMA9, __rt_spim1_rx_handler);
-  rt_irq_set_handler(ARCHI_EVT_UDMA10, __rt_i2c_rx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA10, __rt_i2c_tx_handler);
 
 #elif PULP_CHIP_FAMILY == CHIP_FULMINE
   udma_mapAllEvents(ARCHI_UDMA_EVT_SPIM_TX, ARCHI_UDMA_EVT_SPIM_RX, ARCHI_UDMA_EVT_UART_TX, ARCHI_UDMA_EVT_UART_RX, ARCHI_UDMA_EVT_I2C_RX, ARCHI_UDMA_EVT_I2C_TX, 0, 0);
@@ -176,8 +268,8 @@ RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()
   rt_irq_set_handler(ARCHI_EVT_UDMA1, __rt_spim0_rx_handler);
   rt_irq_set_handler(ARCHI_EVT_UDMA2, __rt_uart_tx_handler);
   rt_irq_set_handler(ARCHI_EVT_UDMA3, __rt_uart_rx_handler);
-  rt_irq_set_handler(ARCHI_EVT_UDMA4, __rt_i2c_rx_handler);
-  rt_irq_set_handler(ARCHI_EVT_UDMA5, __rt_i2c_tx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA4, __rt_i2c_tx_handler);
+  rt_irq_set_handler(ARCHI_EVT_UDMA5, __rt_i2c_rx_handler);
 
 #endif
 

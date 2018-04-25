@@ -236,7 +236,7 @@ static inline void __rt_event_min_init(rt_event_t *event)
 {
   event->thread = NULL;
   event->pending = 0;
-#if PULP_CHIP == CHIP_GAP
+#if PULP_CHIP == CHIP_GAP || !defined(ARCHI_HAS_FC)
   event->copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
 #endif
 }
