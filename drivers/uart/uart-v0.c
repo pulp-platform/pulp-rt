@@ -132,7 +132,7 @@ static int __rt_uart_setfreq_after(void *arg)
 
 rt_uart_t* __rt_uart_open(int channel, rt_uart_conf_t *conf, rt_event_t *event, char *name)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   int baudrate = __RT_UART_BAUDRATE;
   if (conf) baudrate = conf->baudrate;
@@ -160,7 +160,7 @@ rt_uart_t* __rt_uart_open(int channel, rt_uart_conf_t *conf, rt_event_t *event, 
 
   rt_trace(RT_TRACE_DEV_CTRL, "[UART] Successfully opened uart device (handle: %p)\n", uart);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return uart;
 }
@@ -185,7 +185,7 @@ error:
 
 void rt_uart_close(rt_uart_t *uart, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_trace(RT_TRACE_DEV_CTRL, "[UART] Closing uart device (handle: %p)\n", uart);
 
@@ -198,7 +198,7 @@ void rt_uart_close(rt_uart_t *uart, rt_event_t *event)
       __rt_uart_wait_tx_done(uart);
   }
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 

@@ -38,7 +38,7 @@ typedef struct __rt_spim_s rt_spim_t;
 typedef struct __rt_spim_s {
   int max_baudrate;
   int open_count;
-#if defined(UDMA_VERSION) && UDMA_VERSION >= 2
+#if defined(UDMA_VERSION) && UDMA_VERSION >= 1
   unsigned int cfg;
   char cs;
 #endif
@@ -55,6 +55,12 @@ typedef struct __rt_spim_s {
 #elif defined(UDMA_VERSION) && UDMA_VERSION == 2
 
   char byte_align;
+  unsigned char div;
+  char polarity;
+  char phase;
+
+#elif defined(UDMA_VERSION) && UDMA_VERSION == 1
+
   unsigned char div;
   char polarity;
   char phase;

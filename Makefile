@@ -4,7 +4,8 @@ PULP_PROPERTIES += fc/archi pe/archi pulp_chip pulp_chip_family soc/cluster
 PULP_PROPERTIES += host/archi fc_itc udma/hyper udma udma/cam udma/i2c soc/fll
 PULP_PROPERTIES += udma/i2s udma/uart event_unit/version perf_counters
 PULP_PROPERTIES += fll/version soc/spi_master soc/apb_uart padframe/version
-PULP_PROPERTIES += udma/spim udma/spim/version gpio/version rtc
+PULP_PROPERTIES += udma/spim udma/spim/version gpio/version rtc udma/archi
+PULP_PROPERTIES += soc_eu/version
 
 include $(PULP_SDK_HOME)/install/rules/pulp_properties.mk
 
@@ -48,7 +49,7 @@ PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/sched.S kernel/$(fc_archi)/vectors
 endif
 
 ifneq '$(udma)' ''
-PULP_LIB_FC_SRCS_rt     += kernel/periph.c
+PULP_LIB_FC_SRCS_rt     += kernel/periph-v$(udma/archi).c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma.S
 endif
 
@@ -56,7 +57,7 @@ ifneq '$(soc/fll)' ''
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c kernel/freq-v$(fll/version).c
 endif
 
-ifneq '$(udma)' ''
+ifneq '$(soc_eu/version)' ''
 ifneq '$(fc_itc)' ''
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/soc_event_itc.S
 else
@@ -75,6 +76,10 @@ PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
 ifeq '$(pulp_chip_family)' 'devchip'
+PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
+endif
+
+ifeq '$(pulp_chip_family)' 'vega'
 PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
@@ -117,7 +122,7 @@ PULP_LIB_FC_SRCS_rt += drivers/spim/spim-v0.c
 endif
 
 ifneq '$(udma/spim)' ''
-PULP_LIB_FC_SRCS_rt += drivers/spim/spim-v$(udma/spim/version).c drivers/spim/spiflash-v$(udma/spim/version).c drivers/spim/spiflash-v$(udma/spim/version)-asm.c
+PULP_LIB_FC_SRCS_rt += drivers/spim/spim-v$(udma/spim/version).c drivers/spim/spiflash-v$(udma/spim/version).c
 endif
 
 

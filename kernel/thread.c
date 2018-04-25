@@ -48,7 +48,7 @@ static void __rt_thread_init(rt_thread_t *thread, void *(*entry)(void *), void *
 
 void rt_thread_yield()
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_thread_t *current = __rt_thread_current;
   __rt_thread_enqueue_ready(current);
   rt_thread_t *new = __rt_thread_dequeue_ready();
@@ -56,7 +56,7 @@ void rt_thread_yield()
     __rt_thread_current = new;
     __rt_thread_switch(current, new);
   }
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void __rt_thread_sleep()
@@ -72,8 +72,8 @@ void __rt_thread_sleep()
       break;
     }
     rt_wait_for_interrupt();
-    hal_irq_enable();
-    hal_irq_disable();
+    rt_irq_enable();
+    rt_irq_disable();
   } while (1);
 }
 
@@ -86,18 +86,18 @@ void __rt_thread_wakeup(rt_thread_t *thread)
 
 int rt_thread_create(rt_thread_t *thread, void *(*entry)(void *), void *arg, unsigned int stack, unsigned int stack_size)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   thread->waiting = NULL;
   thread->finished = 0;
   __rt_thread_init(thread, entry, arg, stack, stack_size);
   __rt_thread_enqueue_ready(thread);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
   return 0;
 }
 
 void rt_thread_exit(void *status)
 {
-  hal_irq_disable();
+  rt_irq_disable();
   rt_thread_t *thread = __rt_thread_current;
   thread->finished = 1;
   thread->status = status;
@@ -111,7 +111,7 @@ void rt_thread_exit(void *status)
 
 void *rt_thread_join(rt_thread_t *thread)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   if (!thread->finished) {
     thread->waiting = __rt_thread_current;
@@ -120,7 +120,7 @@ void *rt_thread_join(rt_thread_t *thread)
 
   void *status = thread->status;
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return status;
 }

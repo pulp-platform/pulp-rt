@@ -37,52 +37,6 @@
 
 #define RT_PERIPH_COPY_L2   0
 
-#if PULP_CHIP == CHIP_DEVCHIP || PULP_CHIP == CHIP_PULP || PULP_CHIP == CHIP_WOLFE || PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_PULPINO || PULP_CHIP == CHIP_VIVOSOC3
-#define RT_PERIPH_SPIM0_RX   0
-#define RT_PERIPH_SPIM0_TX   1
-#define RT_PERIPH_SPIM1_RX   2
-#define RT_PERIPH_SPIM1_TX   3
-#define RT_PERIPH_UART_RX    6
-#define RT_PERIPH_UART_TX    7
-#define RT_PERIPH_I2C0_DATA  8
-#define RT_PERIPH_I2C0_CMD   9
-#define RT_PERIPH_I2C1_DATA  10
-#define RT_PERIPH_I2C1_CMD   11
-#define RT_PERIPH_I2S0       12
-#define RT_PERIPH_I2S1       13
-#define RT_PERIPH_CAM        14
-#elif PULP_CHIP == CHIP_PULPISSIMO
-#define RT_PERIPH_SPIM0_RX   0
-#define RT_PERIPH_SPIM0_TX   1
-#define RT_PERIPH_SPIM1_RX   2
-#define RT_PERIPH_SPIM1_TX   3
-#define RT_PERIPH_UART_RX    6
-#define RT_PERIPH_UART_TX    7
-#define RT_PERIPH_I2C0_DATA  8
-#define RT_PERIPH_I2C0_CMD   9
-#define RT_PERIPH_I2C1_DATA  10
-#define RT_PERIPH_I2C1_CMD   11
-#define RT_PERIPH_I2S0       12
-#define RT_PERIPH_I2S1       13
-#define RT_PERIPH_CAM        14
-#elif PULP_CHIP == CHIP_GAP
-#define RT_PERIPH_LVDS0_RX   0
-#define RT_PERIPH_LVDS0_TX   1
-#define RT_PERIPH_SPIM0_RX   2
-#define RT_PERIPH_SPIM0_TX   3
-#define RT_PERIPH_SPIM1_RX   4
-#define RT_PERIPH_SPIM1_TX   5
-#define RT_PERIPH_UART_RX    8
-#define RT_PERIPH_UART_TX    9
-#define RT_PERIPH_I2C0_DATA  10
-#define RT_PERIPH_I2C0_CMD   11
-#define RT_PERIPH_I2C1_DATA  12
-#define RT_PERIPH_I2C1_CMD   13
-#define RT_PERIPH_I2S0       14
-#define RT_PERIPH_I2S1       15
-#define RT_PERIPH_CAM        16
-#endif
-
 static inline void rt_periph_copy_init(rt_periph_copy_t *copy, int flags);
 
 void rt_periph_copy(rt_periph_copy_t *copy, int channel, unsigned int addr, int size,
@@ -96,9 +50,9 @@ static inline void rt_periph_dual_copy(rt_periph_copy_t *copy, int rx_channel_id
   unsigned int cfg, rt_event_t *event)
 {
   copy->event = event;
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_periph_dual_copy_safe(copy, rx_channel_id, tx_addr, tx_size, rx_addr, rx_size, cfg);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void __rt_periph_dual_copy_noshadow_safe(rt_periph_copy_t *copy, int rx_channel_id, unsigned int tx_addr, int tx_size, unsigned int rx_addr, int rx_size,
@@ -116,10 +70,10 @@ static inline void rt_periph_dual_copy_noshadow(rt_periph_copy_t *copy, int rx_c
   unsigned int tx_addr, int tx_size, unsigned int rx_addr, int rx_size,
   unsigned int cfg, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_periph_dual_copy_noshadow_safe(copy, rx_channel_id, tx_addr, tx_size,
     rx_addr, rx_size, cfg, event);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 
@@ -171,6 +125,13 @@ static inline rt_periph_channel_t *__rt_periph_channel(int channel) {
 void __rt_periph_wait_event(int event, int clear);
 
 void __rt_periph_clear_event(int event);
+
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+
+void rt_periph_copy_spi(rt_periph_copy_t *copy, int channel_id, unsigned int addr, int size, int len,
+  unsigned int cfg, unsigned int spi_status, rt_event_t *event);
+  
+#endif
 
 /// @endcond
 

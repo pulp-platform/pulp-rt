@@ -131,7 +131,7 @@ static int __rt_freq_set_periph_freq(unsigned int freq, int fll, int domain, uns
 
 int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   int err = 0;
 
   rt_trace(RT_TRACE_FREQ, "Setting domain frequency (domain: %d, freq: %d)\n", domain, freq);
@@ -200,7 +200,7 @@ int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_fr
   }
 
 end:
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return err;
 }

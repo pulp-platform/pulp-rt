@@ -32,22 +32,13 @@
 
 /* 
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
- *          Jie Chen, GreenWaves Technologies (jie.chen@greenwaves-technologies.com)
  */
+
 
 #include "rt/rt_api.h"
 #include <stdint.h>
 
-typedef struct {
-    unsigned int cmd[4];
-} rt_spim_cmd_t;
-
 static rt_spim_t __rt_spim[ARCHI_UDMA_NB_SPIM];
-
-static inline int __rt_spim_id(int periph_id)
-{
-  return periph_id - ARCHI_UDMA_SPIM_ID(0);
-}
 
 static int __rt_spi_get_div(int spi_freq)
 {
@@ -59,28 +50,36 @@ static int __rt_spi_get_div(int spi_freq)
   }
   else
   {
+    // The divider set in the spi register will make a counter counts from 0
+    // to this value (including) and will generate an edge each time it is reached.
+    // So the final divider is (div + 1) * 2.
+    // A divider of 0 also means the clock is actually divided by 2.
+
+
     // Round-up the divider to obtain an SPI frequency which is below the maximum
     int div = (__rt_freq_periph_get() + spi_freq - 1)/ spi_freq;
 
     // The SPIM always divide by 2 once we activate the divider, thus increase by 1
-    // in case it is even to not go avove the max frequency.
+    // in case it is even to not go above the max frequency.
     if (div & 1) div += 1;
-    div >>= 1;
+    div = div / 2 - 1;
 
     return div;
   }
 }
 
-static inline int __rt_spim_get_byte_align(int wordsize, int big_endian)
+void __rt_spim_set_cfg(rt_spim_t *spim)
 {
-  return wordsize == RT_SPIM_WORDSIZE_32 && big_endian;
+  int datasize = spim->wordsize == RT_SPIM_WORDSIZE_32 && spim->big_endian ? 2 : 0;
+  spim->cfg = hal_udma_spim_clkdiv_compute(datasize, datasize, spim->phase, spim->polarity, spim->div);
+  hal_udma_spim_clkdiv_set(hal_udma_periph_base(spim->channel/2), spim->cfg);
 }
 
 rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
-  __rt_padframe_init();
+  //__rt_padframe_init();
 
   rt_spim_conf_t def_conf;
 
@@ -95,7 +94,7 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
   if (conf->id != -1)
   {  
     rt_trace(RT_TRACE_DEV_CTRL, "[SPIM] Opening spim device (id: %d)\n", conf->id);
-    channel = ARCHI_UDMA_SPIM_ID(conf->id);
+    channel = conf->id;
   }
   else if (dev_name != NULL)
   {
@@ -109,12 +108,12 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 
   if (channel == -1) goto error;
 
-  rt_spim_t *spim = &__rt_spim[__rt_spim_id(channel)];
+  rt_spim_t *spim = &__rt_spim[channel];
 
   if (spim->open_count > 0) goto error;
 
   spim->open_count++;
-  spim->channel = channel*2;
+  spim->channel = ARCHI_UDMA_SPIM_ID(channel) * 2;
 
   spim->wordsize = conf->wordsize;
   spim->big_endian = conf->big_endian;
@@ -122,17 +121,11 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
   spim->phase = conf->phase;
   spim->max_baudrate = conf->max_baudrate;
   spim->cs = conf->cs;
-  spim->byte_align = __rt_spim_get_byte_align(conf->wordsize, conf->big_endian);
 
   int div = __rt_spi_get_div(spim->max_baudrate);
   spim->div = div;
 
-  spim->cfg = SPI_CMD_CFG(div, conf->polarity, conf->phase);
-
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
-
-  soc_eu_fcEventMask_setEvent(channel*2);
-  soc_eu_fcEventMask_setEvent(channel*2 + 1);
+  __rt_spim_set_cfg(spim);
 
   rt_irq_restore(irq);
 
@@ -162,9 +155,7 @@ void __rt_spim_control(rt_spim_t *handle, rt_spim_control_e cmd, uint32_t arg)
   if (wordsize) handle->wordsize = wordsize >> 1;
   if (big_endian) handle->big_endian = big_endian >> 1;
 
-
-  handle->cfg = SPI_CMD_CFG(handle->div, handle->polarity, handle->phase);
-  handle->byte_align = __rt_spim_get_byte_align(handle->wordsize, handle->big_endian);
+  __rt_spim_set_cfg(handle);
 }
 
 void rt_spim_close(rt_spim_t *handle, rt_event_t *event)
@@ -180,29 +171,17 @@ void __rt_spim_send(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   rt_periph_copy_t *copy = &call_event->copy;
 
-  // First enqueue the header with SPI config, cs, and send command.
-  // The rest will be sent by the assembly code.
-  // First the user data and finally an epilogue with the EOT command.
-  int next_step;
-  if (cs_mode == RT_SPIM_CS_AUTO) next_step = RT_PERIPH_COPY_SPIM_STEP2;
-  else                            next_step = 0;
-  rt_periph_copy_init_ctrl(copy, RT_PERIPH_COPY_SPIM_STEP1 << RT_PERIPH_COPY_CTRL_TYPE_BIT);
+  uint32_t spi_status = hal_udma_spim_status_compute(
+    cs_mode == RT_SPIM_CS_KEEP, handle->cs, 0, qspi ? ARCHI_SPIM_WSTATUS_QWRITE : ARCHI_SPIM_WSTATUS_WRITE
+  );
 
-  rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
-  unsigned int *udma_cmd = (unsigned int *)cmd->cmd;
-  *udma_cmd++ = handle->cfg;
-  *udma_cmd++ = SPI_CMD_SOT(handle->cs);
-  *udma_cmd++ = SPI_CMD_TX_DATA(len, qspi, handle->byte_align);
+  rt_periph_copy_spi(copy, handle->channel + 1, (unsigned int)data, (len+7)>>3, len, UDMA_CHANNEL_CFG_SIZE_32, spi_status, event);
 
-  copy->cfg = UDMA_CHANNEL_CFG_EN;
-  copy->addr = (int)data;
-  copy->u.raw.val[0] = (len + 7) >> 3;
-  copy->u.raw.val[1] = next_step;
-
-  rt_periph_copy(copy, handle->channel + 1, (unsigned int)cmd, 3*4, 0, event);
+  __rt_wait_event_check(event, call_event);
 
   rt_irq_restore(irq);
 }
+
 
 void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim_cs_e cs_mode, rt_event_t *event)
 {
@@ -213,19 +192,11 @@ void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_s
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   rt_periph_copy_t *copy = &call_event->copy;
 
-  rt_periph_copy_init(copy, 0);
+  uint32_t spi_status = hal_udma_spim_status_compute(
+    cs_mode == RT_SPIM_CS_KEEP, handle->cs, 0, qspi ? ARCHI_SPIM_WSTATUS_QREAD : ARCHI_SPIM_WSTATUS_READ
+  );
 
-  rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
-  unsigned int *udma_cmd = (unsigned int *)cmd->cmd;
-  *udma_cmd++ = handle->cfg;
-  *udma_cmd++ = SPI_CMD_SOT(handle->cs);
-  *udma_cmd++ = SPI_CMD_RX_DATA(len, qspi, handle->byte_align);
-  if (cs_mode == RT_SPIM_CS_AUTO)
-  {
-    *udma_cmd++ = SPI_CMD_EOT(0);
-  }
-
-  rt_periph_dual_copy(copy, handle->channel, (unsigned int)cmd, 4*4, (int)data, (len+7)>>3, 2<<1, call_event);
+  rt_periph_copy_spi(copy, handle->channel, (unsigned int)data, (len+7)>>3, len, UDMA_CHANNEL_CFG_SIZE_32, spi_status, event);
 
   __rt_wait_event_check(event, call_event);
 
@@ -234,8 +205,7 @@ void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_s
 
 void rt_spim_transfer(rt_spim_t *handle, void *tx_data, void *rx_data, size_t len, rt_spim_cs_e mode, rt_event_t *event)
 {
-  rt_trace(RT_TRACE_SPIM, "[SPIM] Transfering bitstream (handle: %p, tx_buffer: %p, rx_buffer: %p, len: 0x%x, keep_cs: %d, event: %p)\n", handle, tx_data, rx_data, len, mode, event);
-
+  return;
 }
 
 void rt_spim_conf_init(rt_spim_conf_t *conf)
