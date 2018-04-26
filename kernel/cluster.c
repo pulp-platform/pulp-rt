@@ -229,7 +229,7 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
   call->nb_pe = nb_pe;
 
   // And trigger an event on cluster side in case it is sleeping
-  eu_evt_trig(eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT), 1);
+  eu_evt_trig(eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT), 0);
 
   if (rt_is_fc()) __rt_wait_event_check(event, call_event);
 

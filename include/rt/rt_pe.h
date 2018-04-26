@@ -95,6 +95,33 @@ static inline void rt_team_barrier();
 
 #if defined(EU_VERSION) && EU_VERSION >= 3
 
+#if defined(ARCHI_HAS_CC)
+
+static inline void rt_team_cc_barrier() {
+  eu_bar_trig_wait_clr(eu_bar_addr(1));
+}
+
+static inline void __rt_team_config_offload(int nb_cores) {
+  unsigned int core_mask = ((1<<nb_cores) - 1);
+  eu_dispatch_team_config(core_mask);
+  eu_bar_setup_mask(eu_bar_addr(0), core_mask, core_mask);
+  // Configure the barrier so that the rendez-vous is between slave cores but the master
+  // also receives the notification so that it can wait for the offload termination.
+  eu_bar_setup_mask(eu_bar_addr(1), core_mask | (1<<8), core_mask | (1<<8));
+}
+
+static inline void rt_team_offload(int nb_cores, void (*entry)(void *), void *arg) {
+  if (nb_cores) __rt_team_config_offload(nb_cores);
+  eu_dispatch_push((int)entry);
+  eu_dispatch_push((int)arg);
+}
+
+static inline void rt_team_offload_wait() {
+  rt_team_cc_barrier();
+}
+
+#endif
+
 static inline void __rt_team_config(int nb_cores) {
   unsigned int core_mask = (1<<nb_cores) - 1;
   eu_dispatch_team_config(core_mask);
