@@ -99,7 +99,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
 #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
 
     // Fetch all cores, they will directly jump to the PE loop waiting from orders through the dispatcher
-    for (int i=0; i<rt_nb_pe(); i++) {
+    for (int i=0; i<rt_nb_active_pe(); i++) {
       plp_ctrl_core_bootaddr_set_remote(cid, i, ((int)_start) & 0xffffff00);
     }
     eoc_fetch_enable_remote(cid, -1);
