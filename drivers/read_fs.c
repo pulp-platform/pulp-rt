@@ -137,7 +137,7 @@ static int __rt_fs_mount_step(void *arg)
 
       case 3: {
         // Allocate roon for the file-system header and read it
-        int fs_size = ((fs->fs_l2->fs_size & 0xFFFFFFFC)|4);
+        int fs_size = ((fs_size + 3) & ~3);
         int fs_offset = fs->fs_l2->fs_offset;
         fs->fs_info = rt_alloc(RT_ALLOC_PERIPH, fs_size);
         if (fs->fs_info == NULL) {
