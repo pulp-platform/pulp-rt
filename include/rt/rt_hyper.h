@@ -66,6 +66,12 @@
  * This structure is used to pass the desired HyperRAM configuration to the runtime when opening the device.
  */
 typedef struct {
+    unsigned int  mbr0;           /*!< Memory base address 0. */
+    unsigned int  mbr1;           /*!< Memory base address 1. */
+    unsigned char  dt0;           /*!< Device type 0. */
+    unsigned char  dt1;           /*!< Device type 1. */
+    unsigned char  max_length_en; /*!< Max transfer length enable. */
+    unsigned int   max_length;    /*!< Max transfer length. */
 } rt_hyperram_conf_t;
 
 /** \brief HyperRAM copy structure.

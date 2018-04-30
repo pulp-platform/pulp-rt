@@ -19,6 +19,12 @@
 
 #include "archi/pulp.h"
 
+#define DEVICE_FLASH  0x0
+#define DEVICE_RAM    0x1
+
+// 512 cycles = 1024 bytes
+#define MAX_LENGTH    0x1FF
+
 #define REG_ACCESS    0x1
 #define MEM_ACCESS    0x0
 
