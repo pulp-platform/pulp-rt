@@ -92,8 +92,6 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
 {
   rt_hyperram_t *hyper = NULL;
 
-  rt_padframe_set(&__rt_padframe_profiles[1]);
-
   rt_dev_t *dev = rt_dev_get(dev_name);
   if (dev == NULL) goto error;
 
