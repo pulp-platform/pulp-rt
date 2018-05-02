@@ -174,7 +174,6 @@ void __rt_hyper_copy(int channel,
     copy->u.hyper.repeat = 0;
   }
 
-  hal_hyper_udma_crt0_set(MEM_ACCESS);
   rt_periph_copy(copy, channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_32, call_event);
 
   __rt_wait_event_check(event, call_event);
