@@ -1,21 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +79,7 @@
  * This can be used to describe which performance event to monitor (cycles, cache miss, etc).
  */
 typedef enum {
-  RT_PERF_CYCLES        = CSR_PCER_NB_EVENTS,    /*!< Total number of cycles (also includes the cycles where the core is sleeping). */
+  RT_PERF_CYCLES        = CSR_PCER_NB_EVENTS,    /*!< Total number of cycles (also includes the cycles where the core is sleeping). Be careful that this event is using a timer shared within the cluster, so resetting, starting or stopping it on one core will impact other cores of the same cluster. */
   RT_PERF_ACTIVE_CYCLES = CSR_PCER_CYCLES,       /*!< Counts the number of cycles the core was active (not sleeping). */
   RT_PERF_INSTR         = CSR_PCER_INSTR,        /*!< Counts the number of instructions executed. */
   RT_PERF_LD_STALL      = CSR_PCER_LD_STALL,     /*!< Number of load data hazards. */  
@@ -200,6 +184,21 @@ void rt_perf_save(rt_perf_t *perf);
  * \return      The performance counter value.
  */
 static inline unsigned int rt_perf_get(rt_perf_t *perf, int id);
+
+
+
+/** \brief Get performance counters values average.
+ *
+ * This returns the saved values, thus rt_perf_save must be called before at least once.
+ * This will compute an average of the specified event between all the specified
+ * performance structures.
+ *
+ * \param perf  A pointer to an array of performance structures.
+ * \param id    The performance event identifier to get.
+ * \param nb_cores The number of performance structures on which the average must be done.
+ * \return      The performance counter value.
+ */
+unsigned int rt_perf_get_average(rt_perf_t *perf, int id, int nb_cores);
 
 
 

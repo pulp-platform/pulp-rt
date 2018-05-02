@@ -175,6 +175,9 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
   int retval = 0;
   int irq = rt_irq_disable();
 
+  if (nb_pe == 0)
+    nb_pe = rt_nb_active_pe();
+
   __rt_cluster_call_t *call;
   rt_fc_cluster_data_t *cluster = &__rt_fc_cluster_data[cid];
 
