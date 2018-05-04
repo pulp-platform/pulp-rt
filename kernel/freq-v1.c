@@ -308,10 +308,10 @@ void __rt_freq_init()
   }
   __rt_freq_domains[RT_FREQ_DOMAIN_CL] = 0;
 
-#if PULP_CHIP == CHIP_QUENTIN
+#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_PULP
   // On quentin FLL 1 is used for FC and 0 for periphs
   __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = __rt_fll_init(__RT_FLL_PERIPH);
-#endif
+#else
 
 #if PULP_CHIP != CHIP_GAP
 
@@ -327,6 +327,8 @@ void __rt_freq_init()
   apb_soc_fll_clkdiv_cluster_set(1);
   apb_soc_fll_clkdiv_periph_set(1);
   apb_soc_fll_clkdiv_soc_set(1);
+
+#endif
 
 #endif
 
