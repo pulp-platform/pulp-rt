@@ -32,6 +32,7 @@ CFLAGS        = $(COMMON) -MMD -MP -c
 # Final binary
 #------------------------------------------
 LIB           = $(TARGET_INSTALL_DIR)/libs/librt.a
+HEADER_DIR    = $(TARGET_INSTALL_DIR)/include/pulp-os
 BUILD_RT  	  ?= $(BUILD_DIR)/rt
 
 HEADERS       = $(wildcard $(shell find $(RUNTIME_PATH)/include -name "*.h"))
@@ -46,14 +47,16 @@ T_OBJECTS_C   = $(patsubst %.c, $(BUILD_RT)/%.o, $(PULP_APP_FC_SRCS) $(PULP_APP_
 
 OBJECTS       = $(S_OBJECTS) $(C_OBJECTS)
 
-INC_DEFINE    = -include $(TARGET_INSTALL_DIR)/include/gap_config.h
+INC_DEFINE    = -include $(TARGET_INSTALL_DIR)/include/pulp-os/gap_config.h
 
-INC           = $(TARGET_INSTALL_DIR)/include $(TARGET_INSTALL_DIR)/include/io
+INC           = $(TARGET_INSTALL_DIR)/include/pulp-os $(TARGET_INSTALL_DIR)/include/pulp-os/io
 INC_PATH      = $(foreach d, $(INC), -I$d)  $(INC_DEFINE)
 
-#TODO: move the Gap8.h to another place.
-install_headers:
-	$(CP) $(GAP_SDK_HOME)/pulp-os/include $(TARGET_INSTALL_DIR)
+$(HEADER_DIR):
+	mkdir -p $@
+
+install_headers: $(HEADER_DIR)
+	$(CP) $(GAP_SDK_HOME)/pulp-os/include/* $(HEADER_DIR)
 	install -D $(GAP_SDK_HOME)/pulp-os/include/Gap8.h $(TARGET_INSTALL_DIR)/include
 
 # Rules for creating rt lib (.d).
