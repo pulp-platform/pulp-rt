@@ -99,7 +99,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
 #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
 
     // Fetch all cores, they will directly jump to the PE loop waiting from orders through the dispatcher
-    for (int i=0; i<rt_nb_pe(); i++) {
+    for (int i=0; i<rt_nb_active_pe(); i++) {
       plp_ctrl_core_bootaddr_set_remote(cid, i, ((int)_start) & 0xffffff00);
     }
     eoc_fetch_enable_remote(cid, -1);
@@ -175,6 +175,9 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
   int retval = 0;
   int irq = rt_irq_disable();
 
+  if (nb_pe == 0)
+    nb_pe = rt_nb_active_pe();
+
   __rt_cluster_call_t *call;
   rt_fc_cluster_data_t *cluster = &__rt_fc_cluster_data[cid];
 
@@ -229,7 +232,7 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
   call->nb_pe = nb_pe;
 
   // And trigger an event on cluster side in case it is sleeping
-  eu_evt_trig(eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT), 1);
+  eu_evt_trig(eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT), 0);
 
   if (rt_is_fc()) __rt_wait_event_check(event, call_event);
 
