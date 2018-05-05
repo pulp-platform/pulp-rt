@@ -144,6 +144,6 @@ void __rt_hyper_copy(int channel,
   rt_periph_copy(copy, channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_16, call_event);
 
   __rt_wait_event_check(event, call_event);
-  
+
   rt_irq_restore(irq);
 }
