@@ -97,7 +97,7 @@ void __rt_init()
   rt_irq_mask_set(1<<ARCHI_FC_EVT_SOC_EVT);
 #endif
 
-  hal_irq_enable();
+  rt_irq_enable();
 
   // Now do individual modules initializations.
   if (__rt_cbsys_exec(RT_CBSYS_START)) goto error;
@@ -154,7 +154,7 @@ RT_L2_DATA void *__rt_cluster_entry_arg;
 
 static void cluster_pe_start(void *arg)
 {
-  hal_irq_enable();
+  rt_irq_enable();
   retval = main();
 }
 
@@ -216,8 +216,11 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
     eu_dispatch_push((unsigned int)rt_stack_size_get());
     eu_dispatch_push((unsigned int)stacks);
 #else
+#if defined(__riscv__)
     __rt_cluster_pe_init(stacks, rt_stack_size_get());
     eoc_fetch_enable_remote(0, (1<<rt_nb_active_pe()) - 1);
+#else
+#endif
 #endif
 
     cluster_start(NULL);

@@ -46,7 +46,7 @@
 
 #else
 
-#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN
+#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN || PULP_CHIP == CHIP_PULP
 
 #define __RT_FREQ_DOMAIN_FC 0
 #define __RT_FREQ_DOMAIN_CL 2
@@ -119,7 +119,7 @@ static inline int rt_freq_get(rt_freq_domain_e domain);
 
 /// @cond IMPLEM
 
-#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN
+#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN || PULP_CHIP == CHIP_PULP
 #define __RT_FLL_CL 2
 #define __RT_FLL_PERIPH 1
 #define __RT_FLL_FC 0
@@ -150,12 +150,20 @@ static inline int rt_freq_get_next(rt_freq_domain_e domain)
 
 static inline int rt_freq_get(rt_freq_domain_e domain)
 {
+#if PULP_CHIP_FAMILY == CHIP_VIVOSOC2
+  return 100000000;
+#else
   return 50000000;
+#endif
 }
 
 static inline int rt_freq_get_next(rt_freq_domain_e domain)
 {
+#if PULP_CHIP_FAMILY == CHIP_VIVOSOC2
+  return 100000000;
+#else
   return 50000000;
+#endif
 }
 
 #endif

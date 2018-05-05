@@ -208,6 +208,53 @@ extern unsigned char __rt_cl_master_stack_size;
 extern unsigned char __rt_cl_slave_stack_size;
 extern unsigned char __rt_stack_size;
 
+#if defined(ARCHI_HAS_CLUSTER)
+
+static inline unsigned int __rt_tas_addr(unsigned int addr) {
+  return addr | (1<<ARCHI_L1_TAS_BIT);
+}
+
+static inline int rt_tas_lock_8(unsigned int addr) {
+  __asm__ __volatile__ ("" : : : "memory");
+  int result = *(volatile unsigned char *)__rt_tas_addr(addr);
+  __asm__ __volatile__ ("" : : : "memory");
+  return result;
+}
+
+static inline void rt_tas_unlock_8(unsigned int addr, unsigned char value) {
+  __asm__ __volatile__ ("" : : : "memory");
+  *(volatile unsigned char *)addr = value;
+  __asm__ __volatile__ ("" : : : "memory");
+}
+
+static inline int rt_tas_lock_16(unsigned int addr) {
+  __asm__ __volatile__ ("" : : : "memory");
+  int result = *(volatile unsigned short *)__rt_tas_addr(addr);
+  __asm__ __volatile__ ("" : : : "memory");
+  return result;
+}
+
+static inline void rt_tas_unlock_16(unsigned int addr, unsigned short value) {
+  __asm__ __volatile__ ("" : : : "memory");
+  *(volatile unsigned short *)addr = value;
+  __asm__ __volatile__ ("" : : : "memory");
+}
+
+static inline int rt_tas_lock_32(unsigned int addr) {
+  __asm__ __volatile__ ("" : : : "memory");
+  int result = *(volatile unsigned int *)__rt_tas_addr(addr);
+  __asm__ __volatile__ ("" : : : "memory");
+  return result;
+}
+
+static inline void rt_tas_unlock_32(unsigned int addr, unsigned int value) {
+  __asm__ __volatile__ ("" : : : "memory");
+  *(volatile unsigned int *)addr = value;
+  __asm__ __volatile__ ("" : : : "memory");
+}
+
+#endif
+
 static inline int rt_cl_master_stack_size_get()
 {
   return (int)(long)&__rt_cl_master_stack_size;
@@ -511,6 +558,7 @@ static inline int rt_fc_tcdm_size()
 #endif
 }
 
+#ifdef __riscv__
 static inline void rt_wait_for_interrupt()
 {
 #if !defined(ARCHI_HAS_FC) || defined(ARCHI_HAS_FC_EU)
@@ -519,6 +567,9 @@ static inline void rt_wait_for_interrupt()
   hal_itc_wait_for_interrupt();
 #endif
 }
+#else
+void rt_wait_for_interrupt();
+#endif
 
 static inline void rt_compiler_barrier() {
   __asm__ __volatile__ ("" : : : "memory");
@@ -549,7 +600,9 @@ static inline unsigned int __rt_get_fc_vector_base()
   else
   {
 #if defined(ARCHI_HAS_CLUSTER)
+#if defined(ARCHI_CLUSTER_CTRL_ADDR)
     return plp_ctrl_bootaddr_get();
+#endif
 #endif
   }
 #endif
@@ -571,7 +624,9 @@ static inline void __rt_set_fc_vector_base(unsigned int base)
   else
   {
 #if defined(ARCHI_HAS_CLUSTER)
+#if defined(ARCHI_CLUSTER_CTRL_ADDR)
     plp_ctrl_bootaddr_set(base);
+#endif
 #endif
   }
 #endif
@@ -615,9 +670,13 @@ void __rt_fc_cluster_unlock(rt_fc_lock_t *lock, rt_fc_lock_req_t *req);
 
 static inline void __rt_fc_lock_init(rt_fc_lock_t *lock)
 {
+#if defined(ARCHI_HAS_FC)
   lock->waiting = NULL;
   lock->locked = 0;
   lock->fc_wait = NULL;
+#else
+  lock->lock = 0;
+#endif
 }
 
 #if defined(ARCHI_HAS_CLUSTER)

@@ -107,7 +107,7 @@ static void __rt_bridge_post_req(rt_bridge_req_t *req, rt_event_t *event)
 
 void rt_bridge_connect(rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   hal_bridge_t *bridge = hal_bridge_get();
 
@@ -134,14 +134,14 @@ void rt_bridge_connect(rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 
 
 void rt_bridge_disconnect(rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   hal_bridge_t *bridge = hal_bridge_get();
 
@@ -153,14 +153,14 @@ void rt_bridge_disconnect(rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 
 
 int rt_bridge_open(const char* name, int flags, int mode, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   hal_bridge_t *bridge = hal_bridge_get();
 
@@ -172,7 +172,7 @@ int rt_bridge_open(const char* name, int flags, int mode, rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return req->header.open.retval;
 }
@@ -190,7 +190,7 @@ int rt_bridge_open_wait(rt_event_t *event)
 
 int rt_bridge_close(int file, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   hal_bridge_t *bridge = hal_bridge_get();
 
@@ -202,7 +202,7 @@ int rt_bridge_close(int file, rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return req->header.close.retval;
 }
@@ -220,7 +220,7 @@ int rt_bridge_close_wait(rt_event_t *event)
 
 int rt_bridge_read(int file, void* ptr, int len, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   hal_bridge_t *bridge = hal_bridge_get();
 
@@ -232,7 +232,7 @@ int rt_bridge_read(int file, void* ptr, int len, rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return req->header.read.retval;
 }
@@ -248,7 +248,7 @@ int rt_bridge_read_wait(rt_event_t *event)
 
 int rt_bridge_write(int file, void* ptr, int len, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   hal_bridge_t *bridge = hal_bridge_get();
 
@@ -260,7 +260,7 @@ int rt_bridge_write(int file, void* ptr, int len, rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return req->header.write.retval;
 }

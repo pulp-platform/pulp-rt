@@ -478,6 +478,9 @@ typedef struct {
   rt_fc_lock_req_t *waiting;
   rt_fc_lock_req_t *last_waiting;
   rt_thread_t *fc_wait;
+#if !defined(ARCHI_HAS_FC)
+  uint32_t lock;
+#endif
 } rt_fc_lock_t;
 
 typedef struct rt_fc_lock_req_s {

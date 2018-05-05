@@ -78,7 +78,7 @@ static inline int __rt_spim_get_byte_align(int wordsize, int big_endian)
 
 rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   __rt_padframe_init();
 
@@ -134,7 +134,7 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
   soc_eu_fcEventMask_setEvent(channel*2);
   soc_eu_fcEventMask_setEvent(channel*2 + 1);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return spim;
 
@@ -175,7 +175,7 @@ void __rt_spim_send(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim
 {
   rt_trace(RT_TRACE_SPIM, "[SPIM] Send bitstream (handle: %p, buffer: %p, len: 0x%x, qspi: %d, keep_cs: %d, event: %p)\n", handle, data, len, qspi, cs_mode, event);
 
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   rt_periph_copy_t *copy = &call_event->copy;
@@ -201,14 +201,14 @@ void __rt_spim_send(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim
 
   rt_periph_copy(copy, handle->channel + 1, (unsigned int)cmd, 3*4, 0, event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim_cs_e cs_mode, rt_event_t *event)
 {
   rt_trace(RT_TRACE_SPIM, "[SPIM] Receive bitstream (handle: %p, buffer: %p, len: 0x%x, qspi: %d, keep_cs: %d, event: %p)\n", handle, data, len, qspi, cs_mode, event);
 
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   rt_periph_copy_t *copy = &call_event->copy;
@@ -229,7 +229,7 @@ void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_s
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void rt_spim_transfer(rt_spim_t *handle, void *tx_data, void *rx_data, size_t len, rt_spim_cs_e mode, rt_event_t *event)

@@ -39,7 +39,7 @@ void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched)
 
 int rt_event_alloc(rt_event_sched_t *sched, int nb_events)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   if (!sched) sched = __rt_thread_current->sched;
 
@@ -57,7 +57,7 @@ int rt_event_alloc(rt_event_sched_t *sched, int nb_events)
     event++;
   }
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
   return 0;
 }
 
@@ -87,41 +87,41 @@ static inline __attribute__((always_inline)) rt_event_t *__rt_get_event(rt_event
 
 rt_event_t *rt_event_get(rt_event_sched_t *sched, void (*callback)(void *), void *arg)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   if (!sched) sched = __rt_thread_current->sched;
   rt_event_t *event = __rt_get_event(sched, callback, arg);
   if (event) event->sched = sched;
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
   return event;
 }
 
 rt_event_t *rt_event_get_blocking(rt_event_sched_t *sched)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   if (!sched) sched = __rt_thread_current->sched;
   rt_event_t *event = __rt_get_event(sched, NULL, NULL);
   if (event) {
     event->sched = sched;
     event->pending = 1;
   }
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
   return event;
 }
 
 void rt_event_push(rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   __rt_push_event(event->sched, event);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 int rt_event_push_callback(rt_event_sched_t *sched, void (*callback)(void *), void *arg)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_event_t *event = __rt_get_event(sched, callback, arg);
   if (event == NULL) return -1;
   __rt_push_event(sched, event);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
   return 0;
 }
 
@@ -153,13 +153,13 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
         }
         else {
           rt_wait_for_interrupt();
-          hal_irq_enable();
-          hal_irq_disable();
+          rt_irq_enable();
+          rt_irq_disable();
         }
         event = *((rt_event_t * volatile *)&sched->first);
       } while (!event);
     } else {
-      hal_irq_enable();
+      rt_irq_enable();
       return;
     }
   }
@@ -179,9 +179,9 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
 
     // Finally execute the event with interrupts enabled
     if (callback) {
-      hal_irq_enable();
+      rt_irq_enable();
       callback(arg);
-      hal_irq_disable();
+      rt_irq_disable();
     }
 
     __rt_event_unblock(event);
@@ -208,9 +208,9 @@ void __rt_wait_event(rt_event_t *event)
 
 void rt_event_wait(rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 __rt_wait_event(event);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_event_sched_init()

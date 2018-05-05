@@ -91,14 +91,21 @@ RT_FC_BOOT_CODE void __rt_utils_init()
 
 void __rt_fc_lock(rt_fc_lock_t *lock)
 {
-  int irq = hal_irq_disable();
+#if defined(ARCHI_HAS_FC)
+  int irq = rt_irq_disable();
   while(lock->locked)
   {
     lock->fc_wait = __rt_thread_current;
-    __rt_event_execute(__rt_thread_current->sched, 1);
+    __rt_event_execute(__rt_thread_current->sched, 0);
   }
   lock->locked = 1;
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
+#else
+  while (rt_tas_lock_32((uint32_t)&lock->lock) == -1)
+  {
+
+  }
+#endif
 }
 
 static int __rt_fc_unlock_to_cluster(rt_fc_lock_t *lock)
@@ -111,24 +118,29 @@ static int __rt_fc_unlock_to_cluster(rt_fc_lock_t *lock)
     __rt_cluster_notif_req_done(req->cid);
     return 1;
   }
+#else
 #endif
   return 0;
 }
 
 void __rt_fc_unlock(rt_fc_lock_t *lock)
 {
-  int irq = hal_irq_disable();
+#if defined(ARCHI_HAS_FC)
+  int irq = rt_irq_disable();
   if (!__rt_fc_unlock_to_cluster(lock))
   {
     lock->locked = 0;    
   }
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
+#else
+  rt_tas_unlock_32((uint32_t)&lock->lock, 0);
+#endif
 }
 
 #if defined(ARCHI_HAS_CLUSTER)
 static void __rt_fc_cluster_lock_req(void *_req)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_fc_lock_req_t *req = (rt_fc_lock_req_t *)_req;
   rt_fc_lock_t *lock = req->lock;
   if (req->req_lock)
@@ -174,7 +186,7 @@ static void __rt_fc_cluster_lock_req(void *_req)
     __rt_cluster_notif_req_done(req->cid);
 
   }
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 #if defined(ARCHI_HAS_FC)
@@ -203,10 +215,15 @@ void __rt_fc_cluster_unlock(rt_fc_lock_t *lock, rt_fc_lock_req_t *req)
 
 void __rt_fc_cluster_lock(rt_fc_lock_t *lock, rt_fc_lock_req_t *req)
 {
+  while (rt_tas_lock_32((uint32_t)&lock->lock) == -1)
+  {
+
+  }
 }
 
 void __rt_fc_cluster_unlock(rt_fc_lock_t *lock, rt_fc_lock_req_t *req)
 {
+  rt_tas_unlock_32((uint32_t)&lock->lock, 0);
 }
 
 #endif

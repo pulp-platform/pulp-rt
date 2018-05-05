@@ -131,7 +131,7 @@ static int __rt_freq_set_periph_freq(unsigned int freq, int fll, int domain, uns
 
 int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   int err = 0;
 
   rt_trace(RT_TRACE_FREQ, "Setting domain frequency (domain: %d, freq: %d)\n", domain, freq);
@@ -200,7 +200,7 @@ int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_fr
   }
 
 end:
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return err;
 }
@@ -308,10 +308,10 @@ void __rt_freq_init()
   }
   __rt_freq_domains[RT_FREQ_DOMAIN_CL] = 0;
 
-#if PULP_CHIP == CHIP_QUENTIN
+#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_PULP
   // On quentin FLL 1 is used for FC and 0 for periphs
   __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = __rt_fll_init(__RT_FLL_PERIPH);
-#endif
+#else
 
 #if PULP_CHIP != CHIP_GAP
 
@@ -327,6 +327,8 @@ void __rt_freq_init()
   apb_soc_fll_clkdiv_cluster_set(1);
   apb_soc_fll_clkdiv_periph_set(1);
   apb_soc_fll_clkdiv_soc_set(1);
+
+#endif
 
 #endif
 

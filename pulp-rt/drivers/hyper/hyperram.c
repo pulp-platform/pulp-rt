@@ -50,34 +50,7 @@ int __rt_hyperram_init(rt_hyperram_t *hyper)
 
 void rt_hyperram_conf_init(rt_hyperram_conf_t *conf)
 {
-    /* Set memory base address, RAM has volume of 8 Mbytes / 2 = 4M*/
-    hal_hyper_udma_mbr0_set(REG_MBR0);
-    /* Set memory base address, RAM has volume of 8 Mbytes / 2 = 4M*/
-    hal_hyper_udma_mbr1_set(REG_MBR1>>24);
 
-    /* Device type of connected memory */
-    /* Device 0 connecte to HyperbusRAM */
-    hal_hyper_udma_dt0_set(DEVICE_RAM);
-    hal_hyper_udma_dt1_set(DEVICE_FLASH);
-
-    /* Default is memory access */
-    hal_hyper_udma_crt0_set(MEM_ACCESS);
-    hal_hyper_udma_crt1_set(MEM_ACCESS);
-
-    /* Maximum length enable = 1024*/
-    hal_hyper_udma_rd_maxlen_en0_set(1);
-    hal_hyper_udma_rd_max_length0_set(MAX_LENGTH);
-    hal_hyper_udma_wr_maxlen_en0_set(1);
-    hal_hyper_udma_wr_max_length0_set(MAX_LENGTH);
-
-    hal_hyper_udma_rd_cshi0_set(4);
-    hal_hyper_udma_rd_css0_set(4);
-    hal_hyper_udma_rd_csh0_set(4);
-    hal_hyper_udma_wr_cshi0_set(4);
-    hal_hyper_udma_wr_css0_set(4);
-    hal_hyper_udma_wr_csh0_set(4);
-
-    hal_hyper_udma_latency0_set(1);
 }
 
 static void __rt_hyperram_free(rt_hyperram_t *hyper)
@@ -101,12 +74,6 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
   hyper->dev = dev;
   hyper->alloc = NULL;
   hyper->channel = dev->channel;
-
-  /* Cut Clock Gating - Enable hyprebus clock*/
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<dev->channel));
-
-  soc_eu_fcEventMask_setEvent(dev->channel*2);
-  soc_eu_fcEventMask_setEvent(dev->channel*2 + 1);
 
   if (__rt_hyperram_init(hyper)) goto error;
 
@@ -158,26 +125,25 @@ void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
 void __rt_hyper_copy(int channel,
   void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   rt_periph_copy_t *copy = &call_event->copy;
 
   copy->ctrl = RT_PERIPH_COPY_HYPER << RT_PERIPH_COPY_CTRL_TYPE_BIT;
-  copy->u.hyper.hyper_addr = mbr | ((unsigned int)(hyper_addr) << 1);
-  if (size > 1024) {
+  copy->u.hyper.hyper_addr = mbr | (unsigned int)hyper_addr;
+  if (size > 512) {
     copy->addr = (unsigned int)addr;
-    copy->u.hyper.repeat = 1024;
+    copy->u.hyper.repeat = 512;
     copy->u.hyper.repeat_size = size;
-    size = 1024;
+    size = 512;
   } else {
     copy->u.hyper.repeat = 0;
   }
 
-  hal_hyper_udma_crt0_set(MEM_ACCESS);
-  rt_periph_copy(copy, channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_32, call_event);
+  rt_periph_copy(copy, channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_16, call_event);
 
   __rt_wait_event_check(event, call_event);
-
-  hal_irq_restore(irq);
+  
+  rt_irq_restore(irq);
 }

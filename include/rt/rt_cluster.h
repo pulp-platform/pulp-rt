@@ -92,7 +92,7 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event);
  * \param stacks  The stacks of the cores. This must contain the master stack and one stack for each slave core. If NULL the stack will be allocated and freed automatically. The free occurs the next time that rt_cluster_call is invoked.
  * \param master_stack_size  Stack size of the master core which will execute the function. If stacks is NULL can be 0 to indicate to use the default master stack size. See rt_cl_master_stack_size_get().
  * \param slave_stack_size   Stack size of each core associated to the execution of the function. If stacks is NULL can be 0 to indicate to use the default slave core stack size. See rt_cl_slave_stack_size_get().
- * \param nb_pe   Number of cores involved in the execution of the function.
+ * \param nb_pe   Number of cores involved in the execution of the function. Can be 0 to select the maximum number of cores.
  * \param event   An event to specify how to be notified when the cluster function has returned. If NULL, the function will only return when this is done. Otherwise the event can be used to either call a callback or to wait on the event afterwards.
  */
 int rt_cluster_call(rt_cluster_call_t *call, int cid, void (*entry)(void *arg), void *arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event);
@@ -117,7 +117,7 @@ void rt_cluster_notif_init(rt_notif_t *notif, int cid);
 /** \brief Send a notification.
  *
  * Notifications can be used to make a cluster core go to sleep until a notification is sent to him. This is useful for example for polling a variable without consuming power for nothing.  
- * Can only be called from cluster.
+ * Can only be called from fabric controller.
  *
  * \param notif    A pointer to the notification structure, this will tell the runtime which event must be used and to which cluster it must be sent.
  * \param core_mask The mask of cores which will receive the notification. There is 1 bit per core, bit 0 (least signigicant bit) is for core 0. A bit set to 1 means the core will receive the notification. The special value RT_TRIGGER_ALL_CORE can also be used to send to all cores.
@@ -185,7 +185,7 @@ void __rt_cluster_pe_init(void *stacks, int stacks_size);
 
 extern void __rt_set_slave_stack();
 
-#if defined(PULP_CHIP_FAMILY) && (PULP_CHIP_FAMILY == CHIP_DEVCHIP || PULP_CHIP_FAMILY == CHIP_WOLFE || PULP_CHIP == CHIP_GAP)
+#if defined(PULP_CHIP_FAMILY) && (PULP_CHIP_FAMILY == CHIP_VEGA || PULP_CHIP_FAMILY == CHIP_DEVCHIP || PULP_CHIP_FAMILY == CHIP_WOLFE || PULP_CHIP == CHIP_GAP)
 
 void __rt_pmu_cluster_power_up();
 

@@ -66,12 +66,6 @@
  * This structure is used to pass the desired HyperRAM configuration to the runtime when opening the device.
  */
 typedef struct {
-    unsigned int  mbr0;           /*!< Memory base address 0. */
-    unsigned int  mbr1;           /*!< Memory base address 1. */
-    unsigned char  dt0;           /*!< Device type 0. */
-    unsigned char  dt1;           /*!< Device type 1. */
-    unsigned char  max_length_en; /*!< Max transfer length enable. */
-    unsigned int   max_length;    /*!< Max transfer length. */
 } rt_hyperram_conf_t;
 
 /** \brief HyperRAM copy structure.
@@ -257,14 +251,6 @@ static inline void rt_hyperram_cluster_wait(rt_hyperram_req_t *req);
 
 
 /// @cond IMPLEM
-
-#if PULP_CHIP == CHIP_DEVCHIP || PULP_CHIP == CHIP_WOLFE || PULP_CHIP == CHIP_QUENTIN
-#define RT_PERIPH_HYPERRAM_RX   4
-#define RT_PERIPH_HYPERRAM_TX   5
-#elif PULP_CHIP == CHIP_GAP
-#define RT_PERIPH_HYPERRAM_RX   6
-#define RT_PERIPH_HYPERRAM_TX   7
-#endif
 
 #if defined(ARCHI_UDMA_HAS_HYPER)
 

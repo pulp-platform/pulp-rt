@@ -78,7 +78,7 @@ void _camera_stop(){
 
 rt_camera_t* rt_camera_open(char *dev_name, rt_cam_conf_t *conf, rt_event_t*event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_trace(RT_TRACE_DEV_CTRL, "[CAM] Opening camera device (name: %s)\n", dev_name);
 
@@ -93,7 +93,7 @@ rt_camera_t* rt_camera_open(char *dev_name, rt_cam_conf_t *conf, rt_event_t*even
 
   memcpy((void *)&cam->desc, (void *)desc, sizeof(rt_cam_dev_t));
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return cam;
 

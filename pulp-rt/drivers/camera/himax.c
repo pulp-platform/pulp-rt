@@ -243,20 +243,20 @@ qvga:
 }
 
 void __rt_himax_close(rt_camera_t *dev_cam, rt_event_t *event){
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
     _camera_stop();
     if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD)
         rt_i2c_close(dev_cam->i2c, NULL);
     rt_free(RT_ALLOC_FC_DATA, (void*)dev_cam, sizeof(rt_camera_t));
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
     if (event) __rt_event_enqueue(event);
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
     rt_trace(RT_TRACE_DEV_CTRL, "[CAM] Control command (cmd: %d)\n", cmd);
     unsigned int *arg = (unsigned int *)_arg;
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
     switch (cmd){
         case CMD_RESOL:
             dev_cam->conf.resolution = *arg;
@@ -298,7 +298,7 @@ void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
             rt_warning("[CAM] This Command %d is not disponible for Himax camera\n", cmd);
             break;
     }
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 static void __rt_camera_conf_init(rt_camera_t *dev, rt_cam_conf_t* cam){
@@ -340,7 +340,7 @@ void __rt_himax_capture(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, rt
 {
     rt_trace(RT_TRACE_CAM, "[CAM HIMAX] Capture (buffer: %p, size: 0x%x)\n", buffer, bufferlen);
 
-    int irq = hal_irq_disable();
+    int irq = rt_irq_disable();
 
     rt_event_t *call_event = __rt_wait_event_prepare(event);
 
@@ -350,7 +350,7 @@ void __rt_himax_capture(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, rt
 
     __rt_wait_event_check(event, call_event);
 
-    hal_irq_restore(irq);
+    rt_irq_restore(irq);
 }
 
 rt_cam_dev_t himax_desc = {

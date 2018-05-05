@@ -54,7 +54,7 @@ void rt_i2s_conf_init(rt_i2s_conf_t *conf)
 
 rt_i2s_t* rt_i2s_open(char *dev_name, rt_i2s_conf_t *conf, rt_event_t*event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_trace(RT_TRACE_DEV_CTRL, "[I2S] Opening i2s device (name: %s)\n", dev_name);
 
@@ -69,7 +69,7 @@ rt_i2s_t* rt_i2s_open(char *dev_name, rt_i2s_conf_t *conf, rt_event_t*event)
 
   memcpy((void *)&i2s->desc, (void *)desc, sizeof(rt_i2s_dev_t));
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 
   return i2s;
 
@@ -209,20 +209,20 @@ static inline void __rt_i2s_resume(rt_i2s_t *dev)
 
 void __rt_i2s_start(rt_i2s_t *dev)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_trace(RT_TRACE_CAM, "[I2S] Start (i2s: %d, clk: %d)\n", dev->i2s_id, dev->clk);
   dev->running = 1;
   __rt_i2s_resume(dev);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 void __rt_i2s_stop(rt_i2s_t *dev)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
   rt_trace(RT_TRACE_CAM, "[I2S] Stop (i2s: %d, clk: %d)\n", dev->i2s_id, dev->clk);
   dev->running = 0;
   __rt_i2s_suspend(dev);
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 static int __rt_i2s_setfreq_before(void *arg)
@@ -261,7 +261,7 @@ static void __rt_i2s_capture(rt_i2s_t *dev, void *buffer, size_t size, rt_event_
 {
   rt_trace(RT_TRACE_CAM, "[I2S] Capture (buffer: %p, size: 0x%x)\n", buffer, size);
 
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
@@ -271,7 +271,7 @@ static void __rt_i2s_capture(rt_i2s_t *dev, void *buffer, size_t size, rt_event_
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_i2s_init()

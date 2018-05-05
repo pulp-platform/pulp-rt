@@ -71,7 +71,7 @@ static void __rt_hyperflash_close(rt_flash_t *flash, rt_event_t *event)
 
 static void __rt_hyperflash_read(rt_flash_t *_dev, void *data, void *addr, size_t size, rt_event_t *event)
 {
-  int irq = hal_irq_disable();
+  int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
@@ -81,7 +81,7 @@ static void __rt_hyperflash_read(rt_flash_t *_dev, void *data, void *addr, size_
 
   __rt_wait_event_check(event, call_event);
 
-  hal_irq_restore(irq);
+  rt_irq_restore(irq);
 }
 
 rt_flash_dev_t hyperflash_desc = {

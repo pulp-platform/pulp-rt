@@ -47,9 +47,22 @@ void rt_perf_save(rt_perf_t *perf)
     int event = __FL1(mask);
     mask &= ~(1<<event);
 
+#ifdef ARCHI_HAS_FC
     if (hal_is_fc())
       perf->values[event] += rt_perf_fc_read(event);
     else
+#endif
       perf->values[event] += rt_perf_cl_read(event);
   }
+}
+
+
+unsigned int rt_perf_get_average(rt_perf_t *perf, int id, int nb_cores)
+{
+  unsigned int result = 0;
+  for (int i=0; i<nb_cores; i++)
+  {
+    result += perf[i].values[id];
+  }
+  return result / nb_cores;
 }
