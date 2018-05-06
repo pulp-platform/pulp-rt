@@ -30,7 +30,7 @@
  * limitations under the License.
  */
 
-/* 
+/*
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
@@ -97,7 +97,7 @@ static void __rt_fs_free(rt_fs_t *fs)
 
 // This function can be called to do all the required asynchronous steps to mount a FS.
 // This can execute in 2 ways:
-//   - No event is given in which case each call is synchronous and the call 
+//   - No event is given in which case each call is synchronous and the call
 //     to this function will just do all steps in one shot
 //   - An event is given in which case, the function will just execute one asynchronous
 //     step and will continue with the next step once it is called again by the event
@@ -137,7 +137,7 @@ static int __rt_fs_mount_step(void *arg)
 
       case 3: {
         // Allocate roon for the file-system header and read it
-        int fs_size = fs->fs_l2->fs_size;
+        int fs_size = ((fs->fs_l2->fs_size + 3) & ~3);
         int fs_offset = fs->fs_l2->fs_offset;
         fs->fs_info = rt_alloc(RT_ALLOC_PERIPH, fs_size);
         if (fs->fs_info == NULL) {
@@ -151,7 +151,7 @@ static int __rt_fs_mount_step(void *arg)
 
     fs->mount_step++;
 
-    // Only continue to execute other steps if no event is provided as it 
+    // Only continue to execute other steps if no event is provided as it
     // is then synchonous
     if (fs->step_event != NULL) goto end;
   }
@@ -285,7 +285,7 @@ static int __rt_fs_read_block(rt_fs_t *fs, unsigned int addr, unsigned int buffe
   rt_trace(RT_TRACE_FS, "[FS] Read block (buffer: 0x%x, addr: 0x%x, size: 0x%x)\n", buffer, addr, size);
 
   rt_flash_read(fs->flash, (void *)buffer, (void *)addr, size, event);
-  return size; 
+  return size;
 }
 
 // Reads a block from cache, whose size is inferior to FS_READ_THRESHOLD
@@ -298,8 +298,8 @@ static int __rt_fs_read_from_cache(rt_file_t *file, unsigned int buffer, unsigne
   return size;
 }
 
-// Reads a block from cache, whose size is inferior to FS_READ_THRESHOLD, 
-// with no alignment constraint. 
+// Reads a block from cache, whose size is inferior to FS_READ_THRESHOLD,
+// with no alignment constraint.
 // If the data is not in the cache, it is loaded fron FS
 // and then it copied from the cache to the buffer
 static int __rt_fs_read_cached(rt_file_t *file, unsigned int buffer, unsigned int addr, unsigned int size, int *pending, rt_event_t *event)
@@ -327,14 +327,14 @@ int __rt_fs_read(rt_file_t *file, unsigned int buffer, unsigned int addr, int si
   rt_trace(RT_TRACE_FS, "[FS] Read through cache (addr: 0x%x, buffer: 0x%x, addr: 0x%x, size: 0x%x)\n", addr, buffer, addr, size);
 
   // 2 case where we go through the cache:
-  //   - Small accesses 
-  //   - FS address alignment is different from L2 alignment, 
+  //   - Small accesses
+  //   - FS address alignment is different from L2 alignment,
   //     there is now way to transfer it directly, it must go through the cache
   int use_cache = size <= FS_READ_THRESHOLD || (addr & 0x3) != (buffer & 0x3);
   if (use_cache) return __rt_fs_read_cached(file, buffer, addr, size, pending, event);
 
   // Cache hit
-  if (size <= FS_READ_THRESHOLD_BLOCK_FULL && 
+  if (size <= FS_READ_THRESHOLD_BLOCK_FULL &&
     addr >= fs->cache_addr &&
     addr + size < fs->cache_addr + FS_READ_THRESHOLD_BLOCK_FULL) {
     return __rt_fs_read_from_cache(file, buffer, addr, size);
@@ -353,7 +353,7 @@ int __rt_fs_read(rt_file_t *file, unsigned int buffer, unsigned int addr, int si
     size -= prefix_size;
   }
 
-  // Then the block in the middle, drop the end to get an aligned size, the end will be 
+  // Then the block in the middle, drop the end to get an aligned size, the end will be
   // retrieved through the cache during the next call
   int block_size = size & ~0x3;
   __rt_fs_read_block(file->fs, addr, buffer, block_size, event);
@@ -375,7 +375,7 @@ int rt_fs_seek(rt_file_t *file, unsigned int offset)
 
 // This function can be called to do all the required asynchronous steps to mount a FS.
 // This can execute in 2 ways:
-//   - No event is given in which case each call is synchronous and the call 
+//   - No event is given in which case each call is synchronous and the call
 //     to this function will just do all steps in one shot
 //   - An event is given in which case, the function will just execute one asynchronous
 //     step and will continue with the next step once it is called again by the event
@@ -411,7 +411,7 @@ static void __rt_fs_try_read(void *arg)
 
 int rt_fs_read(rt_file_t *file, void *buffer, size_t size, rt_event_t *event)
 {
-  // Lock the file-system instead of masking interrupts as we can return 
+  // Lock the file-system instead of masking interrupts as we can return
   // from this function with a pending operation on the cache
   // which must prevent anyone from accessing the cache
   // This also indirectly lock the file, which is good as we keep some pending state
@@ -502,7 +502,7 @@ void __rt_fs_cluster_read(rt_file_t *file, void *buffer, size_t size, rt_fs_req_
   req->done = 0;
   req->direct = direct;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_fs_cluster_req, (void *)req);
-  __rt_cluster_push_fc_event(&req->event);   
+  __rt_cluster_push_fc_event(&req->event);
 }
 
 #endif
