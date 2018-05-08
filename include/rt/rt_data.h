@@ -607,10 +607,12 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_PERIPH_COPY_CTRL_CUSTOM_BIT 16
 #define RT_PERIPH_COPY_SPIM_STEP1  1
 #define RT_PERIPH_COPY_SPIM_STEP2  2
-#define RT_PERIPH_COPY_DUAL        3
-#define RT_PERIPH_COPY_HYPER       4
-#define RT_PERIPH_COPY_FC_TCDM     5
-#define RT_PERIPH_COPY_SPIFLASH    6
+#define RT_PERIPH_COPY_I2C_STEP1   3
+#define RT_PERIPH_COPY_I2C_STEP2   4
+#define RT_PERIPH_COPY_DUAL        5
+#define RT_PERIPH_COPY_HYPER       6
+#define RT_PERIPH_COPY_FC_TCDM     7
+#define RT_PERIPH_COPY_SPIFLASH    8
 #define RT_PERIPH_COPY_SPECIAL_ENQUEUE_THRESHOLD   RT_PERIPH_COPY_DUAL
 
 

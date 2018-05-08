@@ -39,8 +39,6 @@
 
 //TODO: this sequence could be optimized
 static himax_reg_cfg_t himaxRegInit[] = {
-    {SW_RESET, 0x00},
-    {MODE_SELECT, 0x00},
     {BLC_TGT, 0x08},            //  BLC target :8  at 8 bit mode
     {BLC2_TGT, 0x08},           //  BLI target :8  at 8 bit mode
     {0x3044, 0x0A},             //  Increase CDS time for settling
@@ -87,17 +85,18 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x2017, 0x00},
     {0x2018, 0x9B},
 
-    {0x2100, 0x01},     //Automatic Exposure Gain Control
-    {0x2101, 0xB0},     //AE target mean [Def: 0x3C]
-    {0x2102, 0x0A},     //AE target mean [Def: 0x0A]
+    {AE_CTRL,        0x01},      //Automatic Exposure Gain Control
+    {AE_TARGET_MEAN, 0x3C},      //AE target mean [Def: 0x3C]
+    {AE_MIN_MEAN,    0x0A},      //AE min target mean [Def: 0x0A]
 
-    {0x210D, 0x10},     //Damping Factor [Def: 0x20]
+    {INTEGRATION_H,  0x00},      //Integration H [Def: 0x01]
+    {INTEGRATION_L,  0x60},      //Integration L [Def: 0x08]
+    {ANALOG_GAIN,    0x00},      //Analog Global Gain
+    {DAMPING_FACTOR, 0x20},      //Damping Factor [Def: 0x20]
+    {DIGITAL_GAIN_H, 0x01},      //Digital Gain High [Def: 0x01]
+    {DIGITAL_GAIN_L, 0x00},      //Digital Gain Low [Def: 0x00]
 
-    {0x0205, 0x00},     //Analog Global Gain
-    {0x020E, 0x50},     //Digital Gain High
-    {0x020F, 0x00},     //Digital Gain Low
-    {0x0202, 0x03},     //Integration H [Def: 0x01]
-    {0x0203, 0x08},     //Integration L [Def: 0x08]
+    {0x2103, 0x03},
 
     {0x2104, 0x05},
     {0x2105, 0x01},
@@ -108,7 +107,7 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x2109, 0x04},
 
     {0x210B, 0xC0},
-    {0x210E, 0x00}, //Flicker Control KEEP IT AT 0!!!!!!!!!!!!!!!!
+    {0x210E, 0x00}, //Flicker Control
     {0x210F, 0x00},
     {0x2110, 0x3C},
     {0x2111, 0x00},
@@ -130,6 +129,19 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x0104, 0x01}
 };
 
+typedef struct {
+    union {
+        struct {
+            uint16_t addr;
+            uint8_t value;
+        } wr;
+        struct {
+            uint16_t addr;
+        } rd;
+    };
+} i2c_req_t;
+
+static RT_L2_DATA i2c_req_t i2c_req;
 RT_L2_DATA unsigned char valRegHimax;
 RT_L2_DATA unsigned int regAddrHimax;
 // TODO: write a status var for cam
@@ -137,20 +149,17 @@ RT_FC_DATA unsigned char camera_isAwaked = 0;
 
 void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
     if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
-        valRegHimax = value;
-        regAddrHimax = addr;
-        rt_event_t *call_event = rt_event_get_blocking(NULL);
-        rt_i2c_write(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, call_event);
-        rt_event_wait(call_event);
+        i2c_req.wr.value = value;
+        i2c_req.wr.addr = addr;
+        rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, sizeof(i2c_req.wr), 0, NULL);
     }
 }
 
 unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
     if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
-        regAddrHimax = addr;
-        rt_event_t *call_event = rt_event_get_blocking(NULL);
-        rt_i2c_read(cam->i2c, (unsigned char*) &regAddrHimax, 2, &valRegHimax, 1, 0, call_event);
-        rt_event_wait(call_event);
+        i2c_req.rd.addr = addr;
+        rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, sizeof(i2c_req.rd), 1, NULL);
+        rt_i2c_read(cam->i2c, &valRegHimax, 1, 0, NULL);
     }
     return valRegHimax;
 }
@@ -288,10 +297,12 @@ void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
             break;
         case CMD_PAUSE:
             _camera_stop();
+            camera_isAwaked = 0;
             break;
         case CMD_STOP:
             _himaxStandby(dev_cam);
             _camera_stop();
+            camera_isAwaked = 0;
             break;
         default:
             rt_warning("[CAM] This Command %d is not disponible for Himax camera\n", cmd);

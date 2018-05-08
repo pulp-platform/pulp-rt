@@ -137,7 +137,8 @@ void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_p
 
 
 
-void rt_i2c_read(rt_i2c_t *dev_i2c, unsigned char *rx_buff, int length, int xfer_pending, rt_event_t *event){
+void rt_i2c_read(rt_i2c_t *dev_i2c, unsigned char *rx_buff, int length, int xfer_pending, rt_event_t *event)
+{
   int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);

@@ -1,21 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +77,19 @@ static RT_L2_DATA ov7670_reg_cfg_t _yuv422_conf[] = {
     {REG_BRIGHT, 0xC0}
 };
 
+typedef struct {
+    union {
+        struct {
+            uint8_t addr;
+            uint8_t value;
+        } wr;
+        struct {
+            uint8_t addr;
+        } rd;
+    };
+} i2c_req_t;
+
+static RT_L2_DATA i2c_req_t i2c_req;
 RT_L2_DATA unsigned char valRegOV7670;
 RT_L2_DATA unsigned int regAddrOV7670;
 RT_L2_DATA unsigned char __ov7670Inited = 0;
@@ -100,28 +97,17 @@ RT_L2_DATA unsigned char __ov7670Inited = 0;
 
 void ov7670RegWrite(rt_camera_t *cam, unsigned char addr, unsigned char value, rt_event_t *event){
     if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
-        valRegOV7670 = value;
-        regAddrOV7670 = addr;
-        if (event){
-            rt_i2c_write(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, event);
-        }else{
-            rt_event_t *call_event = rt_event_get_blocking(NULL);
-            rt_i2c_write(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, call_event);
-            rt_event_wait(call_event);
-        }
+        i2c_req.wr.value = value;
+        i2c_req.wr.addr = addr;
+        rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, sizeof(i2c_req.wr), 0, NULL);
     }
 }
 
 unsigned int ov7670RegRead(rt_camera_t *cam, unsigned char addr, rt_event_t *event){
     if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
-        regAddrOV7670 = addr;
-        if (event){
-            rt_i2c_read(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, 1, event);
-        }else{
-            rt_event_t *call_event = rt_event_get_blocking(NULL);
-            rt_i2c_read(cam->i2c, (unsigned char*) &regAddrOV7670, 1, &valRegOV7670, 1, 1, event);
-            rt_event_wait(call_event);
-        }
+        i2c_req.rd.addr = addr;
+        rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, sizeof(i2c_req.rd), 1, NULL);
+        rt_i2c_read(cam->i2c, &valRegOV7670, 1, 0, NULL);
     }
     return valRegOV7670;
 }

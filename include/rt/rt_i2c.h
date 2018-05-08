@@ -113,8 +113,6 @@ void rt_i2c_conf_init(rt_i2c_conf_t *conf);
  */
 void rt_i2c_close (rt_i2c_t *handle, rt_event_t *event);
 
-#if defined(UDMA_VERSION) && UDMA_VERSION == 1
-
 /** \brief Dynamically change the device configuration.
  *
  * This function can be called to change part of the device configuration after it has been opened.
@@ -125,20 +123,6 @@ void rt_i2c_close (rt_i2c_t *handle, rt_event_t *event);
  */
 static inline void rt_i2c_control(rt_i2c_t *handle, rt_i2c_control_e cmd, uint32_t arg);
 
-#else
-/** \brief Configure the I2C interface.
- *
- * This function can be called to configure the frequency of an opened I2C interface.
- * This operation is asynchronous and its termination can be managed through an event.
- *
- * \param handle        The handler of the device which was returned when the device was opened.
- * \param frequency     The frequency of the i2c device.
- * \param event         The event used for managing termination.
- */
-void rt_i2c_freq_set(rt_i2c_t *handle, unsigned int frequency, rt_event_t *event);
-
-#endif
-
 /** \brief Enqueue a burst read copy from the I2C (from I2C device to chip).
  *
  * This function can be used to read at least 1 byte of data from the I2C device.
@@ -146,18 +130,12 @@ void rt_i2c_freq_set(rt_i2c_t *handle, unsigned int frequency, rt_event_t *event
  * An event can be specified in order to be notified when the transfer is finished.
  *
  * \param handle        The handler of the device which was returned when the device was opened.
- * \param addr          A pointer for the address specified in the I2C deveice.
- * \param addr_len      The size in byte of this address above.
  * \param rx_buff       The address in the chip where the received data must be written.
  * \param length        The size in bytes of the copy
- * \param stop          Stop to be generated after the tx part is done, it will be followed by a Start for the rx part
+ * \param xfer_pending  If 1, the stop bit is not generated so that the same transfer can be continued with another call to rt_i2c_read or rt_i2c_write 
  * \param event         The event used for managing termination.
  */
-#if defined(UDMA_VERSION) && UDMA_VERSION == 1
 void rt_i2c_read(rt_i2c_t *handle, unsigned char *rx_buff, int length, int xfer_pending, rt_event_t *event);
-#else
-void rt_i2c_read(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned char *rx_buff, int length, unsigned char stop, rt_event_t *event);
-#endif
 
 /** \brief Enqueue a burst write copy to the I2C (from chip to I2C device).
  *
@@ -166,17 +144,12 @@ void rt_i2c_read(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned 
  * An event can be specified in order to be notified when the transfer is finished.
  *
  * \param handle        The handler of the device which was returned when the device was opened.
- * \param addr          A pointer for the address specified in the I2C deveice.
- * \param addr_len      The size in byte of this address above.
  * \param tx_data       The address in the chip where the data to be sent.
  * \param length        The size in bytes of the copy
+ * \param xfer_pending  If 1, the stop bit is not generated so that the same transfer can be continued with another call to rt_i2c_read or rt_i2c_write 
  * \param event         The event used for managing termination.
  */
-#if defined(UDMA_VERSION) && UDMA_VERSION == 1
 void rt_i2c_write(rt_i2c_t *handle, unsigned char *tx_data, int length, int xfer_pending, rt_event_t *event);
-#else
-void rt_i2c_write(rt_i2c_t *handle, unsigned char *addr, char addr_len, unsigned char *tx_data, int length, rt_event_t *event);
-#endif
 
 //!@}
 
