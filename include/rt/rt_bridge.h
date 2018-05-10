@@ -214,13 +214,14 @@ int rt_bridge_write_wait(rt_event_t *event);
  * Can only be called from fabric controller.
  * This operation is asynchronous and its termination can be managed through an event.
  *
+ * \param name      The name associated to this framebuffer, which is passed to the window manager so that the window of this framebuffer can be easily identified.
  * \param width     The width in pixels of the framebuffer.
  * \param height    The height in pixels of the framebuffer.
  * \param format    The format of the image sent by the chip to the bridge to update the framebuffer.
  * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
  * \return          If the event parameter is NULL, this returns the framebuffer descriptor which can be used when updating the framebuffer, otherwise it is undefined.
  */
-uint64_t rt_bridge_fb_open(int width, int height, rt_fb_format_e format, rt_event_t *event);
+uint64_t rt_bridge_fb_open(const char *name, int width, int height, rt_fb_format_e format, rt_event_t *event);
 
 
 

@@ -314,7 +314,7 @@ int rt_bridge_write(int file, void* ptr, int len, rt_event_t *event)
 
 
 
-uint64_t rt_bridge_fb_open(int width, int height, rt_fb_format_e format, rt_event_t *event)
+uint64_t rt_bridge_fb_open(const char* name, int width, int height, rt_fb_format_e format, rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
@@ -323,7 +323,7 @@ uint64_t rt_bridge_fb_open(int width, int height, rt_fb_format_e format, rt_even
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
-  hal_bridge_fb_open(&req->header, width, height, format);
+  hal_bridge_fb_open(&req->header, __rt_bridge_strlen(name), name, width, height, format);
   __rt_bridge_post_req(req, call_event);
 
   __rt_wait_event_check(event, call_event);
