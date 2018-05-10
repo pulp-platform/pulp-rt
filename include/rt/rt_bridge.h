@@ -57,6 +57,17 @@
 /**@{*/
 
 
+/** \enum rt_fb_format_e
+ * \brief Framebuffer image format.
+ *
+ * This is used to specify what is the format of the image sent by the chip to the
+ * external bridge when updating a framebuffer.
+ */
+typedef enum {
+  RT_FB_FORMAT_GRAY = HAL_BRIDGE_REQ_FB_FORMAT_GRAY   /*!< Each pixel is gray on 8 bits. */
+} rt_fb_format_e;
+
+
 
 /** \brief Connect to the external bridge.
  *
@@ -194,6 +205,53 @@ int rt_bridge_write(int file, void* ptr, int len, rt_event_t *event);
  * \return          This returns the return value of the call to write.
  */
 int rt_bridge_write_wait(rt_event_t *event);
+
+
+
+/** \brief Open a framebuffer on the workstation.
+ *
+ * This can be called to ask the debug bridge to open a framebuffer on the workstation.
+ * Can only be called from fabric controller.
+ * This operation is asynchronous and its termination can be managed through an event.
+ *
+ * \param width     The width in pixels of the framebuffer.
+ * \param height    The height in pixels of the framebuffer.
+ * \param format    The format of the image sent by the chip to the bridge to update the framebuffer.
+ * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
+ * \return          If the event parameter is NULL, this returns the framebuffer descriptor which can be used when updating the framebuffer, otherwise it is undefined.
+ */
+uint64_t rt_bridge_fb_open(int width, int height, rt_fb_format_e format, rt_event_t *event);
+
+
+
+/** \brief Wait for framebuffer open termination.
+ *
+ * This can be called to block the execution until the framebuffer opening associated to the specified event is finished.
+ * Can only be called from fabric controller.
+ *
+ * \param event     The event specified when the framebuffer was openened.
+ * \return          This returns the framebuffer descriptor.
+ */
+uint64_t rt_bridge_fb_open_wait(rt_event_t *event);
+
+
+
+/** \brief Update a framebuffer on the workstation.
+ *
+ * This can be called to ask the debug bridge to update a framebuffer on the workstation.
+ * It is possible to update either the whole framebuffer or just a window.
+ * Can only be called from fabric controller.
+ * This operation is asynchronous and its termination can be managed through an event.
+ *
+ * \param fb        The framebuffer descriptor which was returned when the framebuffer was opened.
+ * \param addr      The address of the buffer to use to update the framebuffer.
+ * \param posx      The first column of the window in the framebuffer where pixels must be updated. Can be -1 to update the whole framebuffer.
+ * \param posy      The first row of the window in the framebuffer where pixels must be updated. Ignored when updating the whole framebuffer.
+ * \param width     The width in pixels of the window to be updated in the framebuffer. Ignored when updating the whole framebuffer.
+ * \param height    The height in pixels of the window to be updated in the framebuffer. Ignored when updating the whole framebuffer.
+ * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
+ */
+void rt_bridge_fb_update(uint64_t fb, unsigned int addr, int posx, int posy, int width, int height, rt_event_t *event);
 
 
 
