@@ -314,6 +314,7 @@ typedef struct {
 typedef struct {
   char *name;
   int channel;
+  int itf;
   void *desc;
   union {
     struct {

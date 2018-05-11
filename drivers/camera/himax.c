@@ -314,7 +314,11 @@ rt_camera_t* __rt_himax_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*event
     if (camera == NULL) return NULL;
 
     camera->dev = dev;
-    camera->channel = dev->channel & 0xf;
+    if (dev->channel != -1)
+        camera->channel = dev->channel & 0xf;
+    else
+        camera->channel = dev->itf + ARCHI_UDMA_CAM_ID(dev->itf);
+
     __rt_camera_conf_init(camera, cam);
 
     if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
