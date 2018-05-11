@@ -164,6 +164,9 @@ ifneq '$(udma/i2c)' ''
 ifeq '$(pulp_chip)' 'gap'
 PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c.c
 endif
+ifeq '$(pulp_chip)' 'wolfe'
+PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c.c
+endif
 endif
 
 
