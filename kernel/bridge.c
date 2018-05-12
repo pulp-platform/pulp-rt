@@ -364,7 +364,6 @@ void rt_bridge_fb_update(uint64_t fb, unsigned int addr, int posx, int posy, int
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-
   rt_bridge_req_t *req = &call_event->bridge_req;
   hal_bridge_fb_update(&req->header, fb, addr, posx, posy, width, height);
   __rt_bridge_post_req(req, call_event);
