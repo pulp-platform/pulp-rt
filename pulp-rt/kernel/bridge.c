@@ -172,18 +172,32 @@ int rt_bridge_open(const char* name, int flags, int mode, rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  int retval = req->header.open.retval;
+
   rt_irq_restore(irq);
 
-  return req->header.open.retval;
+  return retval;
 }
 
 
 
 int rt_bridge_open_wait(rt_event_t *event)
 {
+  int irq = rt_irq_disable();
   rt_bridge_req_t *req = &event->bridge_req;
-  rt_event_wait(event);
-  return req->header.open.retval;
+
+  __rt_wait_event(event);
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  int retval = req->header.open.retval;
+
+  rt_irq_restore(irq);
+
+  return retval;
 }
 
 
@@ -202,18 +216,32 @@ int rt_bridge_close(int file, rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  uint64_t retval = req->header.close.retval;    
+
   rt_irq_restore(irq);
 
-  return req->header.close.retval;
+  return retval;
 }
 
 
 
 int rt_bridge_close_wait(rt_event_t *event)
 {
+  int irq = rt_irq_disable();
+
   rt_bridge_req_t *req = &event->bridge_req;
-  rt_event_wait(event);
-  return req->header.close.retval;
+  __rt_wait_event(event);
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  uint64_t retval = req->header.close.retval;    
+
+  rt_irq_restore(irq);
+
+  return retval;
 }
 
 
@@ -232,16 +260,30 @@ int rt_bridge_read(int file, void* ptr, int len, rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  uint64_t retval = req->header.read.retval;    
+
   rt_irq_restore(irq);
 
-  return req->header.read.retval;
+  return retval;
 }
 
 int rt_bridge_read_wait(rt_event_t *event)
 {
+  int irq = rt_irq_disable();
+
   rt_bridge_req_t *req = &event->bridge_req;
-  rt_event_wait(event);
-  return req->header.read.retval;
+  __rt_wait_event(event);
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  uint64_t retval = req->header.read.retval;    
+
+  rt_irq_restore(irq);
+
+  return retval;
 }
 
 
@@ -260,18 +302,93 @@ int rt_bridge_write(int file, void* ptr, int len, rt_event_t *event)
 
   __rt_wait_event_check(event, call_event);
 
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  uint64_t retval = req->header.write.retval;    
+
   rt_irq_restore(irq);
 
-  return req->header.write.retval;
+  return retval;
+}
+
+
+
+uint64_t rt_bridge_fb_open(const char* name, int width, int height, rt_fb_format_e format, rt_event_t *event)
+{
+  int irq = rt_irq_disable();
+
+  hal_bridge_t *bridge = hal_bridge_get();
+
+  rt_event_t *call_event = __rt_wait_event_prepare(event);
+
+  rt_bridge_req_t *req = &call_event->bridge_req;
+  hal_bridge_fb_open(&req->header, __rt_bridge_strlen(name), name, width, height, format);
+  __rt_bridge_post_req(req, call_event);
+
+  __rt_wait_event_check(event, call_event);
+
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  uint64_t retval = req->header.fb_open.screen;    
+
+  rt_irq_restore(irq);
+
+  return retval;
+}
+
+
+uint64_t rt_bridge_fb_open_wait(rt_event_t *event)
+{
+  int irq = rt_irq_disable();
+
+  rt_bridge_req_t *req = &event->bridge_req;
+  __rt_wait_event(event);
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  uint64_t retval = req->header.fb_open.screen;    
+
+  rt_irq_restore(irq);
+
+  return retval;
+}
+
+
+void rt_bridge_fb_update(uint64_t fb, unsigned int addr, int posx, int posy, int width, int height, rt_event_t *event)
+{
+  int irq = rt_irq_disable();
+
+  hal_bridge_t *bridge = hal_bridge_get();
+
+  rt_event_t *call_event = __rt_wait_event_prepare(event);
+
+  rt_bridge_req_t *req = &call_event->bridge_req;
+  hal_bridge_fb_update(&req->header, fb, addr, posx, posy, width, height);
+  __rt_bridge_post_req(req, call_event);
+
+  __rt_wait_event_check(event, call_event);
+
+  rt_irq_restore(irq);
 }
 
 
 
 int rt_bridge_write_wait(rt_event_t *event)
 {
+  int irq = rt_irq_disable();
+
   rt_bridge_req_t *req = &event->bridge_req;
-  rt_event_wait(event);
-  return req->header.write.retval;
+  __rt_wait_event(event);
+
+  // Be careful to not reactivate interrupts before we read
+  // the retval as the wait function is putting the event
+  // into the free list
+  int retval = req->header.write.retval;
+  rt_irq_restore(irq);
+
+  return retval;
 }
 
 
