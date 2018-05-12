@@ -368,7 +368,7 @@ i2c_step2:
 
   #endif
 
-  li          x10, 4
+  li          x10, 1
   sw          x10, UDMA_CHANNEL_SIZE_OFFSET(x12)
   li          x10, UDMA_CHANNEL_CFG_EN
   sw          x10, UDMA_CHANNEL_CFG_OFFSET(x12)

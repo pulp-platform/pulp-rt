@@ -100,7 +100,7 @@ void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_p
 
   copy->cfg = UDMA_CHANNEL_CFG_EN;
   copy->addr = (int)data;
-  copy->u.raw.val[0] = (length + 7) >> 3;
+  copy->u.raw.val[0] = length;
   copy->u.raw.val[1] = next_step;
 
   rt_periph_copy(copy, dev_i2c->channel + 1, (unsigned int)udma_cmd, seq_index, 0, call_event);
@@ -109,7 +109,6 @@ void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_p
 
   rt_irq_restore(irq);
 }
-
 
 
 void rt_i2c_read(rt_i2c_t *dev_i2c, unsigned char *rx_buff, int length, int xfer_pending, rt_event_t *event)
@@ -139,18 +138,15 @@ void rt_i2c_read(rt_i2c_t *dev_i2c, unsigned char *rx_buff, int length, int xfer
   }
   udma_cmd[seq_index++] = I2C_CMD_RD_NACK;
 
-  if (xfer_pending)
+  if (!xfer_pending)
     udma_cmd[seq_index++] = I2C_CMD_STOP;
+    
+  rt_periph_dual_copy(&call_event->copy, dev_i2c->channel, (unsigned int)udma_cmd, seq_index, (int)rx_buff, length, UDMA_CHANNEL_CFG_EN, call_event);
 
-  rt_periph_copy(copy, dev_i2c->channel + 1, (unsigned int)udma_cmd, seq_index, 0, NULL);
-  rt_periph_copy(copy, dev_i2c->channel, (unsigned int)rx_buff, length, 0, call_event);
-  
   __rt_wait_event_check(event, call_event);
 
   rt_irq_restore(irq);
 }
-
-
 
 rt_i2c_t *rt_i2c_open(char *dev_name, rt_i2c_conf_t *i2c_conf, rt_event_t *event)
 {

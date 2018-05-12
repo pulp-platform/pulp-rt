@@ -285,7 +285,9 @@ static inline void __rt_wait_event_check_irq(rt_event_t *event, rt_event_t *call
 static inline rt_event_t *__rt_wait_event_prepare(rt_event_t *event)
 {
   if (likely(event != NULL)) return event;
-  event = &__rt_thread_current->event;
+  event = __rt_first_free;
+  __rt_first_free = event->next;
+  __rt_event_min_init(event);
   event->pending = 1;
   event->callback = NULL;
   return event;

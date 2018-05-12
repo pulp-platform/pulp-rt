@@ -44,6 +44,8 @@ static void __rt_thread_init(rt_thread_t *thread, void *(*entry)(void *), void *
   thread->sched = &__rt_sched;
   thread->state = RT_THREAD_STATE_OTHER;
   __rt_event_init(&thread->event, &__rt_sched);
+  thread->event.next = __rt_first_free;
+  __rt_first_free = &thread->event;
 }
 
 void rt_thread_yield()
