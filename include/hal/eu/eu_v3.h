@@ -139,6 +139,11 @@ static inline unsigned int eu_evt_wait()
   return evt_read32(ARCHI_EU_DEMUX_ADDR, EU_CORE_EVENT_WAIT);
 }
 
+static inline unsigned int eu_evt_wait_noreplay()
+{
+  return pulp_read32(ARCHI_EU_DEMUX_ADDR + EU_CORE_EVENT_WAIT);
+}
+
 static inline unsigned int eu_wait_for_interrupt()
 {
   return pulp_read32(ARCHI_EU_DEMUX_ADDR + EU_CORE_EVENT_WAIT);

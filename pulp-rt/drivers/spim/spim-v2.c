@@ -145,9 +145,11 @@ error:
 
 void __rt_spim_control(rt_spim_t *handle, rt_spim_control_e cmd, uint32_t arg)
 {
+  int irq = rt_irq_disable();
+
   int polarity = (cmd >> __RT_SPIM_CTRL_CPOL_BIT) & 3;
   int phase = (cmd >> __RT_SPIM_CTRL_CPHA_BIT) & 3;
-  int set_freq = (cmd >> __RT_SPIM_CTRL_SET_MAX_BAUDRATE_BIT) & 3;
+  int set_freq = (cmd >> __RT_SPIM_CTRL_SET_MAX_BAUDRATE_BIT) & 1;
   int wordsize = (cmd >> __RT_SPIM_CTRL_WORDSIZE_BIT) & 3;
   int big_endian = (cmd >> __RT_SPIM_CTRL_ENDIANNESS_BIT) & 3;
 
@@ -165,6 +167,8 @@ void __rt_spim_control(rt_spim_t *handle, rt_spim_control_e cmd, uint32_t arg)
 
   handle->cfg = SPI_CMD_CFG(handle->div, handle->polarity, handle->phase);
   handle->byte_align = __rt_spim_get_byte_align(handle->wordsize, handle->big_endian);
+
+  rt_irq_restore(irq);
 }
 
 void rt_spim_close(rt_spim_t *handle, rt_event_t *event)

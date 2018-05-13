@@ -204,6 +204,9 @@ typedef struct rt_periph_copy_s {
   unsigned int cfg;
   unsigned int ctrl;
   unsigned int enqueue_callback;
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+  unsigned int end_callback;
+#endif
   struct rt_periph_copy_s *next;
   struct rt_event_s *event;
   union {
@@ -219,8 +222,17 @@ typedef struct rt_periph_copy_s {
     struct {
       unsigned int val[4];
     } raw;
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+    struct {
+      unsigned char *data;
+      int size;
+      uint32_t base;
+      short div;
+      short xfer_pending;
+    } i2c;
+#endif
   } u;
-#if PULP_CHIP == CHIP_GAP
+#if PULP_CHIP == CHIP_GAP || !defined(ARCHI_HAS_FC)
   char *periph_data;
 #else
   char periph_data[RT_PERIPH_COPY_PERIPH_DATA_SIZE];
@@ -596,10 +608,12 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_PERIPH_COPY_CTRL_CUSTOM_BIT 16
 #define RT_PERIPH_COPY_SPIM_STEP1  1
 #define RT_PERIPH_COPY_SPIM_STEP2  2
-#define RT_PERIPH_COPY_DUAL        3
-#define RT_PERIPH_COPY_HYPER       4
-#define RT_PERIPH_COPY_FC_TCDM     5
-#define RT_PERIPH_COPY_SPIFLASH    6
+#define RT_PERIPH_COPY_I2C_STEP1   3
+#define RT_PERIPH_COPY_I2C_STEP2   4
+#define RT_PERIPH_COPY_DUAL        5
+#define RT_PERIPH_COPY_HYPER       6
+#define RT_PERIPH_COPY_FC_TCDM     7
+#define RT_PERIPH_COPY_SPIFLASH    8
 #define RT_PERIPH_COPY_SPECIAL_ENQUEUE_THRESHOLD   RT_PERIPH_COPY_DUAL
 
 
