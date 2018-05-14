@@ -71,9 +71,9 @@ static inline void rt_irq_mask_set(unsigned int mask)
   eu_irq_maskSet(mask);
   // TODO this is normally not needed as the rt_wait_for_interrupt is called 
   // with interrupts disabled and so the irq mask is normally enough
-  // to prevent the clock-gating. Let's see if this is true with long
-  // appplications.
-  //if (hal_is_fc()) eu_evt_maskSet(mask);
+  // to prevent the clock-gating. Howver this behavior is not modeled in the vp
+  // keep that until the model is fixed.
+  if (hal_is_fc()) eu_evt_maskSet(mask);
 #endif
 }
 
@@ -86,7 +86,7 @@ static inline void rt_irq_mask_clr(unsigned int mask)
   hal_itc_enable_clr(mask);
 #elif defined(EU_VERSION)
   eu_irq_maskClr(mask);
-  //if (hal_is_fc()) eu_evt_maskClr(mask);
+  if (hal_is_fc()) eu_evt_maskClr(mask);
 #endif
 }
 

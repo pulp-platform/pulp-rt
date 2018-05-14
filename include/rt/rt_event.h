@@ -289,6 +289,7 @@ static inline rt_event_t *__rt_wait_event_prepare(rt_event_t *event)
   __rt_first_free = event->next;
   __rt_event_min_init(event);
   event->pending = 1;
+  event->sched = &__rt_sched;
   event->callback = NULL;
   return event;
 }
