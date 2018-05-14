@@ -50,6 +50,10 @@ RT_BOOT_CODE static void do_dtors(void)
 
 void __rt_putc_debug_bridge(char c);
 
+#if PULP_CHIP == CHIP_GAP
+void __rt_pmu_init();
+#endif
+
 void __rt_init()
 {
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
@@ -64,6 +68,10 @@ void __rt_init()
 #ifndef __ariane__
 
 #ifdef FLL_VERSION
+#if PULP_CHIP == CHIP_GAP
+  __rt_pmu_init();
+#endif
+
   // Initialize first the FLLs
   __rt_freq_init();
 #endif

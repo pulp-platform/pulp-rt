@@ -32,7 +32,11 @@ ifneq '$(host/archi)' ''
 PULP_LIB_HOST_SRCS_rt     += kernel/init.c
 PULP_LIB_HOST_ASM_SRCS_rt += kernel/$(host/archi)/crt0.S
 
-PULP_LIB_HOST_SRCS_rtio   += libs/io/tinyprintf.c libs/io/io.c kernel/freq-v$(fll/version).c kernel/fll-v$(fll/version).c kernel/utils.c
+PULP_LIB_HOST_SRCS_rtio   += libs/io/tinyprintf.c libs/io/io.c kernel/freq-v$(fll/version).c kernel/utils.c
+
+ifneq '$(pulp_chip)' 'gap'
+PULP_LIB_HOST_SRCS_rtio   += kernel/fll-v$(fll/version).c
+endif
 
 $(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o: $(CONFIG_BUILD_DIR)/rt/host/kernel/riscv/crt0.o
 	@mkdir -p `dirname $@`
@@ -57,7 +61,10 @@ PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma.S
 endif
 
 ifneq '$(soc/fll)' ''
-PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c kernel/freq-v$(fll/version).c
+ifneq '$(pulp_chip)' 'gap'
+PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
+endif
+PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
 endif
 
 ifneq '$(soc_eu/version)' ''
@@ -87,7 +94,7 @@ PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
 ifeq '$(pulp_chip)' 'gap'
-PULP_LIB_FC_SRCS_rt += kernel/gap/maestro.c
+PULP_LIB_FC_SRCS_rt += kernel/gap/maestro.c kernel/gap/pmu_driver.c
 endif
 
 

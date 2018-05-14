@@ -38,6 +38,7 @@
 #include "rt/rt_api.h"
 #include "stdio.h"
 
+#if 0
 static RT_FC_TINY_DATA unsigned int __rt_current_voltage;
 
 
@@ -241,3 +242,5 @@ static void __attribute__((constructor)) __rt_pmu_init()
     soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_SCU_OK);
   }
 }
+
+#endif
