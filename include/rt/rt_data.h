@@ -99,7 +99,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #define RT_L1_ALIAS_DATA __attribute__((section(".data_alias_l1")))
 
 #if defined(ARCHI_HAS_L1_ALIAS)
-#ifndef ARCHI_NO_L1_TINY
+#if !defined(ARCHI_NO_L1_TINY) && !defined(__LLVM__)
 #define RT_L1_TINY_DATA __attribute__ ((tiny)) __attribute__((section(".data_tiny_l1")))
 #else
 #define RT_L1_TINY_DATA __attribute__((section(".data_tiny_l1")))
@@ -110,7 +110,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 #define RT_L1_DATA RT_L1_GLOBAL_DATA
 
-#if defined(ARCHI_HAS_FC_TCDM) || defined(ARCHI_HAS_L2_ALIAS)
+#if (defined(ARCHI_HAS_FC_TCDM) || defined(ARCHI_HAS_L2_ALIAS)) && !defined(__LLVM__)
 #define RT_FC_TINY_DATA __attribute__((section(".data_tiny_fc"))) __attribute__ ((tiny))
 #else
 #define RT_FC_TINY_DATA __attribute__((section(".data_tiny_fc")))

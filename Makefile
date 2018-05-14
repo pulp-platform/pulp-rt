@@ -5,7 +5,7 @@ PULP_PROPERTIES += host/archi fc_itc udma/hyper udma udma/cam udma/i2c/version s
 PULP_PROPERTIES += udma/i2s udma/uart event_unit/version perf_counters
 PULP_PROPERTIES += fll/version soc/spi_master soc/apb_uart padframe/version
 PULP_PROPERTIES += udma/spim udma/spim/version gpio/version rtc udma/archi
-PULP_PROPERTIES += soc_eu/version
+PULP_PROPERTIES += soc_eu/version compiler
 
 include $(PULP_SDK_HOME)/install/rules/pulp_properties.mk
 
@@ -18,7 +18,10 @@ endif
 
 
 
-PULP_CFLAGS += -Os -g -fno-jump-tables -fno-tree-loop-distribute-patterns -Werror
+PULP_CFLAGS += -Os -g -fno-jump-tables -Werror
+ifneq '$(compiler)' 'llvm'
+PULP_CFLAGS += -fno-tree-loop-distribute-patterns
+endif
 
 INSTALL_FILES += $(shell find include -name *.h)
 WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
