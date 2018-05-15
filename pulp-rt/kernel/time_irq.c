@@ -26,7 +26,11 @@
 
 #if defined(ARCHI_HAS_FC)
 
+#if defined(__LLVM__)
+void __rt_timer_handler()
+#else
 void __attribute__((interrupt)) __rt_timer_handler()
+#endif
 {
   rt_event_t *event = first_delayed;
 

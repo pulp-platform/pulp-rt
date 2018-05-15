@@ -32,7 +32,7 @@
 
 
 
-#if defined(CORE_PULP_BUILTINS)
+#if defined(CORE_PULP_BUILTINS) && !defined(__LLVM__)
 
 static inline unsigned int hal_spr_read_then_clr(unsigned int reg, unsigned int val)
 {
@@ -48,6 +48,10 @@ static inline unsigned int hal_spr_read(unsigned int reg)
 {
   return __builtin_pulp_spr_read(reg);
 }
+
+#else
+
+#if defined(__LLVM__)
 
 #else
 
@@ -72,11 +76,27 @@ static inline unsigned int hal_spr_read(unsigned int reg)
 
 #endif
 
+#endif
 
 
 
 
+
+#if defined(__LLVM__)
+
+#define csr_read(csr)           \
+({                \
+  register unsigned int __v;       \
+  __asm__ __volatile__ ("csrr %0, " #csr      \
+            : "=r" (__v));      \
+  __v;              \
+})
+
+#define hal_mepc_read() csr_read(0x341)
+
+#else
 #define hal_mepc_read() hal_spr_read(CSR_MEPC)
+#endif
 
 static inline unsigned int core_id() {
   int hart_id;
@@ -188,6 +208,22 @@ static inline unsigned int hal_is_fc() {
 
 
 
+#if defined(__LLVM__)
+
+static inline int hal_irq_disable()
+{
+  return 0;
+}
+
+static inline void hal_irq_restore(int state)
+{
+}
+
+static inline void hal_irq_enable()
+{
+}
+
+#else
 
 static inline int hal_irq_disable()
 {
@@ -204,6 +240,7 @@ static inline void hal_irq_enable()
   hal_spr_write(0x300, 0x1<<3);
 }
 
+#endif
 
 /*
  * PERFORMANCE COUNTERS

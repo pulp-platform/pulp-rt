@@ -98,7 +98,7 @@ static inline void eu_evt_mask(unsigned int evtMask)
   */
 static inline void eu_evt_maskSet_base(unsigned int base, unsigned int evtMask)
 {
-#ifdef __riscv__
+#if defined(__riscv__) && !defined(__LLVM__)
   // TODO riscv compiler is not able to factorize the event unit base if we use classic C code
   __asm volatile ("sw %0,%1(%2)" : : "r" (evtMask), "I" (EU_CORE_MASK_OR), "r" (base) );
 #else
@@ -122,7 +122,7 @@ static inline void eu_evt_maskSet(unsigned int evtMask)
   */
 static inline void eu_evt_maskClr(unsigned int evtMask)
 {
-#ifdef __riscv__
+#if defined(__riscv__) && !defined(__LLVM__)
   // TODO riscv compiler is not able to factorize the event unit base if we use classic C code
   __asm volatile ("sw %0,%1(%2)" : : "r" (evtMask), "I" (EU_CORE_MASK_AND), "r" (ARCHI_EU_DEMUX_ADDR) );
 #else
