@@ -203,7 +203,9 @@ void __rt_spim_send(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim
   copy->u.raw.val[0] = (len + 7) >> 3;
   copy->u.raw.val[1] = next_step;
 
-  rt_periph_copy(copy, handle->channel + 1, (unsigned int)cmd, 3*4, 0, event);
+  rt_periph_copy(copy, handle->channel + 1, (unsigned int)cmd, 3*4, 0, call_event);
+
+  __rt_wait_event_check(event, call_event);
 
   rt_irq_restore(irq);
 }
