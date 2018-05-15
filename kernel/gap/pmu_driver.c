@@ -709,3 +709,8 @@ void __rt_fll_deinit(int fll)
 void __rt_flls_constructor()
 {
 }
+
+unsigned int __rt_fll_set_freq(int fll, unsigned int frequency)
+{
+  return SetFllFrequency(fll, frequency, 0);
+}
