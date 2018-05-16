@@ -37,6 +37,7 @@
 
 #include "rt/rt_api.h"
 
+#if 0
 static void __rt_spiflash_free(rt_spiflash_t *flash)
 {
   if (flash != NULL) {
@@ -173,3 +174,5 @@ rt_flash_dev_t spiflash_desc = {
   .close     = &__rt_spiflash_close,
   .read      = &__rt_spiflash_read
 };
+
+#endif

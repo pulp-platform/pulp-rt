@@ -52,7 +52,7 @@ typedef struct __rt_spim_s {
   int div;
   rt_spim_t *next;
 
-#elif defined(UDMA_VERSION) && UDMA_VERSION == 2
+#elif defined(UDMA_VERSION) && UDMA_VERSION >= 2
 
   char byte_align;
   unsigned char div;
