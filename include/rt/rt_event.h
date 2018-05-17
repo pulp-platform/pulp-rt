@@ -232,18 +232,10 @@ void rt_event_push_delayed(rt_event_t *event, int time_us);
 extern RT_FC_TINY_DATA rt_event_t        *__rt_first_free;
 extern RT_FC_TINY_DATA rt_event_sched_t   __rt_sched;
 
-static inline void __rt_event_reset(rt_event_t *event)
+static inline void __rt_event_min_init(rt_event_t *event)
 {
   event->thread = NULL;
   event->pending = 0;
-}
-
-static inline void __rt_event_min_init(rt_event_t *event)
-{
-  __rt_event_reset(event);
-#if PULP_CHIP == CHIP_GAP || !defined(ARCHI_HAS_FC)
-  event->copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
-#endif
 }
 
 void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched);
