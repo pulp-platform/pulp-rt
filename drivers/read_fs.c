@@ -502,6 +502,9 @@ void __rt_fs_cluster_read(rt_file_t *file, void *buffer, size_t size, rt_fs_req_
   req->done = 0;
   req->direct = direct;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_fs_cluster_req, (void *)req);
+  // Mark it as pending event so that it is not added to the list of free events
+  // as it stands inside the event request
+  __rt_event_set_pending(&req->event);
   __rt_cluster_push_fc_event(&req->event);
 }
 

@@ -371,6 +371,9 @@ void rt_alloc_cluster(rt_alloc_e flags, int size, rt_alloc_req_t *req)
   req->cid = rt_cluster_id();
   req->done = 0;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_alloc_cluster_req, (void *)req);
+  // Mark it as pending event so that it is not added to the list of free events
+  // as it stands inside the event request
+  __rt_event_set_pending(&req->event);
   __rt_cluster_push_fc_event(&req->event);
 }
 
@@ -382,6 +385,9 @@ void rt_free_cluster(rt_alloc_e flags, void *chunk, int size, rt_free_req_t *req
   req->cid = rt_cluster_id();
   req->done = 0;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_free_cluster_req, (void *)req);
+  // Mark it as pending event so that it is not added to the list of free events
+  // as it stands inside the event request
+  __rt_event_set_pending(&req->event);
   __rt_cluster_push_fc_event(&req->event);
 }
 
