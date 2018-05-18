@@ -320,6 +320,11 @@ int putchar(int c) {
 
   tfp_putc(NULL, c);
 
+  if (!hal_debug_struct_get()->use_internal_printf)
+  {
+    hal_debug_send_printf(hal_debug_struct_get());
+  }
+
 __rt_io_unlock();
 
   return c;

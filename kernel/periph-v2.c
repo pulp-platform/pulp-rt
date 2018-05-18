@@ -170,6 +170,24 @@ void __rt_periph_dual_copy_noshadow_safe(rt_periph_copy_t *copy, int rx_channel_
 
 }
 
+int __rt_periph_get_event(int event)
+{
+  int irq = rt_irq_disable();
+
+  int index = 0;
+  if (event >= 32)
+  {
+    index = 1;
+    event -= 32;
+  }
+
+  int result = (__rt_socevents_status[index] >> event) & 1;
+
+  rt_irq_restore(irq);
+
+  return result;
+}
+
 void __rt_periph_wait_event(int event, int clear)
 {
   int irq = rt_irq_disable();

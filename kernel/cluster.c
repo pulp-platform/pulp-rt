@@ -81,7 +81,11 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
 
     /* Activate cluster top level clock gating */
 #ifdef ARCHI_HAS_CLUSTER_CLK_GATE
-    IP_WRITE(ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(cid), ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE, 1);
+    // TODO deactivated clock-gating as it is buggy
+    // If the FC does an access while his frequency is low and the clock-gating is active,
+    // it never receives the response from the cluster. It seesm the window where the cluster
+    // clock becomes active to handle the response is too short.
+    //IP_WRITE(ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(cid), ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE, 1);
 #endif
 
     // Initialize cluster global variables
