@@ -232,10 +232,15 @@ void rt_event_push_delayed(rt_event_t *event, int time_us);
 extern RT_FC_TINY_DATA rt_event_t        *__rt_first_free;
 extern RT_FC_TINY_DATA rt_event_sched_t   __rt_sched;
 
-static inline void __rt_event_min_init(rt_event_t *event)
+static inline void __rt_event_reset(rt_event_t *event)
 {
   event->thread = NULL;
   event->pending = 0;
+}
+
+static inline void __rt_event_min_init(rt_event_t *event)
+{
+  __rt_event_reset(event);
 #if PULP_CHIP == CHIP_GAP || !defined(ARCHI_HAS_FC)
   event->copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
 #endif
@@ -282,16 +287,12 @@ static inline void __rt_wait_event_check_irq(rt_event_t *event, rt_event_t *call
   rt_irq_restore(irq);
 }
 
+rt_event_t *__rt_wait_event_prepare_blocking();
+
 static inline rt_event_t *__rt_wait_event_prepare(rt_event_t *event)
 {
   if (likely(event != NULL)) return event;
-  event = __rt_first_free;
-  __rt_first_free = event->next;
-  __rt_event_min_init(event);
-  event->pending = 1;
-  event->sched = &__rt_sched;
-  event->callback = NULL;
-  return event;
+  return __rt_wait_event_prepare_blocking();
 }
 
 static inline rt_event_t *__rt_init_event(rt_event_t *event, rt_event_sched_t *sched, void (*callback)(void *), void *arg)

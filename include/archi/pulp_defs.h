@@ -50,6 +50,7 @@
 #define CHIP_PULP                  29
 #define CHIP_MULTINO               30
 #define CHIP_VEGA                  31
+#define CHIP_HERO_ZC706            32
 
 #define CORE_OR1K_V1  0
 #define CORE_OR1K_V2  1
