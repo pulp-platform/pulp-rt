@@ -152,6 +152,9 @@ void rt_camera_cluster_capture (rt_camera_t *handle, void *buffer, size_t size, 
   req->done = 0;
   req->is_capture = 1;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_camera_cluster_req, (void *)req);
+  // Mark it as pending event so that it is not added to the list of free events
+  // as it stands inside the event request
+  __rt_event_set_pending(&req->event);
   __rt_cluster_push_fc_event(&req->event);
 }
 
@@ -164,6 +167,9 @@ void rt_camera_cluster_control(rt_camera_t *handle, rt_cam_cmd_e cmd, void *arg,
   req->done = 0;
   req->is_capture = 0;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_camera_cluster_req, (void *)req);
+  // Mark it as pending event so that it is not added to the list of free events
+  // as it stands inside the event request
+  __rt_event_set_pending(&req->event);
   __rt_cluster_push_fc_event(&req->event);
 }
 

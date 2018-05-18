@@ -33,6 +33,9 @@ void rt_event_sched_init(rt_event_sched_t *sched)
 void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched)
 {
   __rt_event_min_init(event);
+#if PULP_CHIP == CHIP_GAP || !defined(ARCHI_HAS_FC)
+  event->copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
+#endif
   event->sched = sched;
   event->callback = NULL;
 }
@@ -41,7 +44,7 @@ rt_event_t *__rt_wait_event_prepare_blocking()
 {
   rt_event_t *event = __rt_first_free;
   __rt_first_free = event->next;
-  __rt_event_reset(event);
+  __rt_event_min_init(event);
   event->pending = 1;
   event->sched = &__rt_sched;
   event->callback = NULL;
