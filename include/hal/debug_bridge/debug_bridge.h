@@ -117,12 +117,19 @@ static inline void hal_debug_exit(hal_debug_struct_t *debug_struct, int status) 
   *(volatile uint32_t *)&debug_struct->exit_status = 0x80000000 | status;
 }
 
+static inline void hal_debug_send_printf(hal_debug_struct_t *debug_struct) {
+  if (debug_struct->putc_current)
+  {
+    *(volatile uint32_t *)&debug_struct->pending_putchar = debug_struct->putc_current;
+    *(volatile uint32_t *)&debug_struct->putc_current = 0;
+  }
+}
+
 static inline void hal_debug_putchar(hal_debug_struct_t *debug_struct, char c) {
   hal_debug_flush_printf(debug_struct);
   *(volatile uint8_t *)&(debug_struct->putc_buffer[debug_struct->putc_current++]) = c;
   if (*(volatile uint32_t *)&debug_struct->putc_current == HAL_PRINTF_BUF_SIZE || c == '\n') {
-    *(volatile uint32_t *)&debug_struct->pending_putchar = debug_struct->putc_current;
-    *(volatile uint32_t *)&debug_struct->putc_current = 0;
+    hal_debug_send_printf(debug_struct);
   }
 }
 

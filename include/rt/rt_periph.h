@@ -35,6 +35,8 @@
 
 /// @cond IMPLEM
 
+extern volatile unsigned int __rt_socevents_status[2];
+
 #define RT_PERIPH_COPY_L2   0
 
 static inline void rt_periph_copy_init(rt_periph_copy_t *copy, int flags);
@@ -126,9 +128,23 @@ static inline rt_periph_channel_t *__rt_periph_channel(int channel) {
   return &periph_channels[channel];
 }
 
+int __rt_periph_get_event(int event);
+
 void __rt_periph_wait_event(int event, int clear);
 
 void __rt_periph_clear_event(int event);
+
+static inline void __rt_periph_clear_event_safe(int event)
+{
+  int index = 0;
+  if (event >= 32)
+  {
+    index = 1;
+    event -= 32;
+  }
+
+  __rt_socevents_status[index] &= ~(1<<event);
+}
 
 #if defined(UDMA_VERSION) && UDMA_VERSION == 1
 

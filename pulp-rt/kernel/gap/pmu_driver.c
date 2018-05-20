@@ -331,21 +331,23 @@ static unsigned int PMU_Control_Maestro(PMU_SystemStateT PrevState, PMU_SystemSt
     unsigned int TheIrqs;
     PMU_Write(PCTRL, SetSCUInt);
 
-
-    __rt_periph_wait_event(PMU_EVENT_SCU_OK, 1);
-
-    // TODO 
-#if 0
-    while ((*Evt & PMU_EVENT_SCU_OK) ==  0) { // Wait for SCU_OK
-      eu_evt_maskWaitAndClr(1<<PLP_RT_NOTIF_EVENT);
+    while (__rt_periph_get_event(PMU_EVENT_SCU_OK) ==  0) { // Wait for SCU_OK
+      rt_wait_for_interrupt();
+      rt_irq_enable();
+      rt_irq_disable();
       TheIrqs = PMU_Read(DLC_IFR);
       if (TheIrqs & MAESTRO_EVENT_ICU_OK)       PMU_Read(DLC_IOIFR);
       if (TheIrqs & MAESTRO_EVENT_ICU_DELAYED)  PMU_Read(DLC_IDIFR);
       if (TheIrqs & MAESTRO_EVENT_MODE_CHANGED) PMU_Read(DLC_IMCIFR);
       if (TheIrqs & (MAESTRO_EVENT_PICL_OK|MAESTRO_EVENT_SCU_OK)) PMU_Write(DLC_IFR, TheIrqs & (MAESTRO_EVENT_PICL_OK|MAESTRO_EVENT_SCU_OK));
     }
-    *Evt = *Evt & ((PMU_EVENT_CLUSTER_CLOCK_GATE|PMU_EVENT_CLUSTER_ON_OFF));
-#endif
+
+    __rt_socevents_status[1] &= 
+      ~((1<<(PMU_EVENT_MSP-32)) | (1<<(PMU_EVENT_ICU_MODE_CHANGED-32)) |
+      (1<<(PMU_EVENT_ICU_OK-32)) | (1<<(PMU_EVENT_PICL_OK-32)) |
+      (1<<(PMU_EVENT_SCU_OK-32)));
+
+
   }
   return PMU_CHANGE_OK;
 }
@@ -367,6 +369,8 @@ unsigned int PMU_set_voltage(unsigned int Voltage, unsigned int CheckFrequencies
 {
   if (rt_platform() == ARCHI_PLATFORM_FPGA) return 0;
 
+  int irq = rt_irq_disable();
+
   unsigned int Status = PMU_ERROR_NO_ERROR;
   unsigned int DCDCVal = PMUState.DCDC_Settings[REGULATOR_STATE(PMUState.State)];
   unsigned int NewDCDCVal = mVtoDCDCSetting(Voltage);
@@ -386,6 +390,9 @@ unsigned int PMU_set_voltage(unsigned int Voltage, unsigned int CheckFrequencies
  PMU_Control_Maestro(PMUState.State, NewState);
  PMUState.State  = NewState;
  PMUState.DCDC_Settings[REGULATOR_STATE(NewState)] = NewDCDCVal;
+
+ rt_irq_disable(irq);
+
  return 0;
 }
 
@@ -620,6 +627,7 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   Config.ConfigReg1.MultFactor = Mult;
   Config.ConfigReg1.ClockOutDivider = Div;
   SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
+
 /* Wait for convergence, since we will disable lock enable after this step is mandatory */
   if (Config.ConfigReg1.OutputLockEnable) {
     if (Fll == FLL_CLUSTER && hal_is_fc()) {
@@ -635,7 +643,7 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   if (Config.ConfigReg1.OutputLockEnable) {
       Config.ConfigReg1.OutputLockEnable = 0;
           SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
-  } 
+          } 
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
 
   return SetFrequency;
@@ -657,11 +665,20 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
   FllConfigT Config;
 
   Config.Raw = GetFllConfiguration(WhichFll, FLL_CONFIG1);
-  if (UseRetentiveState || Config.ConfigReg1.Mode) {
+  if (UseRetentiveState)
+  {
     FllsFrequency[WhichFll] = GetFllFreqFromMultDivFactors(Config.ConfigReg1.MultFactor, Config.ConfigReg1.ClockOutDivider);
     PMUState.Frequency[WhichFll] = FllsFrequency[WhichFll];
-  } else {
+  }
+  else
+  {
     unsigned int SetFrequency, Mult, Div;
+
+    if (Config.ConfigReg1.Mode)
+    {
+      Config.ConfigReg1.OutputLockEnable = 0;
+      SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);      
+    }
 
     SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_GAIN);
 
@@ -682,11 +699,11 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     }
     Config.ConfigReg1.OutputLockEnable = 0;
     SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
+
     FllsFrequency[WhichFll] = SetFrequency;
     PMUState.Frequency[WhichFll] = SetFrequency;
 
     SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
-
   }
 }
 
