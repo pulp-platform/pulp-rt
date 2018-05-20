@@ -627,6 +627,7 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   Config.ConfigReg1.MultFactor = Mult;
   Config.ConfigReg1.ClockOutDivider = Div;
   SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
+
 /* Wait for convergence, since we will disable lock enable after this step is mandatory */
   if (Config.ConfigReg1.OutputLockEnable) {
     if (Fll == FLL_CLUSTER && hal_is_fc()) {
@@ -642,7 +643,7 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   if (Config.ConfigReg1.OutputLockEnable) {
       Config.ConfigReg1.OutputLockEnable = 0;
           SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
-  } 
+          } 
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
 
   return SetFrequency;
@@ -664,11 +665,20 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
   FllConfigT Config;
 
   Config.Raw = GetFllConfiguration(WhichFll, FLL_CONFIG1);
-  if (UseRetentiveState || Config.ConfigReg1.Mode) {
+  if (UseRetentiveState)
+  {
     FllsFrequency[WhichFll] = GetFllFreqFromMultDivFactors(Config.ConfigReg1.MultFactor, Config.ConfigReg1.ClockOutDivider);
     PMUState.Frequency[WhichFll] = FllsFrequency[WhichFll];
-  } else {
+  }
+  else
+  {
     unsigned int SetFrequency, Mult, Div;
+
+    if (Config.ConfigReg1.Mode)
+    {
+      Config.ConfigReg1.OutputLockEnable = 0;
+      SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);      
+    }
 
     SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_GAIN);
 
@@ -689,11 +699,11 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     }
     Config.ConfigReg1.OutputLockEnable = 0;
     SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
+
     FllsFrequency[WhichFll] = SetFrequency;
     PMUState.Frequency[WhichFll] = SetFrequency;
 
     SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
-
   }
 }
 
