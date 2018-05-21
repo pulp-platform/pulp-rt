@@ -102,23 +102,6 @@ static void __rt_fs_free(rt_fs_t *fs)
 //   - An event is given in which case, the function will just execute one asynchronous
 //     step and will continue with the next step once it is called again by the event
 //     execution
-typedef struct {
-    unsigned short data;
-    unsigned short addr;
-} cmdSeq;
-
-
-
-RT_L2_DATA  cmdSeq VCRSeq[4]   = {{0xAA, 0x555}, {0x55, 0x2AA}, {0x38, 0x555}, {0x8e0b, 0x0}};
-
-void hyper_flash_write(rt_flash_t *flash, unsigned int l2Addr, unsigned int hyperFlashAddr, rt_event_t *event)
-{
-  rt_hyperflash_t *dev = (rt_hyperflash_t *)flash;
-  rt_event_t *call_event = __rt_wait_event_prepare(event);
-  rt_hyperflash_copy(dev, 1, (void*)l2Addr, (void *)hyperFlashAddr, 2, call_event);
-  __rt_wait_event_check(event, call_event);
-}
-
 static int __rt_fs_mount_step(void *arg)
 {
   rt_fs_t *fs = (rt_fs_t *)arg;
@@ -140,8 +123,6 @@ static int __rt_fs_mount_step(void *arg)
           );
           goto error;
         }
-        for (int i = 0; i < 4; i++)
-            hyper_flash_write(fs->flash, (unsigned int) &VCRSeq[i].data, VCRSeq[i].addr << 1, 0);
         break;
 
       case 1:
