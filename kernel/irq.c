@@ -199,10 +199,4 @@ void __rt_irq_init()
   // vector base to get proper interrupt handlers
   __rt_set_fc_vector_base((int)rt_irq_vector_base());
 #endif
-
-#if defined(ARCHI_HAS_FC_EU)
-  // If the FC has an event unit, the wait-for-interrupt will be emulated.
-  // Activate all events to wake-up for every incoming interrupts
-  eu_evt_maskSet(0xffffffff);
-#endif
 }

@@ -66,7 +66,7 @@
 #define __RT_ALLOC_FC_CODE 0
 #define __RT_ALLOC_CL_CODE 0
 #define __RT_ALLOC_L2_CL_DATA 0
-#define __RT_ALLOC_PERIPH  1
+#define __RT_ALLOC_PERIPH  0
 #define __RT_ALLOC_CL_DATA(cid)  (1 + (cid))
 
 #endif

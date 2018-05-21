@@ -117,6 +117,9 @@ void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
   req->done = 0;
   req->is_write = is_write;
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_cluster_req, (void *)req);
+  // Mark it as pending event so that it is not added to the list of free events
+  // as it stands inside the event request
+  __rt_event_set_pending(&req->event);
   __rt_cluster_push_fc_event(&req->event);
 }
 

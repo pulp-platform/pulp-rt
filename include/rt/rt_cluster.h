@@ -213,8 +213,12 @@ static inline rt_event_sched_t *__rt_cluster_sched_get()
 }
 
 
+// This function will push an event from cluster to FC and will be enqueued
+// into the scheduler like a normal event
 void __rt_cluster_push_fc_event(rt_event_t *event);
 
+// This function will push an event from cluster to FC and the event callback
+// will be executed directly from within the interrupt handler
 static inline void __rt_cluster_push_fc_irq_event(rt_event_t *event)
 {
   __rt_cluster_push_fc_event((rt_event_t *)(((unsigned int)event) | 0x1));

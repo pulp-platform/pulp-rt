@@ -166,6 +166,7 @@ static void __rt_io_uart_wait_pending()
       req.cid = rt_cluster_id();
       req.done = 0;
       __rt_init_event(&req.event, __rt_cluster_sched_get(), __rt_io_uart_wait_req, (void *)&req);
+      __rt_event_set_pending(&__rt_io_event);
       __rt_cluster_push_fc_event(&req.event);
       while((*(volatile char *)&req.done) == 0)
       {
@@ -318,6 +319,11 @@ int putchar(int c) {
   __rt_io_lock();
 
   tfp_putc(NULL, c);
+
+  if (!hal_debug_struct_get()->use_internal_printf)
+  {
+    hal_debug_send_printf(hal_debug_struct_get());
+  }
 
 __rt_io_unlock();
 

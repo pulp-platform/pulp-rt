@@ -1,11 +1,11 @@
 PULP_LIBS = rt rtio bench omp
 
 PULP_PROPERTIES += fc/archi pe/archi pulp_chip pulp_chip_family soc/cluster
-PULP_PROPERTIES += host/archi fc_itc udma/hyper udma udma/cam udma/i2c soc/fll
+PULP_PROPERTIES += host/archi fc_itc udma/hyper udma udma/cam udma/i2c/version soc/fll
 PULP_PROPERTIES += udma/i2s udma/uart event_unit/version perf_counters
 PULP_PROPERTIES += fll/version soc/spi_master soc/apb_uart padframe/version
 PULP_PROPERTIES += udma/spim udma/spim/version gpio/version rtc udma/archi
-PULP_PROPERTIES += soc_eu/version
+PULP_PROPERTIES += soc_eu/version compiler
 
 include $(PULP_SDK_HOME)/install/rules/pulp_properties.mk
 
@@ -18,7 +18,10 @@ endif
 
 
 
-PULP_CFLAGS += -Os -g -fno-jump-tables -fno-tree-loop-distribute-patterns -Werror
+PULP_CFLAGS += -Os -g -fno-jump-tables -Werror
+ifneq '$(compiler)' 'llvm'
+PULP_CFLAGS += -fno-tree-loop-distribute-patterns
+endif
 
 INSTALL_FILES += $(shell find include -name *.h)
 WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
@@ -29,7 +32,11 @@ ifneq '$(host/archi)' ''
 PULP_LIB_HOST_SRCS_rt     += kernel/init.c
 PULP_LIB_HOST_ASM_SRCS_rt += kernel/$(host/archi)/crt0.S
 
-PULP_LIB_HOST_SRCS_rtio   += libs/io/tinyprintf.c libs/io/io.c kernel/freq-v$(fll/version).c kernel/fll-v$(fll/version).c kernel/utils.c
+PULP_LIB_HOST_SRCS_rtio   += libs/io/tinyprintf.c libs/io/io.c kernel/freq-v$(fll/version).c kernel/utils.c
+
+ifneq '$(pulp_chip)' 'gap'
+PULP_LIB_HOST_SRCS_rtio   += kernel/fll-v$(fll/version).c
+endif
 
 $(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o: $(CONFIG_BUILD_DIR)/rt/host/kernel/riscv/crt0.o
 	@mkdir -p `dirname $@`
@@ -54,7 +61,10 @@ PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma.S
 endif
 
 ifneq '$(soc/fll)' ''
-PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c kernel/freq-v$(fll/version).c
+ifneq '$(pulp_chip)' 'gap'
+PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
+endif
+PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
 endif
 
 ifneq '$(soc_eu/version)' ''
@@ -84,7 +94,7 @@ PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
 ifeq '$(pulp_chip)' 'gap'
-PULP_LIB_FC_SRCS_rt += kernel/gap/maestro.c
+PULP_LIB_FC_SRCS_rt += kernel/gap/maestro.c kernel/gap/pmu_driver.c
 endif
 
 
@@ -160,10 +170,8 @@ endif
 
 # I2C
 
-ifneq '$(udma/i2c)' ''
-ifeq '$(pulp_chip)' 'gap'
-PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c.c
-endif
+ifneq '$(udma/i2c/version)' ''
+PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c-v$(udma/i2c/version).c
 endif
 
 

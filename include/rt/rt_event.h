@@ -236,9 +236,6 @@ static inline void __rt_event_min_init(rt_event_t *event)
 {
   event->thread = NULL;
   event->pending = 0;
-#if PULP_CHIP == CHIP_GAP
-  event->copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
-#endif
 }
 
 void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched);
@@ -282,13 +279,12 @@ static inline void __rt_wait_event_check_irq(rt_event_t *event, rt_event_t *call
   rt_irq_restore(irq);
 }
 
+rt_event_t *__rt_wait_event_prepare_blocking();
+
 static inline rt_event_t *__rt_wait_event_prepare(rt_event_t *event)
 {
   if (likely(event != NULL)) return event;
-  event = &__rt_thread_current->event;
-  event->pending = 1;
-  event->callback = NULL;
-  return event;
+  return __rt_wait_event_prepare_blocking();
 }
 
 static inline rt_event_t *__rt_init_event(rt_event_t *event, rt_event_sched_t *sched, void (*callback)(void *), void *arg)

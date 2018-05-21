@@ -35,6 +35,8 @@
 
 /// @cond IMPLEM
 
+extern volatile unsigned int __rt_socevents_status[2];
+
 #define RT_PERIPH_COPY_L2   0
 
 static inline void rt_periph_copy_init(rt_periph_copy_t *copy, int flags);
@@ -101,6 +103,10 @@ static inline void rt_periph_copy_init(rt_periph_copy_t *copy, int flags)
 {
   copy->ctrl = 0;
   copy->u.hyper.repeat = 0;
+
+#if defined(UDMA_VERSION) && UDMA_VERSION == 1
+  copy->end_callback = 0;
+#endif
 }
 
 static inline void rt_periph_copy_init_callback(rt_periph_copy_t *copy, unsigned int callback)
@@ -122,11 +128,29 @@ static inline rt_periph_channel_t *__rt_periph_channel(int channel) {
   return &periph_channels[channel];
 }
 
+int __rt_periph_get_event(int event);
+
 void __rt_periph_wait_event(int event, int clear);
 
 void __rt_periph_clear_event(int event);
 
+static inline void __rt_periph_clear_event_safe(int event)
+{
+  int index = 0;
+  if (event >= 32)
+  {
+    index = 1;
+    event -= 32;
+  }
+
+  __rt_socevents_status[index] &= ~(1<<event);
+}
+
 #if defined(UDMA_VERSION) && UDMA_VERSION == 1
+
+
+void rt_periph_copy_i2c(rt_periph_copy_t *copy, int channel_id, unsigned int addr, int size,
+  unsigned int cfg, int div, rt_event_t *event);
 
 void rt_periph_copy_spi(rt_periph_copy_t *copy, int channel_id, unsigned int addr, int size, int len,
   unsigned int cfg, unsigned int spi_status, rt_event_t *event);

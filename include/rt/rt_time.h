@@ -98,7 +98,11 @@ void rt_time_wait_us(int time_us);
 
 extern rt_event_t *first_delayed;
 
+#if !defined(__LLVM__)
 void __attribute__((interrupt)) __rt_timer_handler();
+#else
+void __rt_timer_handler();
+#endif
 
 /// @endcond
 
