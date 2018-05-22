@@ -60,8 +60,7 @@ void __rt_init()
 
 #if defined(ARCHI_HAS_FC)
   // Deactivate all soc events as they are active by default
-  soc_eu_eventMask_set(SOC_FC_MASK_LSB, 0xFFFFFFFF);
-  soc_eu_eventMask_set(SOC_FC_MASK_MSB, 0xFFFFFFFF);
+  soc_eu_eventMask_reset(SOC_FC_FIRST_MASK);
 #endif
 
 
