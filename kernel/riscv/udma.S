@@ -20,7 +20,11 @@
 
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
+#if UDMA_VERSION == 2
 #include "archi/udma/udma_v2.h"
+#else
+#include "archi/udma/udma_v3.h"
+#endif
 
   .global udma_event_handler
 udma_event_handler:
