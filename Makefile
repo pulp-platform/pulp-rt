@@ -90,7 +90,7 @@ PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
 ifeq '$(pulp_chip_family)' 'vega'
-PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
+PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c
 endif
 
 ifeq '$(pulp_chip)' 'gap'
