@@ -26,19 +26,6 @@ static uint32_t timer_count;
 rt_event_t *first_delayed = NULL;
 
 
-static inline void __rt_time_conf_timer_default()
-{
-  // Configure the FC timer in 64 bits mode as it will be used as a common
-  // timer for all virtual timers.
-  // We also use the ref clock to make the frequency stable.
-  hal_timer_conf(
-    hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_ENABLED,
-    PLP_TIMER_IRQ_DISABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
-    PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
-    PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
-  );
-}
-
 
 static int __rt_time_poweroff(void *arg)
 {
@@ -57,13 +44,12 @@ static int __rt_time_poweron(void *arg)
   return 0;
 }
 
-unsigned long long rt_time_get_us()
+unsigned int rt_time_get_us()
 {
   // Get 64 bit timer counter value and convert it to microseconds
   // as the timer input is connected to the ref clock.
-  unsigned long long count = hal_timer_count_get(hal_timer_fc_addr(0, 1));
-  if ((count >> 32) == 0) return count * 1000000 / ARCHI_REF_CLOCK;
-  else return count / ARCHI_REF_CLOCK * 1000000;
+  unsigned int count = hal_timer_count_get(hal_timer_fc_addr(0, 1));
+  return ((unsigned long long)count) * 1000000 / ARCHI_REF_CLOCK;
 }
 
 void rt_event_push_delayed(rt_event_t *event, int us)
@@ -75,6 +61,9 @@ void rt_event_push_delayed(rt_event_t *event, int us)
   unsigned int ticks, ticks_from_now;
   uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 1));
   
+  if (us < 0)
+    us = 0;
+
   // First compute the corresponding number of ticks.
   // The specified time is the minimum we must, so we have to round-up
   // the number of ticks.
@@ -136,7 +125,15 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
 {
   int err = 0;
 
-  __rt_time_conf_timer_default(); 
+  // Configure the FC timer in 64 bits mode as it will be used as a common
+  // timer for all virtual timers.
+  // We also use the ref clock to make the frequency stable.
+  hal_timer_conf(
+    hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_ENABLED,
+    PLP_TIMER_IRQ_DISABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
+    PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
+    PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
+  );
 
   rt_irq_set_handler(ARCHI_FC_EVT_TIMER1, __rt_timer_handler);
   rt_irq_mask_set(1<<ARCHI_FC_EVT_TIMER1);
@@ -147,62 +144,84 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
   if (err) rt_fatal("Unable to initialize time driver\n");
 }
 
-#if defined(ARCHI_HAS_FC)
-
-#if defined(__LLVM__)
-void __rt_timer_handler()
-#else
-void __attribute__((interrupt)) __rt_timer_handler()
-#endif
+static void __rt_timer_handle(void *arg)
 {
-  rt_event_t *event = first_delayed;
+  rt_timer_t *timer = (rt_timer_t *)arg;
+  rt_event_t *event = timer->user_event;
 
-  uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 1));
+  void (*callback)(void *) = event->callback;
+  void *cb_arg = event->arg;
 
-  // First dequeue and push to their scheduler all events with the same number of
-  // ticks as they were waiting for the same time.
-  while (event && (current_time - event->time) < 0x7fffffff)
-  {
-    rt_event_t *next = event->next;
-    __rt_push_event(event->sched, event);
-    event = next;
+  if (callback) {
+    callback(cb_arg);
   }
 
-  // Update the wait list with the next waiting event which has a different number
-  // of ticks
-  first_delayed = event;
+  __rt_event_unblock(event);
 
-  // Now re-arm the timer in case there are still some events
-  if (first_delayed)
+  if (timer->flags == RT_TIMER_PERIODIC)
   {
-    // Be carefull to set the new comparator from the current time plus a number of ticks
-    // in order to set a value which is not before the actual count.
-    // This may just delay a bit the events which is fine as the specified
-    // duration is a minimum.
-    hal_timer_cmp_set(hal_timer_fc_addr(0, 1),
-      hal_timer_count_get(hal_timer_fc_addr(0, 1)) + 
-      first_delayed->time - current_time
-    );
-
-    hal_timer_conf(
-      hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
-      PLP_TIMER_IRQ_ENABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
-      PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
-      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
-    );
-  }
-  else
-  {
-    // Set back default state where timer is only counting with
-    // no interrupt
-    __rt_time_conf_timer_default(); 
-
-    // Also clear timer interrupt as we might have a spurious one after
-    // we entered the handler
-    rt_irq_clr(1 << ARCHI_FC_EVT_TIMER1);
+    timer->current_time += timer->period;
+    __rt_event_set_pending(timer->event);
+    rt_event_push_delayed(timer->event, timer->current_time - rt_time_get_us());
   }
 }
 
-#endif
+int rt_timer_create(rt_timer_t *timer, rt_timer_flags_e flags, rt_event_t *event)
+{
+  if (rt_event_alloc(event->sched, 1))
+    return -1;
+
+  timer->event = rt_event_get(event->sched, __rt_timer_handle, (void *)timer);
+  timer->user_event = event;
+  timer->flags = flags;
+
+  return 0;
+}
+
+void rt_timer_start(rt_timer_t *timer, int us)
+{
+  timer->period = us;
+  timer->current_time = rt_time_get_us() + us;
+  __rt_event_set_pending(timer->event);
+  rt_event_push_delayed(timer->event, us);
+}
+
+void rt_timer_stop(rt_timer_t *timer)
+{
+  int irq = rt_irq_disable();
+
+  // When the time is stopped, we have to remove the event from any
+  // list to avoid spurious events
+
+  // First look inside the wait list
+  rt_event_t *event = timer->event;
+  rt_event_t *current = first_delayed, *prev=NULL;
+  while (current && current != event)
+  {
+    prev = current;
+    current = current->next;
+  }
+
+  if (current)
+  {
+    if (prev)
+      prev->next = current->next;
+    else
+      first_delayed = current->next;
+  }
+  else
+  {
+    // Otherwise look inside the scheduler event list
+    __rt_sched_event_cancel(event);
+  }
+
+  rt_irq_restore(irq);
+}
+
+void rt_timer_destroy(rt_timer_t *timer)
+{
+  __rt_event_release(timer->user_event);
+  __rt_event_free(timer->event);
+}
 
 #endif

@@ -262,10 +262,20 @@ void rt_event_push_delayed(rt_event_t *event, int time_us);
 extern RT_FC_TINY_DATA rt_event_t        *__rt_first_free;
 extern RT_FC_TINY_DATA rt_event_sched_t   __rt_sched;
 
+static inline void __rt_event_release(rt_event_t *event)
+{
+  event->next = __rt_first_free;
+  __rt_first_free = event;  
+}
+
 static inline rt_event_t *rt_event_irq_get(void (*callback)(void *), void *arg)
 {
   return (rt_event_t *)((((unsigned int)rt_event_get(NULL, callback, arg)) | 1));
 }
+
+void __rt_event_free(rt_event_t *event);
+
+void __rt_sched_event_cancel(rt_event_t *event);
 
 static inline void __rt_event_min_init(rt_event_t *event)
 {

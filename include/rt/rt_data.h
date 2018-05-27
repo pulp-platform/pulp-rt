@@ -588,6 +588,15 @@ typedef struct {
   unsigned int *config;
 } rt_padframe_profile_t;
 
+typedef struct 
+{
+  rt_event_t *event;
+  rt_event_t *user_event;
+  unsigned int current_time;
+  unsigned int period;
+  int flags;
+} rt_timer_t;
+
 extern rt_padframe_profile_t __rt_padframe_profiles[];
 
 #include "rt/data/rt_data_spim.h"
