@@ -187,6 +187,9 @@ endif
 
 ifneq '$(gpio/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/gpio/gpio-v$(gpio/version).c
+ifeq '$(gpio/version)' '2'
+PULP_LIB_FC_ASM_SRCS_rt += kernel/riscv/gpio.S
+endif
 endif
 
 

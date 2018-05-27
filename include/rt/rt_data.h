@@ -217,6 +217,9 @@ typedef struct rt_periph_copy_s {
     struct {
       unsigned int hyper_addr;
       unsigned int repeat_size;
+      // TODO this checked by some code whatever the channel type
+      // and thus conflicts with other features
+      unsigned int dummy;
       short repeat;
     } hyper;
     struct {
@@ -626,7 +629,7 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_PERIPH_COPY_T_EVENT             24
 #define RT_PERIPH_COPY_T_HYPER_ADDR        28
 #define RT_PERIPH_COPY_T_HYPER_REPEAT_SIZE 32
-#define RT_PERIPH_COPY_T_REPEAT            36
+#define RT_PERIPH_COPY_T_REPEAT            40
 #define RT_PERIPH_COPY_T_SPIM_USER_SIZE    28
 #define RT_PERIPH_COPY_T_RAW_VAL0          28
 #define RT_PERIPH_COPY_T_RAW_VAL1          32

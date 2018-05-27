@@ -148,6 +148,14 @@ void __rt_event_unblock(rt_event_t *event)
   }
 }
 
+void __rt_event_yield(rt_event_sched_t *sched)
+{
+  __rt_event_execute(sched, 0);
+  rt_wait_for_interrupt();
+  rt_irq_enable();
+  rt_irq_disable();
+}
+
 void __rt_event_execute(rt_event_sched_t *sched, int wait)
 {
   if (sched == NULL) sched = __rt_thread_current->sched;
@@ -161,17 +169,20 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
 
       sched->waiting = __rt_thread_current;
 
-      do {
-        if (__rt_ready_queue.first) {
-          __rt_thread_sleep();
-        }
-        else {
-          rt_wait_for_interrupt();
-          rt_irq_enable();
-          rt_irq_disable();
-        }
-        event = *((rt_event_t * volatile *)&sched->first);
-      } while (!event);
+      if (__rt_ready_queue.first) {
+        __rt_thread_sleep();
+      }
+      else {
+        rt_wait_for_interrupt();
+        rt_irq_enable();
+        rt_irq_disable();
+      }
+      event = *((rt_event_t * volatile *)&sched->first);
+      if (event == NULL)
+      {
+        rt_irq_enable();
+        return;
+      }
     } else {
       rt_irq_enable();
       return;

@@ -26,6 +26,19 @@ static uint32_t timer_count;
 rt_event_t *first_delayed = NULL;
 
 
+static inline void __rt_time_conf_timer_default()
+{
+  // Configure the FC timer in 64 bits mode as it will be used as a common
+  // timer for all virtual timers.
+  // We also use the ref clock to make the frequency stable.
+  hal_timer_conf(
+    hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_ENABLED,
+    PLP_TIMER_IRQ_DISABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
+    PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
+    PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
+  );
+}
+
 
 static int __rt_time_poweroff(void *arg)
 {
@@ -123,15 +136,7 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
 {
   int err = 0;
 
-  // Configure the FC timer in 64 bits mode as it will be used as a common
-  // timer for all virtual timers.
-  // We also use the ref clock to make the frequency stable.
-  hal_timer_conf(
-    hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_ENABLED,
-    PLP_TIMER_IRQ_DISABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
-    PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
-    PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
-  );
+  __rt_time_conf_timer_default(); 
 
   rt_irq_set_handler(ARCHI_FC_EVT_TIMER1, __rt_timer_handler);
   rt_irq_mask_set(1<<ARCHI_FC_EVT_TIMER1);
@@ -141,5 +146,63 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
 
   if (err) rt_fatal("Unable to initialize time driver\n");
 }
+
+#if defined(ARCHI_HAS_FC)
+
+#if defined(__LLVM__)
+void __rt_timer_handler()
+#else
+void __attribute__((interrupt)) __rt_timer_handler()
+#endif
+{
+  rt_event_t *event = first_delayed;
+
+  uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 1));
+
+  // First dequeue and push to their scheduler all events with the same number of
+  // ticks as they were waiting for the same time.
+  while (event && (current_time - event->time) < 0x7fffffff)
+  {
+    rt_event_t *next = event->next;
+    __rt_push_event(event->sched, event);
+    event = next;
+  }
+
+  // Update the wait list with the next waiting event which has a different number
+  // of ticks
+  first_delayed = event;
+
+  // Now re-arm the timer in case there are still some events
+  if (first_delayed)
+  {
+    // Be carefull to set the new comparator from the current time plus a number of ticks
+    // in order to set a value which is not before the actual count.
+    // This may just delay a bit the events which is fine as the specified
+    // duration is a minimum.
+    hal_timer_cmp_set(hal_timer_fc_addr(0, 1),
+      hal_timer_count_get(hal_timer_fc_addr(0, 1)) + 
+      first_delayed->time - current_time
+    );
+
+    hal_timer_conf(
+      hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
+      PLP_TIMER_IRQ_ENABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
+      PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
+      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
+    );
+  }
+  else
+  {
+    // Set back default state where timer is only counting with
+    // no interrupt
+    __rt_time_conf_timer_default(); 
+
+    // Also clear timer interrupt as we might have a spurious one after
+    // we entered the handler
+    rt_irq_clr(1 << ARCHI_FC_EVT_TIMER1);
+  }
+}
+
+#endif
 
 #endif
