@@ -245,11 +245,13 @@ static inline void rt_gpio_set_dir(uint8_t group, uint32_t mask, rt_gpio_dir_e i
   int irq = rt_irq_disable();
   hal_gpio_set_dir(mask, is_out);
 
+#if GPIO_VERSION >= 2
   if (is_out)
     hal_gpio_en_set(hal_gpio_en_get() & ~mask);
   else
     hal_gpio_en_set(hal_gpio_en_get() | mask);
-  
+#endif
+
   rt_irq_restore(irq);
 }
 

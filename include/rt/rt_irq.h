@@ -94,7 +94,7 @@ static inline void rt_irq_clr(unsigned int mask)
 {
 #if defined(ITC_VERSION)
   hal_itc_status_clr(mask);
-#elif defined(EU_VERSION)
+#elif defined(EU_VERSION) && EU_VERSION >= 3
   eu_evt_clr(mask);
 #endif
 }
