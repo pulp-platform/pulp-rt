@@ -20,6 +20,8 @@
 
 #include "rt/rt_api.h"
 
+#if defined(ARCHI_HAS_FC)
+
 // TODO this code should be in time.c but due to a bug in the compiler which
 // generates wrong code in other functions if the attribute interrupt is 
 // present in the same file, this handler must be in a different file
@@ -82,3 +84,5 @@ void __attribute__((interrupt)) __rt_timer_handler()
     rt_irq_clr(1 << ARCHI_FC_EVT_TIMER1);
   }
 }
+
+#endif
