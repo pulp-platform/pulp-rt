@@ -22,6 +22,7 @@
 #include "hal/pulp.h"
 
 omp_t RT_L1_TINY_DATA ompData;
+RT_L1_TINY_DATA int core_epoch[16];
 
 static void handleReadyTasks(omp_team_t *team);
 
@@ -85,6 +86,10 @@ static void __rt_omp_init(void *arg)
   pulp_barrier_setup(0, nbCores, _this->coreMask);
 #endif
   _this->plainTeam.nbThreads = nbCores;
+#if !defined(ARCHI_EU_HAS_DYNLOOP) && EU_VERSION == 3
+  _this->plainTeam.loop_epoch = 0;
+  _this->plainTeam.loop_is_setup = 0;
+#endif
   //_this->plainTeam.firstReadyTask = NULL;
   //_this->taskPool = NULL;
   //_this->plainTeam.hasTasks = 0;
@@ -129,11 +134,12 @@ static void __rt_omp_init(void *arg)
 
 RT_BOOT_CODE __attribute__((constructor))  void omp_constructor()
 {
+  //printf("(%d, %d) OMP CONSTRUCTOR\n", rt_cluster_id(), rt_core_id());
   int err = 0;
 
-  if (rt_is_fc() && __rt_config_cluster_start()) {
+  //if (rt_is_fc() && __rt_config_cluster_start()) {
     __rt_cluster_entry =  __rt_omp_init;
-  }
+  //}
 }
 
 RT_BOOT_CODE int omp_init(omp_t *_this) {
@@ -173,7 +179,15 @@ void partialParallelRegion(void (*fn) (void*), void *data, int num_threads)
   eu_dispatch_team_config(coreMask);
   // After a partial team has been executed, the loop core epochs are desynchronized,
   // Realign them in order to not disturb plain teams
+#ifdef ARCHI_EU_HAS_DYNLOOP
   eu_loop_initEpoch(eu_loop_addr(1), coreMask);
+#else
+  team->loop_epoch = 0;
+  for (int i=0; i<team->nbThreads; i++)
+  {
+    core_epoch[i] = 0;
+  }
+#endif
 #else
   team->nbThreads = num_threads;
   pulp_barrier_setup(0, num_threads, (1<<num_threads)-1);

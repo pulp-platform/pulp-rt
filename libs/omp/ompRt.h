@@ -46,6 +46,14 @@ typedef struct {
 #if EU_VERSION == 1
   plp_swMutex_t mutex;
 #endif
+#if !defined(ARCHI_EU_HAS_DYNLOOP) && EU_VERSION == 3
+  int loop_epoch;
+  int loop_start;
+  int loop_end;
+  int loop_incr;
+  int loop_chunk;
+  int loop_is_setup;
+#endif
 } omp_team_t;
 
 typedef struct {
@@ -58,6 +66,7 @@ typedef struct {
 } omp_t;
 
 extern omp_t RT_L1_TINY_DATA ompData;
+extern RT_L1_TINY_DATA int core_epoch[16];
 
 void partialParallelRegion(void (*fn) (void*), void *data, int num_threads);
 
@@ -242,11 +251,46 @@ static inline void __attribute__((always_inline)) parallelRegion(void *data, voi
 
 static inline __attribute__((always_inline)) unsigned int sectionGet()
 {
-#if EU_VERSION >= 3
+#ifdef ARCHI_EU_HAS_DYNLOOP
   int size = eu_loop_getChunk(eu_loop_addr(0));
   int start = eu_loop_getStart(eu_loop_addr(0));
   if (size == 0) return 0;
   else return start;
+#elif EU_VERSION >= 3
+  int result = 0;
+  omp_team_t *team = getCurrentTeam();
+
+  int core_id = rt_core_id();
+
+  eu_mutex_lock(eu_mutex_addr(0));
+
+  if (team->loop_epoch - core_epoch[core_id] == 0)
+  {
+    int start = team->loop_start;
+    int end = team->loop_end;
+
+    team->loop_start++;
+
+    if (start >= end)
+    {
+      team->loop_epoch++;
+      team->loop_is_setup = 0;
+      core_epoch[core_id]++;
+      eu_mutex_unlock(eu_mutex_addr(0));
+      return 0;
+    }
+
+    eu_mutex_unlock(eu_mutex_addr(0));
+
+    return start;
+  }
+  else
+  {
+    eu_mutex_unlock(eu_mutex_addr(0));
+    core_epoch[core_id]++;
+  }
+
+  return result;
 #else
   return 0;
 #endif
@@ -254,7 +298,7 @@ static inline __attribute__((always_inline)) unsigned int sectionGet()
 
 static inline __attribute__((always_inline)) unsigned int sectionInit(unsigned int count)
 {
-#if EU_VERSION >= 3
+#ifdef ARCHI_EU_HAS_DYNLOOP
   unsigned int state = eu_loop_getState(eu_loop_addr(0));
   if (state == EU_LOOP_DONE) goto end;
   else if (state == EU_LOOP_SKIP) return 0;
@@ -264,14 +308,37 @@ static inline __attribute__((always_inline)) unsigned int sectionInit(unsigned i
   eu_loop_setChunk(eu_loop_addr(0), 1);
 end:
   return sectionGet();
+#elif EU_VERSION >= 3
+  omp_team_t *team = getCurrentTeam();
+  int core_id = rt_core_id();
+  eu_mutex_lock(eu_mutex_addr(0));
+  if (team->loop_epoch - core_epoch[core_id] == 0)
+  {
+    if (!team->loop_is_setup)
+    {
+      team->loop_is_setup = 1;
+      team->loop_start = 1;
+      team->loop_end = count+1;
+    }
+    eu_mutex_unlock(eu_mutex_addr(0));
+    return sectionGet();
+  }
+  else
+  {
+    eu_mutex_unlock(eu_mutex_addr(0));
+    core_epoch[core_id]++;
+    return 0;
+  }
 #else
   return 0;
 #endif
 }
 
-static inline __attribute__((always_inline)) int dynLoopIter(omp_team_t *team, int *istart, int *iend, int *isLast)
+
+static inline __attribute__((always_inline)) int dynLoopIter(
+  omp_team_t *team, int *istart, int *iend, int *isLast)
 {
-#if EU_VERSION >= 3
+#ifdef ARCHI_EU_HAS_DYNLOOP
   int size = eu_loop_getChunk(eu_loop_addr(0));
   int start = eu_loop_getStart(eu_loop_addr(0));
   if (size == 0) goto end;
@@ -281,6 +348,51 @@ static inline __attribute__((always_inline)) int dynLoopIter(omp_team_t *team, i
   return 1;
 end:
   return 0;
+
+#elif EU_VERSION >= 3
+  int result = 0;
+
+  int core_id = rt_core_id();
+
+  eu_mutex_lock(eu_mutex_addr(0));
+
+  if (team->loop_epoch - core_epoch[core_id] == 0)
+  {
+    int start = team->loop_start;
+    int chunk = team->loop_chunk;
+    int end = team->loop_end;
+
+    team->loop_start = start + chunk;
+
+    if (start >= end)
+    {
+      team->loop_epoch++;
+      team->loop_is_setup = 0;
+      core_epoch[core_id]++;
+      eu_mutex_unlock(eu_mutex_addr(0));
+      return 0;
+    }
+
+    eu_mutex_unlock(eu_mutex_addr(0));
+
+    *istart = start;
+    if (start + chunk > end)
+      chunk = end - start;
+    *iend = start;
+
+    result = 1;
+
+  }
+  else
+  {
+    eu_mutex_unlock(eu_mutex_addr(0));
+    core_epoch[core_id]++;
+  }
+
+  if (isLast) *isLast = 0;
+
+  return result;
+
 #else
   return 0;
 #endif
@@ -288,7 +400,7 @@ end:
 
 static inline int dynLoopInit(omp_team_t *team, int start, int end, int incr, int chunk_size, int *istart, int *iend)
 {
-#if EU_VERSION >= 3
+#ifdef ARCHI_EU_HAS_DYNLOOP
   unsigned int state = eu_loop_getState(eu_loop_addr(0));
   // Case where the loop is already initialized and still have available indexes
   if (state == EU_LOOP_DONE) goto end;
@@ -302,6 +414,31 @@ static inline int dynLoopInit(omp_team_t *team, int start, int end, int incr, in
 
 end:
   return dynLoopIter(team, istart, iend, (void *)0);
+#elif EU_VERSION >= 3
+
+  int core_id = rt_core_id();
+  eu_mutex_lock(eu_mutex_addr(0));
+
+  if (team->loop_epoch - core_epoch[core_id] != 0)
+  {
+    eu_mutex_unlock(eu_mutex_addr(0));
+    core_epoch[core_id]++;
+    return 0;
+  }
+  
+  if (!team->loop_is_setup)
+  {
+    team->loop_is_setup = 1;
+    team->loop_start = start;
+    team->loop_end = end;
+    team->loop_incr = incr;
+    team->loop_chunk = chunk_size;
+  }
+  eu_mutex_unlock(eu_mutex_addr(0));
+
+  return dynLoopIter(team, istart, iend, (void *)0);
+
+
 #else
   return 0;
 #endif
@@ -309,7 +446,7 @@ end:
 
 static inline void dynLoopInitNoIter(omp_team_t *team, int start, int end, int incr, int chunk_size)
 {
-#if EU_VERSION >= 3
+#ifdef ARCHI_EU_HAS_DYNLOOP
   unsigned int state = eu_loop_getState(eu_loop_addr(0));
   // Case where the loop is already initialized and still have available indexes
   if (state == EU_LOOP_DONE) return;
@@ -320,24 +457,64 @@ static inline void dynLoopInitNoIter(omp_team_t *team, int start, int end, int i
   eu_loop_setEnd(eu_loop_addr(0), end);
   eu_loop_setIncr(eu_loop_addr(0), incr);
   eu_loop_setChunk(eu_loop_addr(0), chunk_size);
+#elif EU_VERSION >= 3
+
+  int core_id = rt_core_id();
+  eu_mutex_lock(eu_mutex_addr(0));
+  if (team->loop_epoch - core_epoch[core_id] != 0)
+  {
+    eu_mutex_unlock(eu_mutex_addr(0));
+    core_epoch[core_id]++;
+    return;
+  }
+  
+  if (!team->loop_is_setup)
+  {
+    team->loop_is_setup = 1;
+    team->loop_start = start;
+    team->loop_end = end;
+    team->loop_incr = incr;
+    team->loop_chunk = chunk_size;
+  }
+  eu_mutex_unlock(eu_mutex_addr(0));
+#else
 #endif
 }
 
 static inline void dynLoopInitSingle(omp_team_t *team, int start, int end, int incr, int chunk_size, int nbThread)
 {
-#if EU_VERSION >= 3
+#ifdef ARCHI_EU_HAS_DYNLOOP
   eu_loop_getState(eu_loop_addr(0));
   eu_loop_setStart(eu_loop_addr(0), start);
   eu_loop_setEnd(eu_loop_addr(0), end);
   eu_loop_setIncr(eu_loop_addr(0), incr);
   eu_loop_setChunk(eu_loop_addr(0), chunk_size);
+#elif EU_VERSION >= 3
+  team->loop_is_setup = 1;
+  team->loop_start = start;
+  team->loop_end = end;
+  team->loop_incr = incr;
+  team->loop_chunk = chunk_size;
 #endif
 }
 
 static inline int singleStart()
 {
-#if EU_VERSION >= 3
+#ifdef ARCHI_EU_HAS_DYNLOOP
   return eu_loop_getSingle(eu_loop_addr(0));
+#elif EU_VERSION >= 3
+  int core_id = rt_core_id();
+  int result = 0;
+  omp_team_t *team = getCurrentTeam();
+  eu_mutex_lock(eu_mutex_addr(0));
+  if (team->loop_epoch - core_epoch[core_id] == 0)
+  {
+    result = 1;
+    team->loop_epoch++;
+  }
+  core_epoch[core_id]++;
+  eu_mutex_unlock(eu_mutex_addr(0));
+  return result;
 #else
   return 0;
 #endif

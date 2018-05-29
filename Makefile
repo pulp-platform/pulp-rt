@@ -90,7 +90,7 @@ PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
 ifeq '$(pulp_chip_family)' 'vega'
-PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
+PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c
 endif
 
 ifeq '$(pulp_chip)' 'gap'
@@ -187,6 +187,9 @@ endif
 
 ifneq '$(gpio/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/gpio/gpio-v$(gpio/version).c
+ifeq '$(gpio/version)' '2'
+PULP_LIB_FC_ASM_SRCS_rt += kernel/riscv/gpio.S
+endif
 endif
 
 
