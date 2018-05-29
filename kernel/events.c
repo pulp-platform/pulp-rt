@@ -204,11 +204,9 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
       event = *((rt_event_t * volatile *)&sched->first);
       if (event == NULL)
       {
-        rt_irq_enable();
         return;
       }
     } else {
-      rt_irq_enable();
       return;
     }
   }
