@@ -54,9 +54,6 @@ static rt_flash_t *__rt_hyperflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt
   hyper->header.dev = dev;
   hyper->channel = dev->channel;
 
-  // HyperFlash
-  hal_hyper_udma_dt1_set(0);
-
   if (event) __rt_event_enqueue(event);
 
   return (rt_flash_t *)hyper;
