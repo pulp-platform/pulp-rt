@@ -83,12 +83,12 @@ INSTALL_TARGETS += $(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o
 
 ifeq '$(pulp_chip)' 'oprecompkw'
 
-$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o: $(CONFIG_BUILD_DIR)/rt/fc/kernel/oprecompkw/crt0.o
+$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/oprecompkw/crt0.o
 	install -D $< $@
 
 else
 
-$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o: $(CONFIG_BUILD_DIR)/rt/fc/kernel/$(fc_archi)/crt0.o
+$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/$(fc_archi)/crt0.o
 	install -D $< $@
 
 endif
