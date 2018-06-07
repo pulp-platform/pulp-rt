@@ -1,0 +1,3 @@
+PULP_LIB_NAME_rt = rttiny
+
+CONFIG_UART_ENABLED=1
