@@ -36,13 +36,13 @@
 
 
 
-/**  
-* @ingroup groupDrivers  
+/**
+* @ingroup groupDrivers
 */
 
 
 
-/**        
+/**
  * @defgroup HyperRAM HyperRAM
  *
  * The HyperRAM driver provides support for transferring data between an external HyperRAM chip
@@ -53,9 +53,9 @@
  *
  */
 
-/**        
+/**
  * @addtogroup HyperRAM
- * @{        
+ * @{
  */
 
 /**@{*/
@@ -136,7 +136,7 @@ void rt_hyperram_close(rt_hyperram_t *handle, rt_event_t *event);
 
 /** \brief Enqueue a read copy to the HyperRAM (from HyperRAM to processor).
  *
- * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas. 
+ * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas.
  * An event can be specified in order to be notified when the transfer is finished.
  * Can only be called from fabric-controller side.
  *
@@ -153,7 +153,7 @@ static inline void rt_hyperram_read(rt_hyperram_t *dev,
 
 /** \brief Enqueue a write copy to the HyperRAM (from processor to HyperRAM).
  *
- * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas. 
+ * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas.
  * An event can be specified in order to be notified when the transfer is finished.
  * Can only be called from fabric-controller side.
  *
@@ -199,7 +199,7 @@ static inline int rt_hyperram_free(rt_hyperram_t *dev, void *chunk, int size);
  *
  * This function is a remote call that the cluster can do to the fabric-controller in order to ask
  * for an HyperRam read copy.
- * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas. 
+ * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas.
  * A pointer to a request structure must be provided so that the runtime can properly do the remote call.
  * Can only be called from cluster side.
  *
@@ -218,7 +218,7 @@ static inline void rt_hyperram_cluster_read(rt_hyperram_t *dev,
  *
  * This function is a remote call that the cluster can do to the fabric-controller in order to ask
  * for an HyperRam write copy.
- * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas. 
+ * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas.
  * A pointer to a request structure must be provided so that the runtime can properly do the remote call.
  * Can only be called from cluster side.
  *
@@ -244,8 +244,8 @@ static inline void rt_hyperram_cluster_wait(rt_hyperram_req_t *req);
 
 //!@}
 
-/**        
- * @} end of HyperRAM        
+/**
+ * @} end of HyperRAM
  */
 
 
@@ -290,6 +290,26 @@ static inline void rt_hyperflash_copy(rt_hyperflash_t *dev, int channel,
 }
 
 #if defined(ARCHI_HAS_CLUSTER)
+
+void rt_hyperram_alloc_cluster(rt_hyperram_t *dev, int size, rt_hyperram_alloc_req_t *req);
+void rt_hyperram_free_cluster(rt_hyperram_t *dev, void *chunk, int size, rt_hyperram_free_req_t *req);
+
+static inline void *rt_hyperram_alloc_cluster_wait(rt_hyperram_alloc_req_t *req)
+{
+	while((*(volatile char *)&req->done) == 0)
+	{
+		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+	}
+	return req->result;
+}
+
+static inline void rt_hyperram_free_cluster_wait(rt_hyperram_free_req_t *req)
+{
+	while((*(volatile char *)&req->done) == 0)
+	{
+		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+	}
+}
 
 static inline __attribute__((always_inline)) void rt_hyperram_cluster_wait(rt_hyperram_req_t *req)
 {

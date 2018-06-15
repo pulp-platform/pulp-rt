@@ -554,6 +554,24 @@ typedef struct rt_hyperram_req_s {
   unsigned char is_write;
 } rt_hyperram_req_t ;
 
+typedef struct rt_hyperram_alloc_req_s {
+  rt_hyperram_t *dev;
+  void *result;
+  int size;
+  rt_event_t event;
+  char done;
+  char cid;
+} rt_hyperram_alloc_req_t ;
+
+typedef struct rt_hyperram_free_req_s {
+  rt_hyperram_t *dev;
+  void *result;
+  int size;
+  void *chunk;
+  rt_event_t event;
+  char done;
+  char cid;
+} rt_hyperram_free_req_t ;
 
 typedef struct {
   rt_flash_t *dev;
@@ -588,7 +606,7 @@ typedef struct {
   unsigned int *config;
 } rt_padframe_profile_t;
 
-typedef struct 
+typedef struct
 {
   rt_event_t *event;
   rt_event_t *user_event;
