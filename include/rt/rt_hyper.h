@@ -291,6 +291,26 @@ static inline void rt_hyperflash_copy(rt_hyperflash_t *dev, int channel,
 
 #if defined(ARCHI_HAS_CLUSTER)
 
+void rt_hyperram_alloc_cluster(rt_hyperram_t *dev, int size, rt_hyperram_alloc_req_t *req);
+void rt_hyperram_free_cluster(rt_hyperram_t *dev, void *chunk, int size, rt_hyperram_free_req_t *req);
+
+static inline void *rt_hyperram_alloc_cluster_wait(rt_hyperram_alloc_req_t *req)
+{
+	while((*(volatile char *)&req->done) == 0)
+	{
+		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+	}
+	return req->result;
+}
+
+static inline void rt_hyperram_free_cluster_wait(rt_hyperram_free_req_t *req)
+{
+	while((*(volatile char *)&req->done) == 0)
+	{
+		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+	}
+}
+
 static inline __attribute__((always_inline)) void rt_hyperram_cluster_wait(rt_hyperram_req_t *req)
 {
   while((*(volatile int *)&req->done) == 0)
