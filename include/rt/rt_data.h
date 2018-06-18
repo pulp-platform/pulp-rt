@@ -594,6 +594,7 @@ typedef struct {
   int result;
   unsigned char cid;
   unsigned char direct;
+  unsigned int offset;
 } rt_fs_req_t;
 
 typedef struct {
