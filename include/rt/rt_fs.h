@@ -263,6 +263,18 @@ static inline void rt_fs_cluster_direct_read(rt_file_t *file, void *buffer, size
 
 
 
+/** \brief Reposition the current file position from cluster side.
+ *
+ * This function can be called from cluster side to change the current position of a file.
+ * Note that this does not affect pending copies, but only the ones which will be enqueued after this call.
+ *
+ * \param file      The handle of the file for which the current position is changed.
+ * \param offset    The offset where to set the current position. The offset can be between 0 for the beginning of the file and the file size.
+ * \param req       The request structure used for termination.
+ */
+static inline void rt_fs_cluster_seek(rt_file_t *file, unsigned int offset, rt_fs_req_t *req);
+
+
 /** \brief Wait until the specified fs request has finished.
  *
  * This blocks the calling core until the specified cluster remote copy is finished.
@@ -271,6 +283,7 @@ static inline void rt_fs_cluster_direct_read(rt_file_t *file, void *buffer, size
  *
  * \param req       The request structure used for termination.
  * \return          The number of bytes actually read from the file. This can be smaller than the requested size if the end of file is reached.
+ *                  Could be also RT_STATUS_OK if the rt_fs_cluster_seek was successful, RT_STATUS_ERR otherwise.
  */
 static inline int rt_fs_cluster_wait(rt_fs_req_t *req);
 

@@ -75,7 +75,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
       // Setup FLL
-      __rt_fll_init(1);
+      __rt_fll_init(__RT_FLL_CL);
     }
 #endif
 
@@ -142,7 +142,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
 #ifdef FLL_VERSION
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
-      __rt_fll_deinit(1);
+      __rt_fll_deinit(__RT_FLL_CL);
     }
 #endif
 
