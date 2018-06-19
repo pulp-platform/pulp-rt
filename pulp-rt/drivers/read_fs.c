@@ -508,12 +508,9 @@ void __rt_fs_cluster_read(rt_file_t *file, void *buffer, size_t size, rt_fs_req_
 void __rt_fs_cluster_seek_req(void *_req)
 {
   rt_fs_req_t *req = (rt_fs_req_t *)_req;
-  rt_file_t *file = req->file;
-  unsigned int offset = req->offset;
-  rt_event_t *event = &req->event;
-  __rt_init_event(event, event->sched, __rt_fs_cluster_req_done, (void *)req);
-  req->result = rt_fs_seek(file, offset);
-  __rt_push_event(event->sched, event);
+  req->result = rt_fs_seek(req->file, req->offset);
+  req->done = 1;
+  __rt_cluster_notif_req_done(req->cid);
 }
 
 void __rt_fs_cluster_seek(rt_file_t *file, unsigned int offset, rt_fs_req_t *req)
