@@ -212,10 +212,9 @@ int rt_fs_direct_read(rt_file_t *file, void *buffer, size_t size, rt_event_t *ev
  *
  * \param file      The handle of the file for which the current position is changed.
  * \param offset    The offset where to set the current position. The offset can be between 0 for the beginning of the file and the file size.
- * \param event     The event used for managing termination.
  * \return          RT_STATUS_OK if the operation was successful, RT_STATUS_ERR otherwise.
  */
-int rt_fs_seek(rt_file_t *file, unsigned int offset, rt_event_t *event);
+int rt_fs_seek(rt_file_t *file, unsigned int offset);
 
 
 

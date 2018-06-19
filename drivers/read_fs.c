@@ -362,13 +362,12 @@ int __rt_fs_read(rt_file_t *file, unsigned int buffer, unsigned int addr, int si
   return block_size;
 }
 
-int rt_fs_seek(rt_file_t *file, unsigned int offset, rt_event_t *event)
+int rt_fs_seek(rt_file_t *file, unsigned int offset)
 {
   rt_trace(RT_TRACE_FS, "[FS] File seek (file: %p, offset: 0x%x)\n", file, offset);
 
   if (offset < file->size) {
     file->offset = offset;
-    if(event) rt_event_enqueue(event);
     return 0;
   }
   return -1;
@@ -513,7 +512,8 @@ void __rt_fs_cluster_seek_req(void *_req)
   unsigned int offset = req->offset;
   rt_event_t *event = &req->event;
   __rt_init_event(event, event->sched, __rt_fs_cluster_req_done, (void *)req);
-  req->result = rt_fs_seek(file, offset, event);
+  req->result = rt_fs_seek(file, offset);
+  __rt_push_event(event->sched, event);
 }
 
 void __rt_fs_cluster_seek(rt_file_t *file, unsigned int offset, rt_fs_req_t *req)
