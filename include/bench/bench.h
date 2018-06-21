@@ -41,7 +41,7 @@ static inline void start_timer() {plp_timer_conf_high(1, 0, 0, 0, 0, 0, 0, 0);}
 
 static inline void stop_timer() {plp_timer_conf_high(0, 0, 0, 0, 0, 0, 0, 0);}
 
-static inline void reset_timer() {plp_timer_raw_conf_high(plp_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_BIT));}
+static inline void reset_timer() {plp_timer_raw_conf_high(plp_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_OFFSET));}
 
 static inline int get_time() {return plp_timer_get_count_high();}
 #else
@@ -57,8 +57,8 @@ static inline void stop_timer() {
 }
 
 static inline void reset_timer() {
-  if (hal_is_fc()) plp_fc_timer_raw_conf_high(plp_fc_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_BIT));
-  else plp_timer_raw_conf_high(plp_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_BIT));
+  if (hal_is_fc()) plp_fc_timer_raw_conf_high(plp_fc_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_OFFSET));
+  else plp_timer_raw_conf_high(plp_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_OFFSET));
 }
 
 static inline int get_time() {
