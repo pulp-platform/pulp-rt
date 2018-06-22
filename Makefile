@@ -22,8 +22,10 @@ ifneq '$(compiler)' 'llvm'
 PULP_CFLAGS += -fno-tree-loop-distribute-patterns
 endif
 
+ifeq '$(CONFIG_INSTALL_HEADERS)' '1'
 INSTALL_FILES += $(shell find include -name *.h)
 WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
+endif
 
 
 
