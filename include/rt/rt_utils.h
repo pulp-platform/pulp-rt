@@ -558,6 +558,8 @@ static inline int rt_fc_tcdm_size()
 #endif
 }
 
+#include <stdio.h>
+
 #ifdef __riscv__
 static inline void rt_wait_for_interrupt()
 {
@@ -568,7 +570,6 @@ static inline void rt_wait_for_interrupt()
   // to go to sleep. However this does not work with a normal load, we should
   // investigate why.
   eu_evt_wait_noreplay();
-  //eu_evt_wait();
 #else
   eu_evt_wait();
 #endif

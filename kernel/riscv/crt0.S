@@ -21,8 +21,8 @@
 #include "archi/pulp.h"
 
   .section .text
-  .global _start
-_start:
+
+_entry:
 
   # Cluster PEs will also starts here to avoid aligning another entry point
   # Just re-route them to the right entry
@@ -142,9 +142,11 @@ _fini:
 #ifndef __ariane__
 .section .vectors, "ax"
 .option norvc;
+  .global _start
+_start:
 
   .org 0x80
-  jal x0, _start
+  jal x0, _entry
   jal x0, __rt_illegal_instr
 
   // This variable is pointing to the structure containing all information exchanged with

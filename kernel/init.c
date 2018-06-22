@@ -186,7 +186,6 @@ static void cluster_start(void *arg)
   else
   {
     __rt_team_config(rt_nb_active_pe());
-    retval = main();
   }
 
 #endif
@@ -208,7 +207,6 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
     if (stacks == NULL) return -1;
 
     if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, rt_stack_size_get(), rt_stack_size_get(), rt_nb_active_pe(), event)) return -1;
-
   }
   else
   {
@@ -238,9 +236,8 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
 
 static int __rt_check_clusters_start()
 {
-  if (__rt_config_cluster_start() || !rt_is_fc()) {
+  if (__rt_config_cluster_start()) {
     // All fetch mode, starts all cluster
-
     if (rt_event_alloc(NULL, rt_nb_cluster())) return -1;
 
     rt_event_t *events[rt_nb_cluster()];
