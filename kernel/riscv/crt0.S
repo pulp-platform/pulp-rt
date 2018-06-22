@@ -142,10 +142,9 @@ _fini:
 #ifndef __ariane__
 .section .vectors, "ax"
 .option norvc;
+  .org 0x80
   .global _start
 _start:
-
-  .org 0x80
   jal x0, _entry
   jal x0, __rt_illegal_instr
 
