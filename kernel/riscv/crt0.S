@@ -142,6 +142,40 @@ _fini:
 #ifndef __ariane__
 .section .vectors, "ax"
 .option norvc;
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+  j __rt_no_irq_handler
+
+
   .org 0x80
   .global _start
 _start:
@@ -155,5 +189,8 @@ _start:
   .global __rt_debug_struct_ptr
 __rt_debug_struct_ptr:
   .word __hal_debug_struct
+
+__rt_no_irq_handler:
+  j __rt_no_irq_handler
 
 #endif
