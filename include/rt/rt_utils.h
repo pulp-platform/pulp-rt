@@ -468,9 +468,46 @@ static inline void *rt_irq_vector_base() { return (void *)&__irq_vector_base; }
 
 #if defined(ARCHI_HAS_L2)
 
-static inline void *rt_l2_priv0_base() { return (void *)&__l2_priv0_heap_start; }
+static inline void *rt_l2_priv0_base(){ return (void *)&__l2_priv0_heap_start; }
 
 static inline int rt_l2_priv0_size() { return (int)&__l2_priv0_heap_size; }
+
+#if PULP_CHIP == CHIP_VIVOSOC3
+
+static inline void *rt_l2_priv1_base()
+{
+  if ((int)&__l2_shared_heap_start >= ARCHI_L2_SHARED_ADDR)
+    return (void *)0;
+  else
+    return (void *)&__l2_shared_heap_start;
+}
+
+static inline int rt_l2_priv1_size()
+{
+  if ((int)&__l2_shared_heap_start >= ARCHI_L2_SHARED_ADDR)
+    return (int)0;
+  else
+    return ARCHI_L2_SHARED_ADDR - (int)&__l2_shared_heap_start;
+}
+
+static inline void *rt_l2_shared_base()
+{
+  if ((int)&__l2_shared_heap_start >= ARCHI_L2_SHARED_ADDR)
+    return (void *)&__l2_shared_heap_start;
+  else
+    return (void *)ARCHI_L2_SHARED_ADDR;
+
+}
+
+static inline int rt_l2_shared_size()
+{
+  if ((int)&__l2_shared_heap_start >= ARCHI_L2_SHARED_ADDR)
+    return (int)&__l2_shared_heap_size;
+  else
+    return ARCHI_L2_SHARED_SIZE;
+}
+
+#else
 
 static inline void *rt_l2_priv1_base() { return (void *)&__l2_priv1_heap_start; }
 
@@ -479,6 +516,8 @@ static inline int rt_l2_priv1_size() { return (int)&__l2_priv1_heap_size; }
 static inline void *rt_l2_shared_base() { return (void *)&__l2_shared_heap_start; }
 
 static inline int rt_l2_shared_size() { return (int)&__l2_shared_heap_size; }
+
+#endif
 
 static inline void *rt_l2_base() { return rt_l2_shared_base(); }
 

@@ -23,6 +23,7 @@ PULP_CFLAGS += -fno-tree-loop-distribute-patterns
 endif
 
 INSTALL_FILES += $(shell find include -name *.h)
+INSTALL_FILES += $(shell find rules -name *.ld)
 WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
 
 
