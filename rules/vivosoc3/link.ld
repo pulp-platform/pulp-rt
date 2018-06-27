@@ -156,8 +156,6 @@ SECTIONS
     *(.data.*)
     *(.sdata);
     *(.sdata.*)
-    *(.data_fc_shared)
-    *(.data_fc_shared.*)
     *(.heapl2ram)
     *(.fcTcdm)
     *(.fcTcdm.*)
@@ -220,6 +218,8 @@ SECTIONS
     . = ALIGN(4);
     *(.l2_data)
     *(.l2_data.*)
+    *(.data_fc_shared)
+    *(.data_fc_shared.*)
     . = ALIGN(4);
   } > L2_priv1
 
