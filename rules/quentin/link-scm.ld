@@ -21,6 +21,8 @@ MEMORY
 
 SECTIONS
 {
+  __l2_priv0_end = ALIGN(4);
+
   .vectors :
   {
     . = ALIGN(4);
@@ -234,17 +236,12 @@ SECTIONS
     . = ALIGN(4);
   } > L2_scm
 
-  __l2_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
+  __l2_scm_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
 
 
+  __l2_priv1_end = MAX(0x1c008000,ALIGN(4));
 
+  __l2_shared_end = MAX(0x1c010000,ALIGN(4));
 
-  __cluster_text_size = __cluster_text_end - __cluster_text_start;
-
-  __l2_priv0_heap_start = ORIGIN(L2_priv0);
-  __l2_priv0_heap_size = LENGTH(L2_priv0) - __l2_priv0_heap_start + ORIGIN(L2_priv0);
-
-  __l2_shared_heap_start = __l2_end;
-  __l2_shared_heap_size = LENGTH(L2_scm) - __l2_shared_heap_start + ORIGIN(L2_scm);
 
 }

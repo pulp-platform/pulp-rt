@@ -116,7 +116,7 @@ static inline int rt_debug_config_werror();
 
 #define rt_trace(trace, x...)            \
   do {                                          \
-    if (rt_debug_config_trace() & (1<<trace)) rt_msg(x);          \
+    if (1) rt_msg(x);          \
   } while(0)
 
 #else

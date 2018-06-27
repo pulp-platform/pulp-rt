@@ -295,6 +295,16 @@ static inline int rt_l2_size();
 
 #endif
 
+
+#ifdef ARCHI_L2_SCM_ADDR
+
+static inline void *rt_l2_scm_base();
+
+static inline int rt_l2_scm_size();
+
+#endif
+
+
 #endif
 
 static inline void *rt_l1_base(int cid);
@@ -338,6 +348,20 @@ static inline int rt_platform()
 
 #if defined(__RT_ALLOC_L2_MULTI)
 
+#ifdef ARCHI_L2_SCM_ADDR
+
+extern unsigned char __l2_scm_end;
+
+#endif
+
+#if PULP_CHIP == CHIP_VIVOSOC3 || PULP_CHIP == CHIP_QUENTIN
+
+extern unsigned char __l2_priv0_end;
+extern unsigned char __l2_priv1_end;
+extern unsigned char __l2_shared_end;
+
+#else
+
 extern unsigned char __l2_priv0_heap_start;
 extern unsigned char __l2_priv0_heap_size;
 extern unsigned char __l2_priv1_heap_start;
@@ -345,18 +369,29 @@ extern unsigned char __l2_priv1_heap_size;
 extern unsigned char __l2_shared_heap_start;
 extern unsigned char __l2_shared_heap_size;
 
+#endif
+
+#else
+
+#if PULP_CHIP == CHIP_GAP
+
+extern unsigned char __l2_end;
+extern unsigned char __fc_tcdm_end;
+
 #else
 
 extern unsigned char __l2_heap_start;
 extern unsigned char __l2_heap_size;
+extern unsigned char __fc_tcdm_heap_start;
+extern unsigned char __fc_tcdm_heap_size;
+
+#endif
 
 #endif
 
 #endif
 extern unsigned char __l1_heap_start;;
 extern unsigned char __l1_heap_size;
-extern unsigned char __fc_tcdm_heap_start;
-extern unsigned char __fc_tcdm_heap_size;
 extern unsigned char __irq_vector_base;
 extern unsigned char __rt_nb_cluster;
 extern unsigned char __rt_nb_pe;
@@ -468,46 +503,102 @@ static inline void *rt_irq_vector_base() { return (void *)&__irq_vector_base; }
 
 #if defined(ARCHI_HAS_L2)
 
-static inline void *rt_l2_priv0_base(){ return (void *)&__l2_priv0_heap_start; }
 
-static inline int rt_l2_priv0_size() { return (int)&__l2_priv0_heap_size; }
+#if PULP_CHIP == CHIP_QUENTIN
 
-#if PULP_CHIP == CHIP_VIVOSOC3 || PULP_CHIP == CHIP_QUENTIN
-
-static inline void *rt_l2_priv1_base()
-{
-  if ((int)&__l2_shared_heap_start >= ARCHI_L2_SHARED_ADDR)
-    return (void *)0;
+static inline void *rt_l2_priv0_base() {
+  if ((int)&__l2_priv0_end >= ARCHI_L2_SCM_ADDR)
+    return NULL;
   else
-    return (void *)&__l2_shared_heap_start;
+    return (void *)&__l2_priv0_end;
 }
 
-static inline int rt_l2_priv1_size()
-{
-  if ((int)&__l2_shared_heap_start >= ARCHI_L2_SHARED_ADDR)
-    return (int)0;
+static inline int rt_l2_priv0_size() {
+  if ((int)&__l2_priv0_end >= ARCHI_L2_SCM_ADDR)
+    return 0;
   else
-    return ARCHI_L2_SHARED_ADDR - (int)&__l2_shared_heap_start;
+    return ARCHI_L2_SCM_ADDR - (int)&__l2_priv0_end;
 }
 
-static inline void *rt_l2_shared_base()
-{
-  if ((int)&__l2_shared_heap_start >= ARCHI_L2_SHARED_ADDR)
-    return (void *)&__l2_shared_heap_start;
+static inline void *rt_l2_scm_base() {
+  if ((int)&__l2_scm_end >= ARCHI_L2_PRIV1_ADDR)
+    return NULL;
   else
-    return (void *)ARCHI_L2_SHARED_ADDR;
-
+    return (void *)&__l2_scm_end;
 }
 
-static inline int rt_l2_shared_size()
-{
-  if ((int)&__l2_shared_heap_start >= ARCHI_L2_SHARED_ADDR)
-    return (int)&__l2_shared_heap_size;
+static inline int rt_l2_scm_size() {
+  if ((int)&__l2_scm_end >= ARCHI_L2_PRIV1_ADDR)
+    return 0;
   else
-    return ARCHI_L2_SHARED_SIZE;
+    return ARCHI_L2_PRIV1_ADDR - (int)&__l2_scm_end;
+}
+
+static inline void *rt_l2_priv1_base() {
+  if ((int)&__l2_priv1_end >= ARCHI_L2_SHARED_ADDR)
+    return NULL;
+  else
+    return (void *)&__l2_priv1_end;
+}
+
+static inline int rt_l2_priv1_size() {
+  if ((int)&__l2_priv1_end >= ARCHI_L2_SHARED_ADDR)
+    return 0;
+  else
+    return ARCHI_L2_SHARED_ADDR - (int)&__l2_priv1_end;
+}
+
+static inline void *rt_l2_shared_base() {
+  return (void *)&__l2_shared_end;
+}
+
+static inline int rt_l2_shared_size() {
+  return ARCHI_L2_SHARED_ADDR + ARCHI_L2_SHARED_SIZE - (int)&__l2_shared_end;
+}
+
+#elif PULP_CHIP == CHIP_VIVOSOC3
+
+static inline void *rt_l2_priv0_base() {
+  if ((int)&__l2_priv0_end >= ARCHI_L2_PRIV1_ADDR)
+    return NULL;
+  else
+    return (void *)&__l2_priv0_end;
+}
+
+static inline int rt_l2_priv0_size() {
+  if ((int)&__l2_priv0_end >= ARCHI_L2_PRIV1_ADDR)
+    return 0;
+  else
+    return ARCHI_L2_PRIV1_ADDR - (int)&__l2_priv0_end;
+}
+
+static inline void *rt_l2_priv1_base() {
+  if ((int)&__l2_priv1_end >= ARCHI_L2_SHARED_ADDR)
+    return NULL;
+  else
+    return (void *)&__l2_priv1_end;
+}
+
+static inline int rt_l2_priv1_size() {
+  if ((int)&__l2_priv1_end >= ARCHI_L2_SHARED_ADDR)
+    return 0;
+  else
+    return ARCHI_L2_SHARED_ADDR - (int)&__l2_priv1_end;
+}
+
+static inline void *rt_l2_shared_base() {
+  return (void *)&__l2_shared_end;
+}
+
+static inline int rt_l2_shared_size() {
+  return ARCHI_L2_SHARED_ADDR + ARCHI_L2_SHARED_SIZE - (int)&__l2_shared_end;
 }
 
 #else
+
+static inline void *rt_l2_priv0_base(){ return (void *)&__l2_priv0_heap_start; }
+
+static inline int rt_l2_priv0_size() { return (int)&__l2_priv0_heap_size; }
 
 static inline void *rt_l2_priv1_base() { return (void *)&__l2_priv1_heap_start; }
 
@@ -547,9 +638,19 @@ static inline int rt_l2_size() { return 0; }
 
 #if defined(ARCHI_HAS_L2)
 
+#if PULP_CHIP == CHIP_GAP
+
+static inline void *rt_l2_base() { return (void *)&__l2_end; }
+
+static inline int rt_l2_size() { return ARCHI_L2_ADDR + ARCHI_L2_SIZE - (int)&__l2_end; }
+
+#else
+
 static inline void *rt_l2_base() { return (void *)&__l2_heap_start; }
 
 static inline int rt_l2_size() { return (int)&__l2_heap_size; }
+
+#endif
 
 #else
 
@@ -582,7 +683,7 @@ static inline int rt_l1_size(int cid)
 static inline void *rt_fc_tcdm_base()
 {
 #if defined(ARCHI_HAS_FC_TCDM)
-  return (void *)&__fc_tcdm_heap_start;
+  return (void *)&__fc_tcdm_end;
 #else
   return NULL;
 #endif
@@ -591,7 +692,7 @@ static inline void *rt_fc_tcdm_base()
 static inline int rt_fc_tcdm_size()
 {
 #if defined(ARCHI_HAS_FC_TCDM)
-  return (int)&__fc_tcdm_heap_size;
+  return ARCHI_FC_TCDM_ADDR + ARCHI_FC_TCDM_SIZE - (int)&__fc_tcdm_end;
 #else
   return 0;
 #endif

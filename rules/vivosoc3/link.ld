@@ -3,22 +3,21 @@ OUTPUT_ARCH(riscv)
 ENTRY( _start )
 MEMORY
 {
-  L2_priv0           : ORIGIN = 0x1c000004, LENGTH = 0x00003ffc
-  L2_priv0_aliased   : ORIGIN = 0x00000004, LENGTH = 0x00003ffc
-  L2_priv1           : ORIGIN = 0x1c004000, LENGTH = 0x00014000
+  L2           : ORIGIN = 0x1c000004, LENGTH = 0x00017ffc
+  L2_aliased   : ORIGIN = 0x00000004, LENGTH = 0x00003ffc
   L1                 : ORIGIN = 0x10000004, LENGTH = 0x00007ffc
   L1_aliased         : ORIGIN = 0x00000004, LENGTH = 0x00007ffc
 }
 
 /*
- * This linker script put FC data in L2 private bank0 and FC code 
+ * This linker script try to put FC data in L2 private bank0 and FC code 
  * in L2 private bank1 to avoid contention between FC code and data
  * as FC has no instruction cache and is so often accessing L2 to
- * get instructions.
- * Cluster code and initialized data are also put in private bank1
- * to let the fc and cluster grows until the end of the L2.
- * This should not generate a lot of contention as cluster code
- * is supposed to quickly fit into the cluster instruction cache.
+ * get instructions. Everything can be shifted in case one bank is full.
+ *
+ * Cluster code and initialized data are put in shared banks to not polute
+ * private banks which are quite small, and also avoid contentions between
+ * cluster cache refill and FC.
  */
 
 
@@ -38,21 +37,21 @@ SECTIONS
     . = ALIGN(4);
     *(.data_tiny_fc)
     *(.data_tiny_fc.*)
-  } > L2_priv0_aliased AT> L2_priv0
+  } > L2_aliased AT> L2
 
 
   .init :
   {
     . = ALIGN(4);
     KEEP( *(.init) )
-  } > L2_priv0
+  } > L2
 
 
   .fini :
   {
     . = ALIGN(4);
     KEEP( *(.fini) )
-  } > L2_priv0
+  } > L2
 
 
   .preinit_array : {
@@ -60,7 +59,7 @@ SECTIONS
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array))
     PROVIDE_HIDDEN (__preinit_array_end = .);
-  } > L2_priv0
+  } > L2
 
 
   .init_array : {
@@ -75,7 +74,7 @@ SECTIONS
     LONG(0)
     __CTOR_END__ = .;
     PROVIDE_HIDDEN (__init_array_end = .);
-  } > L2_priv0
+  } > L2
 
 
   .fini_array : {
@@ -90,14 +89,14 @@ SECTIONS
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array ))
     PROVIDE_HIDDEN (__fini_array_end = .);
-  } > L2_priv0
+  } > L2
 
 
   .boot : {
     . = ALIGN(4);
     *(.boot)
     *(.boot.data)
-  } > L2_priv0
+  } > L2
 
 
   .rodata : {
@@ -107,35 +106,35 @@ SECTIONS
     *(.srodata);
     *(.srodata.*)
     *(.eh_frame*)
-  } > L2_priv0
+  } > L2
 
 
   .got : {
     . = ALIGN(4);
     *(.got.plt) * (.igot.plt) *(.got) *(.igot)
-  } > L2_priv0
+  } > L2
 
 
   .shbss : {
     . = ALIGN(4);
     *(.shbss)
-  } > L2_priv0
+  } > L2
 
 
   .talias : {
-  } > L2_priv0
+  } > L2
 
 
   .gnu.offload_funcs : {
     . = ALIGN(4);
     KEEP(*(.gnu.offload_funcs))
-  } > L2_priv0
+  } > L2
 
 
   .gnu.offload_vars : {
     . = ALIGN(4);
     KEEP(*(.gnu.offload_vars))
-  } > L2_priv0
+  } > L2
 
 
   .stack : {
@@ -143,7 +142,7 @@ SECTIONS
     . = ALIGN(16);
     . = . + 0x800;
     stack = .;
-  } > L2_priv0
+  } > L2
 
 
   .data : {
@@ -164,7 +163,7 @@ SECTIONS
     . = ALIGN(4);
     edata  =  .;
     _edata  =  .;
-  } > L2_priv0
+  } > L2
 
 
   .bss : {
@@ -177,10 +176,10 @@ SECTIONS
     *(COMMON)
     . = ALIGN(4);
     _bss_end = .;
-  } > L2_priv0
+  } > L2
 
 
-  __l2_priv0_end = ALIGN(8);
+  __l2_priv0_end = ALIGN(4);
 
 
 
@@ -188,14 +187,14 @@ SECTIONS
   /*
    * L2 PRIVATE BANK1
    *
-   * Contains FC code and cluster code and data
+   * Contains FC code
    */
 
-  .vectors :
+  .vectors MAX(0x1c004000,ALIGN(256)) :
   {
-    . = ALIGN(4);
-    __irq_vector_base = .;KEEP(*(.vectors))
-  } > L2_priv1
+    __irq_vector_base = .;
+    KEEP(*(.vectors))
+  } > L2
 
   .text :
   {
@@ -203,16 +202,30 @@ SECTIONS
     _stext = .;
     *(.text)
     *(.text.*)
-    . = ALIGN(4);
-    __cluster_text_start = .;*(.cluster.text)
-    *(.cluster.text.*)
-    __cluster_text_end = .;_etext  =  .;
+    _etext  =  .;
     *(.lit)
     *(.shdata)
     _endtext = .;
     . = ALIGN(4);
-  } > L2_priv1
+  } > L2
 
+  __l2_priv1_end = ALIGN(4);
+
+
+  /*
+   * L2 SHARED BANKS
+   *
+   * Contains other data such as peripheral data and cluster code and data
+   */
+
+  .text.cluster MAX(0x1c008000,ALIGN(4)) :
+  {
+    __cluster_text_start = .;
+    *(.cluster.text)
+    *(.cluster.text.*)
+    __cluster_text_end = .;
+    . = ALIGN(4);
+  } > L2
 
   .l2_data : {
     . = ALIGN(4);
@@ -221,7 +234,7 @@ SECTIONS
     *(.data_fc_shared)
     *(.data_fc_shared.*)
     . = ALIGN(4);
-  } > L2_priv1
+  } > L2
 
 
   /* Following sections are keeping the cluster data
@@ -237,7 +250,7 @@ SECTIONS
     *(.data_tiny_l1.*)
     *(.data_alias_l1)
     *(.data_alias_l1.*)
-  } > L1_aliased AT> L2_priv1
+  } > L1_aliased AT> L2
 
   .l1cluster_g (ORIGIN(L1) + SIZEOF(.data_tiny_l1)): {
     . = ALIGN(4);
@@ -252,18 +265,18 @@ SECTIONS
     *(.libgomp)
     *(.libgomp.*)
     . = ALIGN(4);
-  } > L1 AT> L2_priv1
+  } > L1 AT> L2
 
   .bss_l1 : {
     . = ALIGN(4);
     *(.bss_l1)
     *(.bss_l1.*)
     . = ALIGN(4);
-  } > L1 AT> L2_priv1
+  } > L1 AT> L2
 
   __l1_end = ALIGN(4);
 
-  __l2_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
+  __l2_shared_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
 
 
 
@@ -274,11 +287,4 @@ SECTIONS
 
   __l1_heap_start = ALIGN(4);
   __l1_heap_size = LENGTH(L1) - __l1_heap_start + ORIGIN(L1);
-
-  __l2_priv0_heap_start = __l2_priv0_end;
-  __l2_priv0_heap_size = LENGTH(L2_priv0) - __l2_priv0_heap_start + ORIGIN(L2_priv0);
-
-  __l2_shared_heap_start = __l2_end;
-  __l2_shared_heap_size = LENGTH(L2_priv1) - __l2_shared_heap_start + ORIGIN(L2_priv1);
-
 }
