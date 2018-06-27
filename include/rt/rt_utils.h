@@ -472,7 +472,7 @@ static inline void *rt_l2_priv0_base(){ return (void *)&__l2_priv0_heap_start; }
 
 static inline int rt_l2_priv0_size() { return (int)&__l2_priv0_heap_size; }
 
-#if PULP_CHIP == CHIP_VIVOSOC3
+#if PULP_CHIP == CHIP_VIVOSOC3 || PULP_CHIP == CHIP_QUENTIN
 
 static inline void *rt_l2_priv1_base()
 {
