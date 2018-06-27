@@ -7,10 +7,23 @@ fc_archi = $(pe/archi)
 endif
 
 
-PULP_LIB_FC_SRCS_rt     += kernel/init.c kernel/alloc.c kernel/alloc_extern.c \
-  kernel/thread.c kernel/events.c kernel/dev.c kernel/irq.c kernel/debug.c \
+PULP_LIB_FC_SRCS_rt     += kernel/init.c \
+   kernel/dev.c kernel/irq.c kernel/debug.c \
   kernel/utils.c kernel/error.c kernel/bridge.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/crt0.S kernel/$(fc_archi)/thread.S
+
+
+ifeq '$(CONFIG_SCHED_ENABLED)' '1'
+PULP_LIB_FC_SRCS_rt     += kernel/thread.c kernel/events.c
+endif
+
+
+
+ifeq '$(CONFIG_ALLOC_ENABLED)' '1'
+PULP_LIB_FC_SRCS_rt     += kernel/alloc.c kernel/alloc_extern.c
+endif
+
+
 
 ifeq '$(CONFIG_TIME_ENABLED)' '1'
 PULP_LIB_FC_SRCS_rt     += kernel/time.c kernel/time_irq.c

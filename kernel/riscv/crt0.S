@@ -124,10 +124,18 @@ is_ariane:
   /* Do all other initializations from C code */
   jal  x1, __rt_deinit
 
+#ifdef __RT_MODE_BARE
+
+__rt_exit_loop:
+  j __rt_exit_loop
+
+#else
 
   /* If program returns from main, call exit routine */
   mv   a0, s0
   jal  x1, exit
+
+#endif
 
 
 
@@ -142,6 +150,7 @@ _fini:
 #ifndef __ariane__
 .section .vectors, "ax"
 .option norvc;
+
   j __rt_no_irq_handler
   j __rt_no_irq_handler
   j __rt_no_irq_handler
@@ -180,6 +189,10 @@ _fini:
   .global _start
 _start:
   jal x0, _entry
+
+
+#ifndef __RT_MODE_BARE
+
   jal x0, __rt_illegal_instr
 
   // This variable is pointing to the structure containing all information exchanged with
@@ -189,6 +202,8 @@ _start:
   .global __rt_debug_struct_ptr
 __rt_debug_struct_ptr:
   .word __hal_debug_struct
+
+#endif
 
 __rt_no_irq_handler:
   j __rt_no_irq_handler

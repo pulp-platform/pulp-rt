@@ -55,6 +55,18 @@ void __rt_putc_debug_bridge(char c);
 void __rt_pmu_init();
 #endif
 
+#ifdef __RT_MODE_BARE
+
+void __rt_init()
+{
+}
+
+void __rt_deinit()
+{
+}
+
+#else
+
 void __rt_init()
 {
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
@@ -149,6 +161,8 @@ void __rt_deinit()
   /* Call global and static destructors */
   do_dtors();
 }
+
+#endif
 
 
 #if defined(ARCHI_HAS_CLUSTER)
