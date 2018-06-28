@@ -75,7 +75,7 @@ static void __rt_uart_wait_tx_done(rt_uart_t *uart)
 static void __rt_uart_setup(rt_uart_t *uart)
 {
   int div =  __rt_freq_periph_get() / uart->baudrate;
-  plp_uart_setup(uart->channel, 0, div);
+  plp_uart_setup(uart->channel - ARCHI_UDMA_UART_ID(0), 0, div);
 }
 
 
