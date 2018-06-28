@@ -82,15 +82,6 @@ SECTIONS
   } > fc_tcdm
 
 
-  .rodata : {
-    . = ALIGN(4);
-    *(.rodata);
-    *(.rodata.*)
-    *(.srodata);
-    *(.srodata.*)
-    *(.eh_frame*)
-  } > fc_tcdm
-
 
   .got : {
     . = ALIGN(4);
@@ -127,40 +118,6 @@ SECTIONS
     stack = .;
   } > fc_tcdm
 
-
-  .data : {
-    . = ALIGN(4);
-    sdata  =  .;
-    _sdata  =  .;
-    *(.data_fc)
-    *(.data_fc.*)
-    *(.data);
-    *(.data.*)
-    *(.sdata);
-    *(.sdata.*)
-    *(.heapl2ram)
-    *(.fcTcdm)
-    *(.fcTcdm.*)
-    *(.fcTcdm_g)
-    *(.fcTcdm_g.*)
-    . = ALIGN(4);
-    edata  =  .;
-    _edata  =  .;
-  } > fc_tcdm
-
-
-  .bss : {
-    . = ALIGN(8);
-    _bss_start = .;
-    *(.bss)
-    *(.bss.*)
-    *(.sbss)
-    *(.sbss.*)
-    *(COMMON)
-    . = ALIGN(4);
-    _bss_end = .;
-  } > fc_tcdm
-
   __fc_tcdm_end = ALIGN(4);
 
 
@@ -188,6 +145,53 @@ SECTIONS
     *(.shdata)
     _endtext = .;
     . = ALIGN(4);
+  } > L2
+
+
+  /* The following data are kept in L2 because of a HW bug which makes
+   * byte acceses failing from cluster to FC TCDM
+   */
+
+  .rodata : {
+    . = ALIGN(4);
+    *(.rodata);
+    *(.rodata.*)
+    *(.srodata);
+    *(.srodata.*)
+    *(.eh_frame*)
+  } > L2
+
+  .data : {
+    . = ALIGN(4);
+    sdata  =  .;
+    _sdata  =  .;
+    *(.data_fc)
+    *(.data_fc.*)
+    *(.data);
+    *(.data.*)
+    *(.sdata);
+    *(.sdata.*)
+    *(.heapl2ram)
+    *(.fcTcdm)
+    *(.fcTcdm.*)
+    *(.fcTcdm_g)
+    *(.fcTcdm_g.*)
+    . = ALIGN(4);
+    edata  =  .;
+    _edata  =  .;
+  } > L2
+
+
+  .bss : {
+    . = ALIGN(8);
+    _bss_start = .;
+    *(.bss)
+    *(.bss.*)
+    *(.sbss)
+    *(.sbss.*)
+    *(COMMON)
+    . = ALIGN(4);
+    _bss_end = .;
   } > L2
 
 
