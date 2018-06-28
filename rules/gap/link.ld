@@ -177,28 +177,16 @@ SECTIONS
     _stext = .;
     *(.text)
     *(.text.*)
-    _etext  =  .;
-    *(.lit)
-    *(.shdata)
-    _endtext = .;
     . = ALIGN(4);
-  } > L2
-
-  .text.cluster :
-  {
     __cluster_text_start = .;
     *(.cluster.text)
     *(.cluster.text.*)
     __cluster_text_end = .;
     . = ALIGN(4);
-  } > L2
-
-  .l2_data : {
-    . = ALIGN(4);
-    *(.l2_data)
-    *(.l2_data.*)
-    *(.data_fc_shared)
-    *(.data_fc_shared.*)
+    _etext  =  .;
+    *(.lit)
+    *(.shdata)
+    _endtext = .;
     . = ALIGN(4);
   } > L2
 
