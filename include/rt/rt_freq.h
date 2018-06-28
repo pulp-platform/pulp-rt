@@ -191,7 +191,11 @@ static inline unsigned int __rt_fll_freq_get(int fll)
 
 static inline unsigned int __rt_freq_periph_get()
 {
+#if PULP_CHIP == CHIP_VIVOSOC3
+  return 10000000;
+#else
   return rt_freq_get(RT_FREQ_DOMAIN_PERIPH);
+#endif
 }
 
 static inline unsigned int __rt_freq_periph_get_next()
