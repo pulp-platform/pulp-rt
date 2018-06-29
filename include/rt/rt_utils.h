@@ -354,7 +354,7 @@ extern unsigned char __l2_scm_end;
 
 #endif
 
-#if PULP_CHIP == CHIP_VIVOSOC3 || PULP_CHIP == CHIP_QUENTIN
+#if PULP_CHIP == CHIP_VIVOSOC3 || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_QUENTIN
 
 extern unsigned char __l2_priv0_end;
 extern unsigned char __l2_priv1_end;
@@ -556,7 +556,7 @@ static inline int rt_l2_shared_size() {
   return ARCHI_L2_SHARED_ADDR + ARCHI_L2_SHARED_SIZE - (int)&__l2_shared_end;
 }
 
-#elif PULP_CHIP == CHIP_VIVOSOC3
+#elif PULP_CHIP == CHIP_VIVOSOC3 || PULP_CHIP == CHIP_VEGA
 
 static inline void *rt_l2_priv0_base() {
   if ((int)&__l2_priv0_end >= ARCHI_L2_PRIV1_ADDR)
