@@ -190,7 +190,7 @@ SECTIONS
    * Contains FC code
    */
 
-  .vectors MAX(0x1c004000,ALIGN(256)) :
+  .vectors MAX(0x1c008000,ALIGN(256)) :
   {
     __irq_vector_base = .;
     KEEP(*(.vectors))
@@ -218,7 +218,7 @@ SECTIONS
    * Contains other data such as peripheral data and cluster code and data
    */
 
-  .text.cluster MAX(0x1c008000,ALIGN(4)) :
+  .text.cluster MAX(0x1c010000,ALIGN(4)) :
   {
     __cluster_text_start = .;
     *(.cluster.text)
