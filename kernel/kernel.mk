@@ -7,10 +7,23 @@ fc_archi = $(pe/archi)
 endif
 
 
-PULP_LIB_FC_SRCS_rt     += kernel/init.c kernel/alloc.c kernel/alloc_extern.c \
-  kernel/thread.c kernel/events.c kernel/dev.c kernel/irq.c kernel/debug.c \
+PULP_LIB_FC_SRCS_rt     += kernel/init.c \
+   kernel/dev.c kernel/irq.c kernel/debug.c \
   kernel/utils.c kernel/error.c kernel/bridge.c
-PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/crt0.S kernel/$(fc_archi)/thread.S
+PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/$(PULP_LIB_NAME_rt)/crt0.S kernel/$(fc_archi)/thread.S
+
+
+ifeq '$(CONFIG_SCHED_ENABLED)' '1'
+PULP_LIB_FC_SRCS_rt     += kernel/thread.c kernel/events.c
+endif
+
+
+
+ifeq '$(CONFIG_ALLOC_ENABLED)' '1'
+PULP_LIB_FC_SRCS_rt     += kernel/alloc.c kernel/alloc_extern.c
+endif
+
+
 
 ifeq '$(CONFIG_TIME_ENABLED)' '1'
 PULP_LIB_FC_SRCS_rt     += kernel/time.c kernel/time_irq.c
@@ -78,17 +91,17 @@ endif
 endif
 
 
-INSTALL_TARGETS += $(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o
+INSTALL_TARGETS += $(PULP_SDK_INSTALL)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o
 
 
 ifeq '$(pulp_chip)' 'oprecompkw'
 
-$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/oprecompkw/crt0.o
+$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/oprecompkw/$(PULP_LIB_NAME_rt)/crt0.o
 	install -D $< $@
 
 else
 
-$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/$(fc_archi)/crt0.o
+$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/$(fc_archi)/$(PULP_LIB_NAME_rt)/crt0.o
 	install -D $< $@
 
 endif

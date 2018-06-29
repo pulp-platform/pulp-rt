@@ -16,6 +16,21 @@ endif
 include $(PULP_RT_CONFIG)
 
 
+ifdef CONFIG_IO_ENABLED
+PULP_CFLAGS += -D__RT_USE_IO=1
+endif
+
+ifdef CONFIG_ASSERT_ENABLED
+PULP_CFLAGS += -D__RT_USE_ASSERT=1
+endif
+
+ifdef CONFIG_TRACE_ENABLED
+PULP_CFLAGS += -D__RT_USE_TRACE=1
+endif
+
+ifdef CONFIG_CFLAGS
+PULP_CFLAGS += $(CONFIG_CFLAGS)
+endif
 
 PULP_CFLAGS += -Os -g -fno-jump-tables -Werror
 ifneq '$(compiler)' 'llvm'
@@ -23,6 +38,7 @@ PULP_CFLAGS += -fno-tree-loop-distribute-patterns
 endif
 
 INSTALL_FILES += $(shell find include -name *.h)
+INSTALL_FILES += $(shell find rules -name *.ld)
 WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
 
 

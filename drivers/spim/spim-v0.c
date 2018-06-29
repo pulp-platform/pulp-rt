@@ -95,7 +95,11 @@ void __rt_spim_v0_receive(
   pulp_spi_set_datalen(spiBase, len);
   
   // Just in case there is a spurious event
+#if EU_VERSION >= 3
+  eu_evt_clr(1<<ARCHI_EVT_SPIM0);
+#else
   pulp_gpevt_clear(ARCHI_EVT_SPIM0);
+#endif
 
   // The transaction is started now so that data start being pushed
   // to the FIFO.
@@ -182,7 +186,11 @@ void __rt_spim_v0_send(
   pulp_spi_set_datalen(spiBase, len);
   
   // Just in case there is a spurious event
+#if EU_VERSION >= 3
+  eu_evt_clr(1<<ARCHI_EVT_SPIM0);
+#else
   pulp_gpevt_clear(ARCHI_EVT_SPIM0);
+#endif
 
   // Now we need to iterate in order to fill the FIFO without overwriting
   // any existing value.
@@ -362,12 +370,14 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
   spim->cs_gpio = conf->cs_gpio;
 
   // Configure the pads for SPIM
+#ifdef PIN_MSPI_SIO0
   rt_pad_config(PIN_MSPI_SIO0, PIN_MSPI_SIO0_FUN);
   rt_pad_config(PIN_MSPI_SIO1, PIN_MSPI_SIO1_FUN);
   rt_pad_config(PIN_MSPI_SIO2, PIN_MSPI_SIO2_FUN);
   rt_pad_config(PIN_MSPI_SIO3, PIN_MSPI_SIO3_FUN);
   rt_pad_config(PIN_MSPI_SCK, PIN_MSPI_SCK_FUN);
   rt_pad_config(PIN_MSPI_CSN0, PIN_MSPI_CSN0_FUN);
+#endif
 
   // Setup command and address to zero as this driver is just receiving and
   // sending raw spi bitstream.
