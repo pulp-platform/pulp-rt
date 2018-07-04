@@ -597,7 +597,8 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
 {
   if (Fll == FLL_CLUSTER && !PMU_ClusterIsRunning()) return 0;
   FllConfigT Config;
-  unsigned int SetFrequency, Mult, Div, DCOIn, MultDiff;
+  unsigned int SetFrequency, Mult, Div, DCOIn;
+  int MultDiff;
 
   if (Check) {
     unsigned int CurrentVoltage = DCDCSettingtomV(PMUState.DCDC_Settings[REGULATOR_STATE(PMUState.State)]);
@@ -644,6 +645,7 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   /* Check FLL converge by compare status register with multiply factor */
   do {
       MultDiff = GetFllStatus(Fll) - Mult;
+      MultDiff = (MultDiff < 0) ? (0 - MultDiff) : MultDiff;
   } while ( MultDiff > 0x10 );
 
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
