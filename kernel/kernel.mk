@@ -43,8 +43,10 @@ endif
 ifneq '$(soc/fll)' ''
 ifneq '$(pulp_chip)' 'gap'
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
-endif
 PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
+else
+PULP_LIB_FC_SRCS_rt     += kernel/gap/freq.c
+endif
 endif
 
 ifneq '$(soc_eu/version)' ''

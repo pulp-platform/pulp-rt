@@ -45,7 +45,7 @@ void __rt_freq_init()
   __rt_freq_domains[RT_FREQ_DOMAIN_CL] = __rt_fll_init(0);
 }
 
-int rt_freq_set(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
+int rt_freq_set_and_get(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
 {
   int irq = rt_irq_disable();
   int err = 0;
