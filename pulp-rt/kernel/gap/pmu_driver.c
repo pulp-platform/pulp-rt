@@ -57,7 +57,7 @@
 #define HAL_FLL_CONF2_NB_STABLE_WIDTH    6
 
 #define HAL_FLL_CONF2_NB_UNSTABLE_BIT    4
-#define HAL_FLL_CONF2_NB_UNSTABLE_WIDTH  6
+#define HAL_FLL_CONF2_NB_UNSTABLE_WIDTH  6 
 
 #define HAL_FLL_CONF2_GAIN_BIT           0
 #define HAL_FLL_CONF2_GAIN_WIDTH         4
@@ -65,10 +65,10 @@
 
 
 #define HAL_FLL_INT_STATE_INT_BIT         16
-#define HAL_FLL_INT_STATE_INT_WIDTH       10
+#define HAL_FLL_INT_STATE_INT_WIDTH       10  
 
-#define HAL_FLL_INT_STATE_FRACT_BIT       6
-#define HAL_FLL_INT_STATE_FRACT_WIDTH     10
+#define HAL_FLL_INT_STATE_FRACT_BIT       6  
+#define HAL_FLL_INT_STATE_FRACT_WIDTH     10  
 
 
 /* Fll ressources */
@@ -342,7 +342,7 @@ static unsigned int PMU_Control_Maestro(PMU_SystemStateT PrevState, PMU_SystemSt
       if (TheIrqs & (MAESTRO_EVENT_PICL_OK|MAESTRO_EVENT_SCU_OK)) PMU_Write(DLC_IFR, TheIrqs & (MAESTRO_EVENT_PICL_OK|MAESTRO_EVENT_SCU_OK));
     }
 
-    __rt_socevents_status[1] &=
+    __rt_socevents_status[1] &= 
       ~((1<<(PMU_EVENT_MSP-32)) | (1<<(PMU_EVENT_ICU_MODE_CHANGED-32)) |
       (1<<(PMU_EVENT_ICU_OK-32)) | (1<<(PMU_EVENT_PICL_OK-32)) |
       (1<<(PMU_EVENT_SCU_OK-32)));
@@ -538,9 +538,9 @@ unsigned int EstimateDCOInputCode(unsigned int Fll, unsigned int MultFactor)
 
   unsigned int Shift = __MAX(0, (ALPHA_PREC+MF_Dyn)-32);
 
-  if (Fll==FLL_SOC)
+  if (Fll==FLL_SOC) 
     return (((FllSoC_DCO.Alpha[OperPoint]*MultFactor>>Shift) + (FllSoC_DCO.Beta[OperPoint]<<(ALPHA_PREC-Shift-BETA_PREC)))>>(ALPHA_PREC-Shift));
-  else
+  else 
     return (((FllCluster_DCO.Alpha[OperPoint]>>Shift)*MultFactor + (FllCluster_DCO.Beta[OperPoint]<<(ALPHA_PREC-Shift-BETA_PREC)))>>(ALPHA_PREC-Shift));
 }
 
@@ -589,8 +589,20 @@ static unsigned int FLL_CONFIG1_DEF_NOLOCK       = FLL_CONFIG1_VAL(0, 0, 0, 0, 1
 static unsigned int FLL_CONFIG1_DEF_LOCK         = FLL_CONFIG1_VAL(0, 0, 0, 1, 1);
 static unsigned int FLL_CONFIG1_DEF_OPEN_LOOP_LOCK   = FLL_CONFIG1_VAL(0, 0, 0, 1, 0);
 #define FLL_CONFIG2_VAL(Gain, Deassert, Assert, LockTol, ClkSel, OpenLoop, Dither) ((Gain)|((Deassert)<<4)|((Assert)<<(4+6))|((LockTol)<<(4+6+6))|((ClkSel)<<(4+6+6+12))|((OpenLoop)<<(4+6+6+12+1+1))|((Dither)<<(4+6+6+12+1+1+1)))
+// static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0x7, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1);
+// static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xF, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1);
+#if 1
 static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0x7, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
 static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
+#else
+#if 0
+static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
+static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
+#else
+static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0xA, 0x10, 0x2, 0x100, 0x0, 0x0, 0x0);
+static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1); 
+#endif
+#endif
 
 unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
 
@@ -598,7 +610,6 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   if (Fll == FLL_CLUSTER && !PMU_ClusterIsRunning()) return 0;
   FllConfigT Config;
   unsigned int SetFrequency, Mult, Div, DCOIn;
-  int MultDiff;
 
   if (Check) {
     unsigned int CurrentVoltage = DCDCSettingtomV(PMUState.DCDC_Settings[REGULATOR_STATE(PMUState.State)]);
@@ -635,25 +646,15 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
      while (SoCFllConverged() == 0) {};
     }
   }
+  FllsFrequency[Fll] = SetFrequency;
+  PMUState.Frequency[Fll] = SetFrequency;
 
   /* Disable lock enable since we are stable now and removed gain from feed back loop */
   if (Config.ConfigReg1.OutputLockEnable) {
       Config.ConfigReg1.OutputLockEnable = 0;
           SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
-          }
-
-  /* Check FLL converge by compare status register with multiply factor */
-  do {
-      MultDiff = GetFllStatus(Fll) - Mult;
-      MultDiff = (MultDiff < 0) ? (0 - MultDiff) : MultDiff;
-  } while ( MultDiff > 0x10 );
-
+          } 
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
-
-  SetFrequency = GetFllFreqFromMultDivFactors(GetFllStatus(Fll), Div);
-
-  FllsFrequency[Fll] = SetFrequency;
-  PMUState.Frequency[Fll] = SetFrequency;
 
   return SetFrequency;
 }
@@ -698,7 +699,7 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
 
     /* Lock Fll */
     // Config.Raw = FLL_CONFIG1_DEF_LOCK;
-    Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT
+    Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT 
     SetFrequency = SetFllMultDivFactors(50000000, &Mult, &Div);
     Config.ConfigReg1.MultFactor = Mult;
     Config.ConfigReg1.ClockOutDivider = Div;

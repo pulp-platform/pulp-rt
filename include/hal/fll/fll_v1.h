@@ -37,7 +37,7 @@ typedef enum {
 #define FLL_CLUSTER_INTEGRATOR_REG      	(ARCHI_SOC_PERIPHERALS_ADDR+FLL_CLUSTER_OFFSET+FLL_INTEGRATOR_REG_OFFSET)
 
 static inline unsigned int GetFllStatus(int Fll) {
-        return (unsigned int) IP_READ((int *) ARCHI_SOC_PERIPHERALS_ADDR, (int) (Fll*FLL_OFFSET_SOC_CLUSTER+FLL_SOC_OFFSET+FLL_STATUS_REG_OFFSET));
+        return (unsigned int) IP_READ((int *) ARCHI_SOC_PERIPHERALS_ADDR, (int) (FLL_SOC_OFFSET+FLL_STATUS_REG_OFFSET));
 }
 
 static inline unsigned int GetFllConfiguration(int Fll, hal_fll_config_e Reg) {
