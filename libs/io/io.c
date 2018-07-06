@@ -356,7 +356,8 @@ static void __rt_exit_debug_bridge(int status)
 
 void exit(int status)
 {
-  hal_cluster_ctrl_eoc_set(1);
+  apb_soc_status_set(status);
+  //hal_cluster_ctrl_eoc_set(1);
   __wait_forever();
 }
 
