@@ -45,7 +45,6 @@ typedef struct {
 
 
 static RT_FC_DATA rt_i2c_t __rt_i2c[ARCHI_UDMA_NB_I2C];
-static RT_FC_DATA int open_count = 0;
 
 
 
@@ -228,7 +227,6 @@ rt_i2c_t *rt_i2c_open(char *dev_name, rt_i2c_conf_t *i2c_conf, rt_event_t *event
   if (i2c->open_count > 0) goto error;
 
   i2c->open_count++;
-  open_count++;
   i2c->channel = channel*2;
   i2c->cs = i2c_conf->cs;
   i2c->max_baudrate = i2c_conf->max_baudrate;
@@ -247,9 +245,8 @@ rt_i2c_t *rt_i2c_open(char *dev_name, rt_i2c_conf_t *i2c_conf, rt_event_t *event
 
 void rt_i2c_close (rt_i2c_t *i2c, rt_event_t *event)
 {
-  i2c->open_count = 0;
-  open_count--;
-  if (open_count == 0)
+  i2c->open_count--;
+  if (i2c->open_count == 0)
   {
     hal_udma_i2c_setup_set(hal_udma_periph_base(i2c->channel/2), hal_udma_i2c_setup_compute(0, 0));
   }

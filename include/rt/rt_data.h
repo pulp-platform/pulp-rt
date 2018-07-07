@@ -122,6 +122,8 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 #define RT_L2_DATA __attribute__((section(".l2_data")))
 
+#define RT_L2_RET_DATA __attribute__((section(".l2_data")))
+
 #define RT_FC_DATA RT_FC_GLOBAL_DATA
 
 #ifdef __RT_CLUSTER_START

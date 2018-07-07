@@ -45,7 +45,7 @@ ifneq '$(pulp_chip)' 'gap'
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
 else
-PULP_LIB_FC_SRCS_rt     += kernel/gap/freq.c
+PULP_LIB_FC_SRCS_rt     += kernel/gap/freq.c kernel/gap/pm.c
 endif
 endif
 
