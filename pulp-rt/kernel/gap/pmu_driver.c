@@ -409,11 +409,15 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
   PMURetentionState.Fields.WakeupState = REGULATOR_STATE(WakeUpState);
   PMURetentionState.Fields.ClusterWakeUpState = CLUSTER_STATE(WakeUpState);
 
+  PMURetentionState.Fields.L2Retention = 0xF;
+
   PMUState.State = PMUState.State & 0x6; // Clear cluster on in case since at wake up it will not be on
   SetRetentiveState(PMURetentionState.Raw);
 
   PMU_Control_Maestro(PMUState.State, Retentive?RETENTIVE:DEEP_SLEEP);
 }
+
+
 
 void InitFlls();
 
@@ -461,6 +465,10 @@ void __rt_pmu_init()
   PMU_Write(DLC_IFR, (MAESTRO_EVENT_PICL_OK|MAESTRO_EVENT_SCU_OK));
 }
 
+
+
+// Note this is not called for now, as the user is supposed toc lose the cluster
+// before asking for deep or retentive sleep
 void FinalizeInitPMUDriver()
 {
   PMURetentionState.Raw = GetRetentiveState();
@@ -610,7 +618,6 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   if (Fll == FLL_CLUSTER && !PMU_ClusterIsRunning()) return 0;
   FllConfigT Config;
   unsigned int SetFrequency, Mult, Div, DCOIn;
-  int MultDiff;
 
   if (Check) {
     unsigned int CurrentVoltage = DCDCSettingtomV(PMUState.DCDC_Settings[REGULATOR_STATE(PMUState.State)]);
@@ -647,11 +654,8 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
      while (SoCFllConverged() == 0) {};
     }
   }
-
-  do {
-      MultDiff = GetFllStatus(Fll) - Mult;
-      MultDiff = (MultDiff < 0) ? (0 - MultDiff) : MultDiff;
-  } while ( MultDiff > 0x10 );
+  FllsFrequency[Fll] = SetFrequency;
+  PMUState.Frequency[Fll] = SetFrequency;
 
   /* Disable lock enable since we are stable now and removed gain from feed back loop */
   if (Config.ConfigReg1.OutputLockEnable) {
@@ -659,11 +663,6 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
           SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
           } 
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
-
-  SetFrequency = GetFllFreqFromMultDivFactors(GetFllStatus(Fll), Div);
-
-  FllsFrequency[Fll] = SetFrequency;
-  PMUState.Frequency[Fll] = SetFrequency;
 
   return SetFrequency;
 }

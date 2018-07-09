@@ -147,7 +147,7 @@ static RT_L2_DATA i2c_req_t i2c_req;
 RT_L2_DATA unsigned char valRegHimax;
 
 // TODO: write a status var for cam
-RT_FC_DATA unsigned char camera_isAwaked = 0;
+RT_FC_DATA unsigned char camera_isAwaked;
 
 
 void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
@@ -384,3 +384,8 @@ rt_cam_dev_t himax_desc = {
     .control   = &__rt_himax_control,
     .capture   = &__rt_himax_capture
 };
+
+RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_himax_init()
+{
+  camera_isAwaked = 0;
+}
