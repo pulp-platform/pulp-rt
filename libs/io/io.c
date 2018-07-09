@@ -32,9 +32,9 @@
 static RT_FC_DATA rt_fc_lock_t __rt_io_fc_lock;
 
 #if defined(__RT_USE_UART)
-static rt_uart_t *_rt_io_uart = NULL;
+static rt_uart_t *_rt_io_uart;
 static rt_event_t __rt_io_event;
-static rt_event_t *__rt_io_event_current = NULL;
+static rt_event_t *__rt_io_event_current;
 #endif
 
 hal_debug_struct_t HAL_DEBUG_STRUCT_NAME = HAL_DEBUG_STRUCT_INIT;
@@ -356,7 +356,8 @@ static void __rt_exit_debug_bridge(int status)
 
 void exit(int status)
 {
-  hal_cluster_ctrl_eoc_set(1);
+  apb_soc_status_set(status);
+  //hal_cluster_ctrl_eoc_set(1);
   __wait_forever();
 }
 
@@ -449,6 +450,9 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_io_init()
   __rt_fc_lock_init(&__rt_io_fc_lock);
 
 #if defined(__RT_USE_UART)
+  _rt_io_uart = NULL;
+  __rt_io_event_current = NULL;
+  
   if (rt_iodev() == RT_IODEV_UART)
   {
     __rt_cbsys_add(RT_CBSYS_START, __rt_io_start, NULL);

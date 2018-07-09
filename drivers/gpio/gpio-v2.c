@@ -16,9 +16,9 @@
 
 #include "rt/rt_api.h"
 
-RT_FC_TINY_DATA uint32_t __rt_gpio_status = 0;
+RT_FC_TINY_DATA uint32_t __rt_gpio_status;
 RT_FC_TINY_DATA rt_event_t *__rt_gpio_events[32];
-RT_FC_TINY_DATA uint32_t __rt_gpio_active_events = 0;
+RT_FC_TINY_DATA uint32_t __rt_gpio_active_events;
 
 extern void __rt_gpio_handler();
 
@@ -93,10 +93,15 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_gpio_init()
   rt_irq_set_handler(ARCHI_FC_EVT_GPIO, __rt_gpio_handler);
   rt_irq_mask_set(1<<ARCHI_FC_EVT_GPIO);
 #else
+#ifdef SOC_EU_VERSION
   soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_GPIO);
+#endif
 #endif
   for (int i=0; i<32; i++)
   {
     __rt_gpio_events[i] = NULL;
   }
+  
+  __rt_gpio_status = 0;
+  __rt_gpio_active_events = 0;
 }
