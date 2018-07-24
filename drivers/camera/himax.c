@@ -125,7 +125,7 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x3011, 0x70},
     {0x3059, 0x02},
     {0x3060, 0x01},
-    {0x3060, 0x25}, //Clock gating and clock divisors
+//    {0x3060, 0x25}, //Clock gating and clock divisors
     {0x3068, 0x20}, //PCLK0 polarity
     {IMG_ORIENTATION, 0x01}, // change the orientation
     {0x0104, 0x01}
@@ -181,7 +181,6 @@ static void _himaxMode(rt_camera_t *cam, unsigned char mode){
 
 static void _himaxWakeUP (rt_camera_t *cam){
     if (!camera_isAwaked){
-        plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_CAM_ID(0)));   // Activate CAM channel
         _himaxMode(cam, HIMAX_Streaming);
         camera_isAwaked = 1;
     }
@@ -219,19 +218,20 @@ static void _himaxParamInit(rt_camera_t *dev_cam, rt_cam_conf_t *cam_conf){
 }
 
 // TODO: For each case, should add the configuration of camera if necessary.
-static void _himaxConfigAndEnable(rt_cam_conf_t *cam){
+static void _himaxConfig(rt_cam_conf_t *cam){
+
+    plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_CAM_ID(0)));   // Activate CAM channel
     plpUdmaCamCustom_u _cpi;
     _cpi.raw = 0;
     switch (cam->resolution){
-        case QVGA:
-            goto qvga;
         case QQVGA:
             break;
+        case QVGA:
         default:
-qvga:
             _cpi.cfg_size.row_length = ((QVGA_W+4)/2 - 1);
     }
     hal_cpi_size_set(0, _cpi.raw);
+    
     _cpi.raw = 0;
 
     switch (cam->format){
@@ -248,9 +248,10 @@ qvga:
     _cpi.cfg_glob.framedrop_value = cam->frameDrop_value & MASK_6BITS;
     _cpi.cfg_glob.frameslice_enable = cam->slice_en & MASK_1BIT;
     _cpi.cfg_glob.shift = cam->shift & MASK_4BITS;
-    _cpi.cfg_glob.enable = ENABLE;
+    _cpi.cfg_glob.enable = DISABLE;
 
     hal_cpi_glob_set(0, _cpi.raw);
+    plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
 }
 
 void __rt_himax_close(rt_camera_t *dev_cam, rt_event_t *event){
@@ -292,13 +293,15 @@ void __rt_himax_control(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *_arg){
         case CMD_FRAMEDROP:
             _camera_drop_frame(&dev_cam->conf, arg);
             break;
-        case CMD_START:
+        case CMD_INIT:
             _himaxWakeUP(dev_cam);
-            _himaxConfigAndEnable(&dev_cam->conf);
+            _himaxConfig(&dev_cam->conf);
+            break;
+        case CMD_START:
+            _camera_start();
             break;
         case CMD_PAUSE:
             _camera_stop();
-            camera_isAwaked = 0;
             break;
         case CMD_STOP:
             _himaxStandby(dev_cam);
@@ -329,7 +332,7 @@ rt_camera_t* __rt_himax_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*event
     if (dev->channel != -1)
         camera->channel = dev->channel & 0xf;
     else
-        camera->channel = ARCHI_UDMA_CAM_ID(dev->itf);
+        camera->channel = dev->itf + ARCHI_UDMA_CAM_ID(dev->itf);
 
     __rt_camera_conf_init(camera, cam);
 
@@ -368,7 +371,7 @@ void __rt_himax_capture(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, rt
 
     rt_periph_copy_init(&call_event->copy, 0);
 
-    rt_periph_copy(&call_event->copy, UDMA_CHANNEL_ID(dev_cam->channel) + 0, (unsigned int) buffer, bufferlen, dev_cam->conf.cpiCfg, call_event);
+    rt_periph_copy(&call_event->copy, UDMA_CHANNEL_ID(dev_cam->channel) + 0, (unsigned int) buffer+2, bufferlen, dev_cam->conf.cpiCfg, call_event);
 
     __rt_wait_event_check(event, call_event);
 
