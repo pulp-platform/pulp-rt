@@ -133,6 +133,7 @@ void __rt_camera_cluster_req(void *_req)
   {
     rt_event_t *event = &req->event;
     __rt_init_event(event, event->sched, __rt_camera_cluster_req_done, (void *)req);
+    __rt_event_set_pending(event);
     rt_camera_capture (req->handle, req->buffer, req->size, event);
   }
   else
