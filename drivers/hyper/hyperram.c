@@ -103,6 +103,7 @@ void __rt_hyperram_cluster_req(void *_req)
   rt_hyperram_req_t *req = (rt_hyperram_req_t *)_req;
   rt_event_t *event = &req->event;
   __rt_init_event(event, event->sched, __rt_hyperram_cluster_req_done, (void *)req);
+  __rt_event_set_pending(event);
   __rt_hyper_copy(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, event, REG_MBR0);
 }
 
