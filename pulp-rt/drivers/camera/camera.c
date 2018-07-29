@@ -56,16 +56,23 @@ void _camera_filter(rt_cam_conf_t *cam, rt_img_filter_t *filter){
 void _camera_extract(rt_cam_conf_t *cam, rt_img_slice_t *slicer){
   plpUdmaCamCustom_u _cpi;
   // Write the coordinate of lower left corner
-  _cpi.cfg_ll.frameslice_llx = slicer->slice_ll.x & MASK_16BITS;
+  _cpi.cfg_ll.frameslice_llx = (slicer->slice_ll.x/2) & MASK_16BITS;
   _cpi.cfg_ll.frameslice_lly = slicer->slice_ll.y & MASK_16BITS;
   hal_cpi_ll_set(0, _cpi.raw);
 
   _cpi.raw = 0;
   // Write the coordinate of upper right corner
-  _cpi.cfg_ur.frameslice_urx = (slicer->slice_ur.x-1) & MASK_16BITS;
-  _cpi.cfg_ur.frameslice_ury = (slicer->slice_ur.y-1) & MASK_16BITS;
+  _cpi.cfg_ur.frameslice_urx = (slicer->slice_ur.x/2) & MASK_16BITS;
+  _cpi.cfg_ur.frameslice_ury = (slicer->slice_ur.y) & MASK_16BITS;
   hal_cpi_ur_set(0, _cpi.raw);
-  cam->slice_en = ENABLE;
+
+  _cpi.raw = hal_cpi_glob_read(0);
+  _cpi.cfg_glob.frameslice_enable = ENABLE;
+  _cpi.cfg_glob.enable = ENABLE;
+  hal_cpi_glob_set(0, _cpi.raw);
+  _camera_stop();
+  _camera_start();
+
 }
 
 void _camera_stop(){
@@ -82,9 +89,7 @@ void _camera_start(){
   _cpi.raw = hal_cpi_glob_read(0);
   _cpi.cfg_glob.enable = ENABLE;
   hal_cpi_glob_set(0, _cpi.raw);
- 
 }
-
 
 rt_camera_t* rt_camera_open(char *dev_name, rt_cam_conf_t *conf, rt_event_t*event)
 {
