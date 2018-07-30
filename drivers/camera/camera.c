@@ -62,8 +62,8 @@ void _camera_extract(rt_cam_conf_t *cam, rt_img_slice_t *slicer){
 
   _cpi.raw = 0;
   // Write the coordinate of upper right corner
-  _cpi.cfg_ur.frameslice_urx = (slicer->slice_ur.x/2) & MASK_16BITS;
-  _cpi.cfg_ur.frameslice_ury = (slicer->slice_ur.y) & MASK_16BITS;
+  _cpi.cfg_ur.frameslice_urx = (slicer->slice_ur.x/2-1) & MASK_16BITS;
+  _cpi.cfg_ur.frameslice_ury = (slicer->slice_ur.y-1) & MASK_16BITS;
   hal_cpi_ur_set(0, _cpi.raw);
 
   _cpi.raw = hal_cpi_glob_read(0);
