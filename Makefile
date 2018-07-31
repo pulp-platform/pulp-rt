@@ -43,9 +43,27 @@ WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
 
 
 
+
+
+PULP_LIB_FC_SRCS_rt = $(shell plpfiles copy --item=hal_src_files)
+
+
+
 include kernel/kernel.mk
 include drivers/drivers.mk
 include libs/libs.mk
 
 
 include $(PULP_SDK_HOME)/install/rules/pulp_rt.mk
+
+
+define halSrcRules
+
+$(CONFIG_BUILD_DIR)/rt/fc/$(1): $(PULP_SDK_HOME)/install/src/$(2)
+	@mkdir -p `dirname $$@`
+	$(PULP_FC_CC) $(rt_cl_cflags) -MMD -MP -c $$< -o $$@
+
+endef
+
+$(foreach file, $(shell plpfiles copy --item=hal_src_files), $(eval $(call halSrcRules,$(patsubst %.c,%.o,$(file)),$(file))))
+
