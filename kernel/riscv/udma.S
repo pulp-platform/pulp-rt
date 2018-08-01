@@ -119,7 +119,7 @@ fcTcdm_rx:
 hyper:
 #ifdef ARCHI_UDMA_HAS_HYPER
 #ifdef RV_ISA_RV32
-  la    x10, ~(1<<UDMA_CHANNEL_SIZE_LOG2)
+  li    x10, ~(1<<UDMA_CHANNEL_SIZE_LOG2)
   and   x9, x12, x10
   lw    x10, RT_PERIPH_COPY_T_HYPER_ADDR(x11)
 #else
