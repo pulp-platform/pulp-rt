@@ -310,7 +310,6 @@ start:
       {
         // Good case where the body is aligned on both sides and we can do
         // a direct copy.
-
         __rt_hyper_copy_aligned(channel, (void *)addr, (void *)hyper_addr, size_aligned, event, mbr);
 
         copy->u.hyper.pending_hyper_addr += size_aligned;
@@ -370,6 +369,7 @@ start:
         {
           copy->u.hyper.pending_hyper_addr = copy->u.hyper.pending_hyper_addr - copy->u.hyper.length + copy->u.hyper.stride;
           copy->u.hyper.pending_size = copy->u.hyper.size_2d > copy->u.hyper.length ? copy->u.hyper.length : copy->u.hyper.size_2d;
+          if (!async) event = __rt_wait_event_prepare_blocking();
           goto start;
         }
       }
@@ -494,7 +494,6 @@ start:
       {
         // Good case where the body is aligned on both sides and we can do
         // a direct copy.
-
         __rt_hyper_copy_aligned(channel, (void *)addr, (void *)hyper_addr, size_aligned, event, mbr);
 
         copy->u.hyper.pending_hyper_addr += size_aligned;
@@ -506,7 +505,6 @@ start:
         if (async) goto end;
 
         __rt_wait_event(event);
-
       }
       else
       {
