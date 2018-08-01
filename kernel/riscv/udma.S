@@ -41,7 +41,7 @@ udma_event_handler:
   lw   x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
   lw   x11, RT_PERIPH_CHANNEL_T_FIRST_TO_ENQUEUE(x9)   // This is used later on, just put here to fill the slot
   beq  x8, x0, __rt_udma_no_copy                       // Special case where there is no copy, just register the event in the bitfield
-  lh   x12, RT_PERIPH_COPY_T_REPEAT(x8)
+  lw   x12, RT_PERIPH_COPY_T_REPEAT(x8)
   lw   x10, RT_PERIPH_COPY_T_NEXT(x8)
   bne  x12, x0, repeat_transfer
   sw   x10, RT_PERIPH_CHANNEL_T_FIRST(x9)
@@ -198,17 +198,17 @@ repeat_transfer:
   sw      x10, RT_PERIPH_COPY_T_HYPER_ADDR(x8)
 
   lw      x10, RT_PERIPH_COPY_T_ADDR(x8)
-  lw      x9, RT_PERIPH_COPY_T_HYPER_REPEAT_SIZE(x8)
+  lw      x9, RT_PERIPH_COPY_T_REPEAT_SIZE(x8)
   add     x10, x10, x12
   sub     x9, x9, x12
   blt     x12, x9, not_last
   mv      x12, x9
-  sh      x0, RT_PERIPH_COPY_T_REPEAT(x8)
+  sw      x0, RT_PERIPH_COPY_T_REPEAT(x8)
   beq     x12, x0, udma_event_handler_end
 
 not_last:
   sw      x10, RT_PERIPH_COPY_T_ADDR(x8)
-  sw      x9, RT_PERIPH_COPY_T_HYPER_REPEAT_SIZE(x8)
+  sw      x9, RT_PERIPH_COPY_T_REPEAT_SIZE(x8)
   sw      x10, UDMA_CHANNEL_SADDR_OFFSET(x11)
   sw      x12, UDMA_CHANNEL_SIZE_OFFSET(x11)
 
