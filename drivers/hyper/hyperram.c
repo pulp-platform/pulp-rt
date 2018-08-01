@@ -226,13 +226,13 @@ void __attribute__((noinline)) __rt_hyper_copy_aligned(int channel,
 
 
 
-// Performs a misaligned 2d transfer without any constraint.
+// Performs a misaligned 2d read without any constraint.
 // This function can be either called directly or as an event callback
 // This function is like a state machine, 
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
-static void __rt_hyper_resume_misaligned_copy(void *arg)
+static void __rt_hyper_resume_misaligned_read(void *arg)
 {
   int irq = rt_irq_disable();
 
@@ -251,8 +251,6 @@ start:
     int do_memcpy = copy->u.hyper.memcpy;
     copy->u.hyper.memcpy = 0;
 
-    //printf("Resume transfer addr %x hyper addr %x size %x\n", addr, hyper_addr, size);
-
     // Compute information to see how to do one more step
     int addr_aligned = (addr + 3) & ~0x3;
     int prologue_size = addr_aligned - (int)addr;
@@ -265,7 +263,7 @@ start:
     // we are called again when the next step is over
     if (async)
     {
-      __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_copy, event);
+      __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_read, event);
       // Be careful to not free the event, it is reused to finish the transfer
       __rt_event_set_pending(event);
     }
@@ -348,8 +346,6 @@ start:
           __rt_wait_event(event);
         }
 
-        //printf("COPY ALIGNED from temp addr %x temp offset %x size %x\n", addr, 1, size_aligned);
-
         memcpy((void *)addr, &__rt_hyper_temp_buffer[1], size_aligned);
     
         copy->u.hyper.pending_hyper_addr += size_aligned;
@@ -394,8 +390,199 @@ start:
           if (event)
           {
             __rt_hyper_first_waiting_misaligned = event->next;
-            __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_copy, event);
-            __rt_event_set_pending(event);
+            __rt_event_enqueue(event);
+          }
+        }
+       else
+        {
+          __rt_hyper_pending_misaligned = 0;
+        }
+      }
+    }
+  }
+
+end:
+  rt_irq_restore(irq);
+}
+
+
+
+// Performs a misaligned 2d write without any constraint.
+// This function can be either called directly or as an event callback
+// This function is like a state machine, 
+// it checks the state of the pending copy and does one more step
+// so that the whole transfer can be done asynchronously without blocking
+// the core.
+static void __rt_hyper_resume_misaligned_write(void *arg)
+{
+  int irq = rt_irq_disable();
+
+start:
+  {
+    rt_event_t *event = (rt_event_t *)arg;
+    rt_periph_copy_t *copy = &event->copy;
+
+    // Extract the current state of the transfer to see how to continue it
+    int addr = copy->u.hyper.pending_addr;
+    int hyper_addr = copy->u.hyper.pending_hyper_addr;
+    int channel = copy->u.hyper.channel;
+    int mbr = copy->u.hyper.mbr;
+    int size = copy->u.hyper.pending_size;
+    int async = copy->u.hyper.async;
+    int do_memcpy = copy->u.hyper.memcpy;
+    copy->u.hyper.memcpy = 0;
+
+    // Compute information to see how to do one more step
+    int addr_aligned = (addr + 3) & ~0x3;
+    int prologue_size = addr_aligned - (int)addr;
+    int hyper_addr_aligned = hyper_addr + prologue_size;
+
+    if (size < 4)
+      prologue_size = size;
+
+    // In case the transfer is asynchronous, prepare the callback so that
+    // we are called again when the next step is over
+    if (async)
+    {
+      __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_write, event);
+      // Be careful to not free the event, it is reused to finish the transfer
+      __rt_event_set_pending(event);
+    }
+
+    if (prologue_size)
+    {
+      // Case where we have a partial copy to do
+      if (!do_memcpy)
+      {
+        // A partial transfer must first transfer the content of the hyperram
+        // to the temporary area and partially overwrite it with a memcpy.
+        // This part is first called to trigger the transfer while the part after
+        // is called to do the memcpy and the final transfer as a second step.
+        __rt_hyper_copy_aligned(channel-1, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), 4, event, mbr);
+
+        // In case it is asynchronous, just remember we have to do
+        // a memcpy when the transfer is done and leave
+        if (async) {
+          copy->u.hyper.memcpy = 1;
+          goto end;
+        }
+
+        // Otherwise finish the transfer now
+        __rt_wait_event(event);
+        event = __rt_wait_event_prepare_blocking();
+      }
+
+      memcpy(&__rt_hyper_temp_buffer[hyper_addr & 1], (void *)addr, prologue_size);
+
+      __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), 4, event, mbr);
+
+      copy->u.hyper.pending_hyper_addr += prologue_size;
+      copy->u.hyper.pending_addr += prologue_size;
+      copy->u.hyper.pending_size -= prologue_size;
+
+      if (async) goto end;
+
+      // Otherwise finish the transfer now
+      __rt_wait_event(event);
+    }
+    else if (size > 0)
+    {
+      // Case where we have the body to transfer
+      int size_aligned = size & ~0x3;
+
+      if ((hyper_addr_aligned & 0x1) == 0)
+      {
+        // Good case where the body is aligned on both sides and we can do
+        // a direct copy.
+
+        __rt_hyper_copy_aligned(channel, (void *)addr, (void *)hyper_addr, size_aligned, event, mbr);
+
+        copy->u.hyper.pending_hyper_addr += size_aligned;
+        copy->u.hyper.pending_addr += size_aligned;
+        copy->u.hyper.pending_size -= size_aligned;
+
+        // In case it is asynchronous, just leave, we'll continue the transfer
+        // when this one is over
+        if (async) goto end;
+
+        __rt_wait_event(event);
+
+      }
+      else
+      {
+        // Bad case where we have to transfer the body using a temporary
+        // buffer as the aligments on both sides are not compatible.
+        // This part is very similar to the prologue.
+        // Just be careful to split into small transfers to fit the temporary buffer.
+
+        if ((size_aligned & 1) == 0)
+          size_aligned--;
+
+        if (size_aligned > __RT_HYPER_TEMP_BUFFER_SIZE - 2)
+          size_aligned = __RT_HYPER_TEMP_BUFFER_SIZE - 2;
+
+        if (!do_memcpy)
+        {
+          __rt_hyper_copy_aligned(channel-1, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), 4, event, mbr);
+
+          if (async) {
+            copy->u.hyper.memcpy = 1;
+            goto end;
+          }
+
+          __rt_wait_event(event);
+          event = __rt_wait_event_prepare_blocking();
+        }
+
+        memcpy(&__rt_hyper_temp_buffer[1], (void *)addr, size_aligned);
+    
+        __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), size_aligned+2, event, mbr);
+
+        copy->u.hyper.pending_hyper_addr += size_aligned;
+        copy->u.hyper.pending_addr += size_aligned;
+        copy->u.hyper.pending_size -= size_aligned;
+
+        if (async) goto end;
+
+        __rt_wait_event(event);
+      }
+    }
+
+    // Now check if we are done
+    if (copy->u.hyper.pending_size == 0)
+    {
+      // Check if we are doing a 2D transfer
+      if (copy->u.hyper.size_2d > 0)
+      {
+        // In this case, update the global size
+        copy->u.hyper.size_2d -= copy->u.hyper.length;
+
+        // And check if we must reenqueue a line.
+        if (copy->u.hyper.size_2d > 0)
+        {
+          copy->u.hyper.pending_hyper_addr = copy->u.hyper.pending_hyper_addr - copy->u.hyper.length + copy->u.hyper.stride;
+          copy->u.hyper.pending_size = copy->u.hyper.size_2d > copy->u.hyper.length ? copy->u.hyper.length : copy->u.hyper.size_2d;
+          if (!async) event = __rt_wait_event_prepare_blocking();
+          goto start;
+        }
+      }
+
+      // Special case where it is asynchronous
+      if (async)
+      {
+        // First enqueue the user event.
+        // We need to restore it as we reused the user event for the internal copies.
+        __rt_event_restore(event);
+        __rt_event_enqueue(event);
+
+        // In case there are other misaligned copies waiting for the temporary
+        // buffer, wakeup one of them.
+        if (__rt_hyper_first_waiting_misaligned)
+        {
+          event = __rt_hyper_first_waiting_misaligned;
+          if (event)
+          {
+            __rt_hyper_first_waiting_misaligned = event->next;
             __rt_event_enqueue(event);
           }
         }
@@ -440,12 +627,20 @@ static void __attribute__((noinline)) __rt_hyper_copy_misaligned(int channel,
     if (!__rt_hyper_pending_misaligned)
     {
       __rt_hyper_pending_misaligned = 1;
-      __rt_hyper_resume_misaligned_copy((void *)event);
+      if (channel & 1)
+        __rt_hyper_resume_misaligned_write((void *)event);
+      else
+        __rt_hyper_resume_misaligned_read((void *)event);
     }
     else
     {
       event->next = __rt_hyper_first_waiting_misaligned;
       __rt_hyper_first_waiting_misaligned = event;
+      if (channel & 1)
+        __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_write, event);
+      else
+        __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_read, event);
+      __rt_event_set_pending(event);
     }
   }
   else
@@ -453,7 +648,10 @@ static void __attribute__((noinline)) __rt_hyper_copy_misaligned(int channel,
     // In case it is synchronous, just loop until the transfer is finished
     while (1)
     {
-      __rt_hyper_resume_misaligned_copy((void *)event);
+      if (channel & 1)
+        __rt_hyper_resume_misaligned_write((void *)event);
+      else
+        __rt_hyper_resume_misaligned_read((void *)event);
       if (copy->u.hyper.pending_size <= 0) break;
 
       event = __rt_wait_event_prepare_blocking();

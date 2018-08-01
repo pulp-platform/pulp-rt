@@ -70,6 +70,7 @@ __rt_udma_call_enqueue_callback_resume:
   sw  x9, UDMA_CHANNEL_SIZE_OFFSET(x12)
 
   lw  x9, RT_PERIPH_COPY_T_CTRL(x11)
+  andi x9, x9, (1<<RT_PERIPH_COPY_CTRL_TYPE_WIDTH)-1
   li  x10, RT_PERIPH_COPY_SPECIAL_ENQUEUE_THRESHOLD
   blt x9, x10, transfer_resume
 
@@ -116,13 +117,13 @@ fcTcdm_rx:
 
 
 hyper:
-#ifdef RT_PERIPH_HAS_HYPER
+#ifdef ARCHI_UDMA_HAS_HYPER
 #ifdef RV_ISA_RV32
   la    x10, ~(1<<UDMA_CHANNEL_SIZE_LOG2)
   and   x9, x12, x10
-  lw    x10, RT_PERIPH_COPY_T_EXT_ADDR(x11)
+  lw    x10, RT_PERIPH_COPY_T_HYPER_ADDR(x11)
 #else
-  lw    x10, RT_PERIPH_COPY_T_EXT_ADDR(x11)
+  lw    x10, RT_PERIPH_COPY_T_HYPER_ADDR(x11)
   p.bclr  x9, x12, 0, UDMA_CHANNEL_SIZE_LOG2
 #endif
   sw    x10, HYPER_EXT_ADDR_CHANNEL_CUSTOM_OFFSET(x9)

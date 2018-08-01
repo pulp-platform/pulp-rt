@@ -168,7 +168,7 @@ static inline void rt_hyperram_write(rt_hyperram_t *dev,
 
 
 
-/** \brief Enqueue a 2D read copy  (rectangle area) to the HyperRAM (from HyperRAM to processor).
+/** \brief Enqueue a 2D read copy (rectangle area) to the HyperRAM (from HyperRAM to processor).
  *
  * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas.
  * An event can be specified in order to be notified when the transfer is finished.
@@ -183,6 +183,25 @@ static inline void rt_hyperram_write(rt_hyperram_t *dev,
  * \param event       The event used to notify the end of transfer. See the documentation of rt_event_t for more details.
  */
 static inline void rt_hyperram_read_2d(rt_hyperram_t *dev,
+  void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event);
+
+
+
+/** \brief Enqueue a 2D write copy (rectangle area) to the HyperRAM (from processor to HyperRAM).
+ *
+ * The copy will make an asynchronous transfer between the HyperRAM and one of the processor memory areas.
+ * An event can be specified in order to be notified when the transfer is finished.
+ * Can only be called from fabric-controller side.
+ *
+ * \param dev         The device descriptor of the HyperRAM chip on which to do the copy.
+ * \param addr        The address of the copy in the processor.
+ * \param hyper_addr  The address of the copy in the HyperRAM.
+ * \param size        The size in bytes of the copy
+ * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one. Must fit in 16 bits, i.e. must be less than 65536.
+ * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line. Must fit in 16 bits, i.e. must be less than 65536.
+ * \param event       The event used to notify the end of transfer. See the documentation of rt_event_t for more details.
+ */
+static inline void rt_hyperram_write_2d(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event);
 
 
@@ -340,6 +359,13 @@ static inline void rt_hyperram_write(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, rt_event_t *event)
 {
   __rt_hyper_copy(UDMA_CHANNEL_ID(dev->channel) + 1, addr, hyper_addr, size, event, REG_MBR0);
+}
+
+
+static inline void rt_hyperram_write_2d(rt_hyperram_t *dev,
+  void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event)
+{
+  __rt_hyper_copy_2d(UDMA_CHANNEL_ID(dev->channel) + 1, addr, hyper_addr, size, stride, length, event, REG_MBR0);
 }
 
 int __rt_hyperram_init(rt_hyperram_t *dev);
