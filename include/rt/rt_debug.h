@@ -35,6 +35,13 @@
 
 /// @cond IMPLEM
 
+#define RT_LOG_CRIT     0   // Critical condition that will likely leave the system unstable
+#define RT_LOG_ERROR    1   // Error condition, might require manual intervention
+#define RT_LOG_WARNING  2   // Unusual condition, not serious by itself but might indicate problems
+#define RT_LOG_INFO     3   // Information on the status of the system
+#define RT_LOG_DEBUG    4   // Debug messages
+#define RT_LOG_TRACE    5   // Very fine-grained debug and status messages
+
 static inline unsigned int rt_debug_config();
 
 static inline unsigned int rt_debug_config_trace();
