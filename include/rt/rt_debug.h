@@ -68,6 +68,11 @@ static inline int rt_debug_config_werror();
     if (rt_debug_config_werror()) abort();  \
   } while(0)
 
+#define rt_error(fmt, x...) \
+  do { \
+    rt_msg("\033[31mERROR\033[0m: " fmt, ##x); \
+  } while(0)
+
 #define rt_fatal(msg...)    \
   do { \
     rt_msg("\033[31mFATAL\033[0m: "msg);      \
@@ -77,6 +82,7 @@ static inline int rt_debug_config_werror();
 #else
 
 #define rt_msg(x...) while(0)
+#define rt_error(x...) while(0)
 #define rt_warning(x...) while(0)
 #define rt_fatal(x...) while(0)
 
