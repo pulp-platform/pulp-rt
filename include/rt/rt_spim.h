@@ -224,6 +224,8 @@ static inline void rt_spim_receive(rt_spim_t *handle, void *data, size_t len, rt
 
 
 
+#if 0
+
 /** \brief Enqueue a read and write copy to the SPI (using full duplex mode).
  *
  * This function can be used to send and receive data with the SPI device using full duplex mode.
@@ -240,6 +242,7 @@ static inline void rt_spim_receive(rt_spim_t *handle, void *data, size_t len, rt
  */
 void rt_spim_transfer(rt_spim_t *handle, void *tx_data, void *rx_data, size_t len, rt_spim_cs_e cs_mode, rt_event_t *event);
 
+#endif
 
 
 /** \brief Enqueue a write copy to the SPI using quad spi (from Chip to SPI device).

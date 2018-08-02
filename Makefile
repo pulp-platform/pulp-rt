@@ -60,7 +60,7 @@ include $(PULP_SDK_HOME)/install/rules/pulp_rt.mk
 
 define halSrcRules
 
-$(CONFIG_BUILD_DIR)/rt/fc/$(1): $(PULP_SDK_HOME)/install/src/$(2)
+$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/$(1): $(PULP_SDK_HOME)/install/src/$(2)
 	@mkdir -p `dirname $$@`
 	$(PULP_FC_CC) $(rt_cl_cflags) -MMD -MP -c $$< -o $$@
 
