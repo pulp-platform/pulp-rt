@@ -113,7 +113,7 @@ static inline int rt_debug_config_werror();
 #define rt_info(x...) while(0)
 #define rt_error(x...) while(0)
 #define rt_warning(x...) while(0)
-#define rt_fatal(x...) while(0)
+#define rt_fatal(x...) do { abort(); } while(0)
 
 #define RT_LOG_FATALS(x)    0
 #define RT_LOG_ERRORS(x)    0
