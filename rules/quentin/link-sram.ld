@@ -3,8 +3,8 @@ OUTPUT_ARCH(riscv)
 ENTRY( _start )
 MEMORY
 {
-  L2_scm_0             : ORIGIN = 0x1c006000, LENGTH = 0x00002000
-  L2_scm_1             : ORIGIN = 0x1c080000, LENGTH = 0x00002000
+  L2_sram_0             : ORIGIN = 0x1c000000, LENGTH = 0x00006000
+  L2_sram_1             : ORIGIN = 0x1c008000, LENGTH = 0x00088000
 }
 
 /*
@@ -27,7 +27,7 @@ SECTIONS
   {
     . = ALIGN(4);
     __irq_vector_base = .;KEEP(*(.vectors))
-  } > L2_scm_0
+  } > L2_sram_0
 
   .text :
   {
@@ -43,28 +43,28 @@ SECTIONS
     *(.shdata)
     _endtext = .;
     . = ALIGN(4);
-  } > L2_scm_0
+  } > L2_sram_0
 
   .data_tiny_fc :
   {
     . = ALIGN(4);
     *(.data_tiny_fc)
     *(.data_tiny_fc.*)
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .init :
   {
     . = ALIGN(4);
     KEEP( *(.init) )
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .fini :
   {
     . = ALIGN(4);
     KEEP( *(.fini) )
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .preinit_array : {
@@ -72,7 +72,7 @@ SECTIONS
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array))
     PROVIDE_HIDDEN (__preinit_array_end = .);
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .init_array : {
@@ -87,7 +87,7 @@ SECTIONS
     LONG(0)
     __CTOR_END__ = .;
     PROVIDE_HIDDEN (__init_array_end = .);
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .fini_array : {
@@ -102,14 +102,14 @@ SECTIONS
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array ))
     PROVIDE_HIDDEN (__fini_array_end = .);
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .boot : {
     . = ALIGN(4);
     *(.boot)
     *(.boot.data)
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .rodata : {
@@ -119,35 +119,35 @@ SECTIONS
     *(.srodata);
     *(.srodata.*)
     *(.eh_frame*)
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .got : {
     . = ALIGN(4);
     *(.got.plt) * (.igot.plt) *(.got) *(.igot)
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .shbss : {
     . = ALIGN(4);
     *(.shbss)
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .talias : {
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .gnu.offload_funcs : {
     . = ALIGN(4);
     KEEP(*(.gnu.offload_funcs))
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .gnu.offload_vars : {
     . = ALIGN(4);
     KEEP(*(.gnu.offload_vars))
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .stack : {
@@ -155,7 +155,7 @@ SECTIONS
     . = ALIGN(16);
     . = . + 0x800;
     stack = .;
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .data : {
@@ -176,7 +176,7 @@ SECTIONS
     . = ALIGN(4);
     edata  =  .;
     _edata  =  .;
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .bss : {
@@ -189,7 +189,7 @@ SECTIONS
     *(COMMON)
     . = ALIGN(4);
     _bss_end = .;
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   .l2_data : {
@@ -199,7 +199,7 @@ SECTIONS
     *(.data_fc_shared)
     *(.data_fc_shared.*)
     . = ALIGN(4);
-  } > L2_scm_1
+  } > L2_sram_1
 
 
   /* Following sections are keeping the cluster data
@@ -212,7 +212,7 @@ SECTIONS
     *(.data_tiny_l1.*)
     *(.data_alias_l1)
     *(.data_alias_l1.*)
-  } > L2_scm_1
+  } > L2_sram_1
 
   .l1cluster_g : {
     . = ALIGN(4);
@@ -227,16 +227,16 @@ SECTIONS
     *(.libgomp)
     *(.libgomp.*)
     . = ALIGN(4);
-  } > L2_scm_1
+  } > L2_sram_1
 
   .bss_l1 : {
     . = ALIGN(4);
     *(.bss_l1)
     *(.bss_l1.*)
     . = ALIGN(4);
-  } > L2_scm_1
+  } > L2_sram_1
 
-  __L2_scm_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
+  __L2_sram_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
 
 
   __l2_priv1_end = MAX(0x1c008000,ALIGN(4));
