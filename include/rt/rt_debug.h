@@ -78,6 +78,11 @@ static inline int rt_debug_config_werror();
     rt_msg("\033[31mTRACE\033[0m: " fmt, x); \
   } while(0)
 
+#define rt_debug(fmt, x...) \
+  do { \
+    rt_msg("\033[31mDEBUG\033[0m: " fmt, ##x); \
+  } while(0)
+
 #define rt_warning(x...)                                       \
   do {                                                          \
     if (rt_debug_config_warnings()) rt_msg("\033[31mWARNING\033[0m: "x);  \
@@ -99,6 +104,7 @@ static inline int rt_debug_config_werror();
 
 #define rt_msg(x...) while(0)
 #define rt_trace(x...) while(0)
+#define rt_debug(x...) while(0)
 #define rt_error(x...) while(0)
 #define rt_warning(x...) while(0)
 #define rt_fatal(x...) while(0)
