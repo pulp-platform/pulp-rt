@@ -39,7 +39,7 @@
 
 /// @cond IMPLEM
 
-#define RT_LOG_CRIT     0   // Critical condition that will likely leave the system unstable
+#define RT_LOG_FATAL    0   // Fatal condition, the system should terminate execution ASAP
 #define RT_LOG_ERROR    1   // Error condition, might require manual intervention
 #define RT_LOG_WARNING  2   // Unusual condition, not serious by itself but might indicate problems
 #define RT_LOG_INFO     3   // Information on the status of the system
@@ -60,6 +60,13 @@ static inline int rt_debug_config_werror();
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#define RT_LOG_FATALS(x)    (x >= RT_LOG_FATAL)
+#define RT_LOG_ERRORS(x)    (x >= RT_LOG_ERROR)
+#define RT_LOG_WARNINGS(x)  (x >= RT_LOG_WARNING)
+#define RT_LOG_INFOS(x)     (x >= RT_LOG_INFO)
+#define RT_LOG_DEBUGS(x)    (x >= RT_LOG_DEBUG)
+#define RT_LOG_TRACES(x)    (x >= RT_LOG_TRACE)
 
 #define rt_msg(fmt, x...)                      \
   do { \
@@ -89,6 +96,13 @@ static inline int rt_debug_config_werror();
 #define rt_error(x...) while(0)
 #define rt_warning(x...) while(0)
 #define rt_fatal(x...) while(0)
+
+#define RT_LOG_FATALS(x)    0
+#define RT_LOG_ERRORS(x)    0
+#define RT_LOG_WARNINGS(x)  0
+#define RT_LOG_INFOS(x)     0
+#define RT_LOG_DEBUGS(x)    0
+#define RT_LOG_TRACES(x)    0
 
 #endif
 
