@@ -68,9 +68,9 @@ static inline int rt_debug_config_werror();
 #define RT_LOG_DEBUGS(x)    (x >= RT_LOG_DEBUG)
 #define RT_LOG_TRACES(x)    (x >= RT_LOG_TRACE)
 
-#define rt_msg(fmt, x...)                      \
+#define rt_msg(fmt, x...) \
   do { \
-    printf("[\033[35mRT(%d,%d)\033[0m] " fmt, rt_cluster_id(), rt_core_id(), ##x);                                      \
+    printf("[\033[35mRT(%d,%d)\033[0m] " fmt, rt_cluster_id(), rt_core_id(), ##x); \
   } while(0)
 
 #define rt_debug(fmt, x...) \
@@ -84,9 +84,9 @@ static inline int rt_debug_config_werror();
   } while(0)
 
 #define rt_warning(fmt, x...) \
-  do {                                                          \
-    if (rt_debug_config_warnings()) rt_msg("\033[31mWARNING\033[0m: " fmt, ##x);  \
-    if (rt_debug_config_werror()) abort();  \
+  do { \
+    if (rt_debug_config_warnings()) rt_msg("\033[31mWARNING\033[0m: " fmt, ##x); \
+    if (rt_debug_config_werror()) abort(); \
   } while(0)
 
 #define rt_error(fmt, x...) \
@@ -94,10 +94,10 @@ static inline int rt_debug_config_werror();
     rt_msg("\033[31mERROR\033[0m: " fmt, ##x); \
   } while(0)
 
-#define rt_fatal(msg...)    \
+#define rt_fatal(msg...) \
   do { \
-    rt_msg("\033[31mFATAL\033[0m: "msg);      \
-    abort();          \
+    rt_msg("\033[31mFATAL\033[0m: "msg); \
+    abort(); \
   } while(0)
 
 #else
@@ -157,15 +157,15 @@ static inline int rt_debug_config_werror();
 #define RT_TRACE_SPIM      14
 #define RT_TRACE_FLASH     15
 
-#define rt_trace(trace, x...)            \
-  do {                                          \
-    if (rt_debug_config_trace() & (1<<trace)) rt_msg(x);          \
+#define rt_trace(trace, x...) \
+  do { \
+    if (rt_debug_config_trace() & (1<<trace)) rt_msg(x); \
   } while(0)
 
 #else
 
-#define rt_trace(x...)            \
-  do {                            \
+#define rt_trace(x...) \
+  do { \
   } while(0)
 
 #endif
