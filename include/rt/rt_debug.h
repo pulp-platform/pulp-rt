@@ -88,9 +88,9 @@ static inline int rt_debug_config_werror();
     rt_msg("\033[31mINFO\033[0m: " fmt, ##x); \
   } while(0)
 
-#define rt_warning(x...)                                       \
+#define rt_warning(fmt, x...) \
   do {                                                          \
-    if (rt_debug_config_warnings()) rt_msg("\033[31mWARNING\033[0m: "x);  \
+    if (rt_debug_config_warnings()) rt_msg("\033[31mWARNING\033[0m: " fmt, ##x);  \
     if (rt_debug_config_werror()) abort();  \
   } while(0)
 
