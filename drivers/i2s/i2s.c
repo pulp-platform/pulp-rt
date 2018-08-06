@@ -95,8 +95,6 @@ static rt_i2s_t *__rt_i2s_open(rt_dev_t *dev, rt_i2s_conf_t *conf, rt_event_t*ev
   i2s = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_i2s_t));
   if (i2s == NULL) goto error;
 
-  if (__rt_freq_set_constraint_multiple(i2s_freq)) goto error;
-
   // Remember the desired frequency to update the I2S divider in case the soc frequency is updated
   i2s->i2s_freq = i2s_freq;
   i2s->pdm = conf->pdm;
