@@ -34,6 +34,7 @@ static int __rt_hyper_pending_misaligned;
 // First misaligned pending copy waiting until __rt_hyper_temp_buffer is
 // available
 static rt_event_t *__rt_hyper_first_waiting_misaligned;
+static rt_event_t *__rt_hyper_last_waiting_misaligned;
 
 
 
@@ -228,7 +229,7 @@ void __attribute__((noinline)) __rt_hyper_copy_aligned(int channel,
 
 // Performs a misaligned 2d read without any constraint.
 // This function can be either called directly or as an event callback
-// This function is like a state machine, 
+// This function is like a state machine,
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
@@ -346,7 +347,7 @@ start:
         }
 
         memcpy((void *)addr, &__rt_hyper_temp_buffer[1], size_aligned);
-    
+
         copy->u.hyper.pending_hyper_addr += size_aligned;
         copy->u.hyper.pending_addr += size_aligned;
         copy->u.hyper.pending_size -= size_aligned;
@@ -409,7 +410,7 @@ end:
 
 // Performs a misaligned 2d write without any constraint.
 // This function can be either called directly or as an event callback
-// This function is like a state machine, 
+// This function is like a state machine,
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
@@ -533,7 +534,7 @@ start:
         }
 
         memcpy(&__rt_hyper_temp_buffer[1], (void *)addr, size_aligned);
-    
+
         __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), size_aligned+2, event, mbr);
 
         copy->u.hyper.pending_hyper_addr += size_aligned;
@@ -632,8 +633,13 @@ static void __attribute__((noinline)) __rt_hyper_copy_misaligned(int channel,
     }
     else
     {
-      event->next = __rt_hyper_first_waiting_misaligned;
-      __rt_hyper_first_waiting_misaligned = event;
+      if(__rt_hyper_first_waiting_misaligned){
+          __rt_hyper_last_waiting_misaligned->next = event;
+      }else{
+          //event->next = __rt_hyper_first_waiting_misaligned;
+          __rt_hyper_first_waiting_misaligned = event;
+      }
+      __rt_hyper_last_waiting_misaligned = event;
       if (channel & 1)
         __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_write, event);
       else
@@ -712,4 +718,5 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_hyper_init()
   __rt_hyper_temp_buffer = NULL;
   __rt_hyper_pending_misaligned = 0;
   __rt_hyper_first_waiting_misaligned = NULL;
+  __rt_hyper_last_waiting_misaligned = NULL;
 }
