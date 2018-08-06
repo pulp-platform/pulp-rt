@@ -54,7 +54,10 @@ static inline int rt_debug_config_warnings();
 
 static inline int rt_debug_config_werror();
 
-
+#ifndef __RT_USE_IO
+  // Comment the following line out to disable all print-outs by the runtime.
+  #define __RT_USE_IO
+#endif
 
 #if defined(__RT_USE_IO)
 
