@@ -78,17 +78,17 @@ static inline int rt_debug_config_werror();
 
 #define rt_debug(fmt, x...) \
   do { \
-    rt_msg("\033[31mDEBUG\033[0m: " fmt, ##x); \
+    rt_msg("\033[36mDEBUG\033[0m: " fmt, ##x); \
   } while(0)
 
 #define rt_info(fmt, x...) \
   do { \
-    rt_msg("\033[31mINFO\033[0m: " fmt, ##x); \
+    rt_msg("\033[34mINFO\033[0m: " fmt, ##x); \
   } while(0)
 
 #define rt_warning(fmt, x...) \
   do { \
-    if (rt_debug_config_warnings()) rt_msg("\033[31mWARNING\033[0m: " fmt, ##x); \
+    if (rt_debug_config_warnings()) rt_msg("\033[33mWARNING\033[0m: " fmt, ##x); \
     if (rt_debug_config_werror()) abort(); \
   } while(0)
 
@@ -99,7 +99,7 @@ static inline int rt_debug_config_werror();
 
 #define rt_fatal(msg...) \
   do { \
-    rt_msg("\033[31mFATAL\033[0m: "msg); \
+    rt_msg("\033[39mFATAL\033[0m: "msg); \
     abort(); \
   } while(0)
 
@@ -129,7 +129,7 @@ static inline int rt_debug_config_werror();
 
 #define rt_assert(cond, msg...)           \
   if (!(cond)) {                          \
-    rt_msg("\033[31mASSERT\033[0m: "msg); \
+    rt_msg("\033[39mASSERT\033[0m: "msg); \
     abort();                              \
   }
 
