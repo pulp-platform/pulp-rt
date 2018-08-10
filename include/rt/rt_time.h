@@ -70,6 +70,18 @@ unsigned int rt_time_get_us();
 void rt_time_wait_us(int time_us);
 
 
+/** \brief Wait for a specific number of clock cycles.
+ *
+ * Calling this function lets the calling core spin for the specified number of
+ * clock cycles.  This function guarantees that at least the specified number of
+ * clock cycles is executed.  The actual number of clock cycles spent in the
+ * function might be slightly higher (especially for low cycle numbers), but
+ * this is designed to be the most precise way to wait a specific number of
+ * clock cycles.
+ *
+ * \param   cycles  The number of clock cycles to wait.
+ */
+static inline void rt_time_wait_cycles(const unsigned cycles);
 
 //!@}
 
@@ -81,6 +93,21 @@ void rt_time_wait_us(int time_us);
 /// @cond IMPLEM
 
 extern rt_event_t *first_delayed;
+
+void rt_time_wait_cycles(const unsigned cycles)
+{
+    /**
+     * The following loop will be compiled to a hardware loop.  It starts with
+     * one `lp.setup` instruction, and each loop iteration comprises two `nop`s
+     * (because the minimum loop size is two instructions).  Since every `nop`
+     * instruction takes one cycle to execute, each loop iteration takes two
+     * cycles to execute.  Thus, the number of iterations is half the specified
+     * number of cycles.
+     */
+    for (unsigned i = 0; i < (cycles >> 1); ++i) {
+        asm __volatile__("nop" : :);
+    }
+}
 
 /// @endcond
 
