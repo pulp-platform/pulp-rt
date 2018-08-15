@@ -1,7 +1,7 @@
 PULP_LIBS = rt
 
 PULP_PROPERTIES += fc/archi pe/archi pulp_chip pulp_chip_family soc/cluster
-PULP_PROPERTIES += host/archi fc_itc udma/hyper udma udma/cam udma/i2c/version soc/fll
+PULP_PROPERTIES += host/archi fc_itc udma/hyper udma udma/cpi udma/i2c/version soc/fll
 PULP_PROPERTIES += udma/i2s udma/uart event_unit/version perf_counters
 PULP_PROPERTIES += fll/version soc/spi_master soc/apb_uart padframe/version
 PULP_PROPERTIES += udma/spim udma/spim/version gpio/version rtc udma/archi
