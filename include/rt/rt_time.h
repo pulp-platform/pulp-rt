@@ -77,7 +77,7 @@ void rt_time_wait_us(int time_us);
  * clock cycles is executed.  The actual number of clock cycles spent in the
  * function might be slightly higher (especially for low cycle numbers), but
  * this is designed to be the most precise way to wait a specific number of
- * clock cycles.
+ * clock cycles.  This function does not interfere with any timers.
  *
  * \param   cycles  The number of clock cycles to wait.
  */
