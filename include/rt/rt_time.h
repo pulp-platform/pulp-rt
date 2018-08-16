@@ -77,7 +77,10 @@ void rt_time_wait_us(int time_us);
  * clock cycles is executed.  The actual number of clock cycles spent in the
  * function might be slightly higher (especially for low cycle numbers), but
  * this is designed to be the most precise way to wait a specific number of
- * clock cycles.  This function does not interfere with any timers.
+ * clock cycles.
+ *
+ * In order to be as generally applicable as possible, this function does not
+ * interfere with any timers and does not depend on or use hardware loops.
  *
  * \param   cycles  The number of clock cycles to wait.
  */
@@ -97,16 +100,32 @@ extern rt_event_t *first_delayed;
 void rt_time_wait_cycles(const unsigned cycles)
 {
     /**
-     * The following loop will be compiled to a hardware loop.  It starts with
-     * one `lp.setup` instruction, and each loop iteration comprises two `nop`s
-     * (because the minimum loop size is two instructions).  Since every `nop`
-     * instruction takes one cycle to execute, each loop iteration takes two
-     * cycles to execute.  Thus, the number of iterations is half the specified
-     * number of cycles.
+     * Each iteration of the loop below will take four cycles on RI5CY (one for
+     * `addi` and three for the taken `bnez`; if the instructions hit in the
+     * I$).  Thus, we let `i` count the number of remaining loop iterations and
+     * initialize it to a fourth of the number of clock cyles.  With this
+     * initialization, we must not enter the loop if the number of clock cycles
+     * is less than four, because this will cause an underflow on the first
+     * subtraction.
      */
-    for (unsigned i = 0; i < (cycles >> 1); ++i) {
-        asm __volatile__("nop" : :);
-    }
+    register unsigned threshold;
+    asm volatile("c.li %[threshold], 4" : [threshold] "=r" (threshold));
+    asm volatile goto("ble %[cycles], %[threshold], %l2"
+            : /* no output */
+            : [cycles] "r" (cycles), [threshold] "r" (threshold)
+            : /* no clobbers */
+            : __wait_cycles_end);
+    register unsigned i = cycles >> 2;
+__wait_cycles_start:
+    // Decrement `i` and loop if it is not yet zero.
+    asm volatile("c.addi %0, -1" : "+r" (i));
+    asm volatile goto("c.bnez %0, %l1"
+            : /* no output */
+            : "r" (i)
+            : /* no clobbers */
+            : __wait_cycles_start);
+__wait_cycles_end:
+    return;
 }
 
 /// @endcond
