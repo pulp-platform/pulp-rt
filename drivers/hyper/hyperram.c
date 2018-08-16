@@ -37,13 +37,13 @@ static rt_event_t *__rt_hyper_first_waiting_misaligned;
 
 
 
-int __rt_hyperram_init(rt_hyperram_t *hyper)
+int __rt_hyperram_init(rt_hyperram_t *hyper, int ramsize)
 {
   rt_extern_alloc_t *alloc = (rt_extern_alloc_t *)rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_extern_alloc_t));
   if (alloc == NULL) return -1;
 
   hyper->alloc = alloc;
-  if (rt_extern_alloc_init(alloc, 0, hyper->dev->u.hyperram.size)) return -1;
+  if (rt_extern_alloc_init(alloc, 0, ramsize)) return -1;
 
   return 0;
 }
@@ -52,7 +52,8 @@ int __rt_hyperram_init(rt_hyperram_t *hyper)
 
 void rt_hyperram_conf_init(rt_hyperram_conf_t *conf)
 {
-
+  conf->id = -1;
+  conf->ram_size = 0;
 }
 
 
@@ -70,9 +71,22 @@ static void __rt_hyperram_free(rt_hyperram_t *hyper)
 rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_event_t *event)
 {
   rt_hyperram_t *hyper = NULL;
+  int channel;
+  int ramsize;
 
-  rt_dev_t *dev = rt_dev_get(dev_name);
-  if (dev == NULL) goto error;
+  if (dev_name)
+  {
+    rt_dev_t *dev = rt_dev_get(dev_name);
+    if (dev == NULL) goto error;
+    channel = dev->channel;
+    ramsize = dev->u.hyperram.size;
+  }
+  else
+  {
+    channel = ARCHI_UDMA_HYPER_ID(conf->id);
+    ramsize = conf->ram_size;
+  }
+
 
   if (__rt_hyper_temp_buffer == NULL)
   {
@@ -83,11 +97,10 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
   hyper = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_hyperram_t));
   if (hyper == NULL) goto error;
 
-  hyper->dev = dev;
   hyper->alloc = NULL;
-  hyper->channel = dev->channel;
+  hyper->channel = channel;
 
-  if (__rt_hyperram_init(hyper)) goto error;
+  if (__rt_hyperram_init(hyper, ramsize)) goto error;
 
   return hyper;
 

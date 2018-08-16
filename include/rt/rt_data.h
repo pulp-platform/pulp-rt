@@ -352,7 +352,6 @@ typedef struct {
 } rt_dev_t;
 
 typedef struct {
-  rt_dev_t *dev;
   rt_extern_alloc_t *alloc;
   int channel;
 } rt_hyperram_t;
