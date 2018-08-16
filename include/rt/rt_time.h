@@ -109,7 +109,7 @@ void rt_time_wait_cycles(const unsigned cycles)
      * subtraction.
      */
     register unsigned threshold;
-    asm volatile("c.li %[threshold], 4" : [threshold] "=r" (threshold));
+    asm volatile("li %[threshold], 4" : [threshold] "=r" (threshold));
     asm volatile goto("ble %[cycles], %[threshold], %l2"
             : /* no output */
             : [cycles] "r" (cycles), [threshold] "r" (threshold)
@@ -118,8 +118,8 @@ void rt_time_wait_cycles(const unsigned cycles)
     register unsigned i = cycles >> 2;
 __wait_cycles_start:
     // Decrement `i` and loop if it is not yet zero.
-    asm volatile("c.addi %0, -1" : "+r" (i));
-    asm volatile goto("c.bnez %0, %l1"
+    asm volatile("addi %0, %0, -1" : "+r" (i));
+    asm volatile goto("bnez %0, %l1"
             : /* no output */
             : "r" (i)
             : /* no clobbers */
