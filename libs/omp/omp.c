@@ -61,9 +61,8 @@ static inline void initTeam(omp_t *_this, omp_team_t *team)
 extern int main();
 
 
-static void __rt_omp_init(void *arg)
+static void __rt_omp_init(int exec_main)
 {
-
   rt_trace(RT_TRACE_INIT, "OMP init\n");
   unsigned int cid = rt_cluster_id();
   unsigned int nbCores = rt_nb_pe();
@@ -129,21 +128,30 @@ static void __rt_omp_init(void *arg)
   //rt_l1_start(rtCc, NULL, NULL);
   rt_trace(RT_TRACE_INIT, "OMP init done\n");
 
-  main();
+  if (exec_main)
+    main();
+}
+
+static void __rt_omp_init_no_main()
+{
+  __rt_omp_init(1);
 }
 
 RT_BOOT_CODE __attribute__((constructor))  void omp_constructor()
 {
-  //printf("(%d, %d) OMP CONSTRUCTOR\n", rt_cluster_id(), rt_core_id());
   int err = 0;
 
   //if (rt_is_fc() && __rt_config_cluster_start()) {
-    __rt_cluster_entry =  __rt_omp_init;
+    __rt_cluster_entry =  __rt_omp_init_no_main;
   //}
 }
 
-RT_BOOT_CODE int omp_init(omp_t *_this) {
+int rt_omp_start() {
+  __rt_omp_init(0);
   return 0;
+}
+
+void rt_omp_stop() {
 }
 
 int omp_get_thread_num(void) {
