@@ -59,7 +59,7 @@ endif
 # CAM
 
 ifeq '$(CONFIG_CAM_ENABLED)' '1'
-ifneq '$(udma/cam)' ''
+ifneq '$(udma/cpi)' ''
 PULP_LIB_FC_SRCS_rt += drivers/camera/himax.c drivers/camera/ov7670.c drivers/camera/camera.c
 endif
 endif

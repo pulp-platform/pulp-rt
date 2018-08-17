@@ -34,7 +34,7 @@ __rt_fc_socevents_handler:
 
   // Pop one element from the FIFO
   li   x8, ARCHI_FC_ITC_ADDR
-  lw   x10, ARCHI_ITC_FIFO(x8)
+  lw   x10, ARCHI_ITC_FIFO_OFFSET(x8)
 
   // UDMA CHANNEL EVENTS
   li x9, ((ARCHI_SOC_EVENT_UDMA_FIRST_EVT + ARCHI_SOC_EVENT_UDMA_NB_EVT + 1) & 0xfffffffe) + ARCHI_SOC_EVENT_UDMA_NB_TGEN_EVT
