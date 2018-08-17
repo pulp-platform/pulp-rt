@@ -66,6 +66,8 @@
  * This structure is used to pass the desired HyperRAM configuration to the runtime when opening the device.
  */
 typedef struct {
+  signed char id;         /*!< If it is different from -1, this specifies on which hyperbus interface the device is connected. */
+  signed int ram_size;   /*!< Size of the ram. */
 } rt_hyperram_conf_t;
 
 /** \brief HyperRAM copy structure.
@@ -368,7 +370,7 @@ static inline void rt_hyperram_write_2d(rt_hyperram_t *dev,
   __rt_hyper_copy_2d(UDMA_CHANNEL_ID(dev->channel) + 1, addr, hyper_addr, size, stride, length, event, REG_MBR0);
 }
 
-int __rt_hyperram_init(rt_hyperram_t *dev);
+int __rt_hyperram_init(rt_hyperram_t *dev, int ramsize);
 
 static inline void *rt_hyperram_alloc(rt_hyperram_t *dev, int size)
 {

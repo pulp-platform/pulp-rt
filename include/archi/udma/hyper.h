@@ -17,8 +17,6 @@
 #ifndef __ARCHI_HYPER_H__
 #define __ARCHI_HYPER_H__
 
-#include "archi/pulp.h"
-
 #define REG_ACCESS    0x1
 #define MEM_ACCESS    0x0
 

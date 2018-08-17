@@ -33,7 +33,18 @@
 #ifndef __RT_RT_DEBUG_H__
 #define __RT_RT_DEBUG_H__
 
+#include "io/stdlib.h"      // abort()
+#include "rt/rt_data.h"     // RT_FC_GLOBAL_DATA
+#include "rt/rt_utils.h"    // rt_{cluster,core}_id(),
+
 /// @cond IMPLEM
+
+#define RT_LOG_FATAL    0   // Fatal condition, the system should terminate execution ASAP
+#define RT_LOG_ERROR    1   // Error condition, might require manual intervention
+#define RT_LOG_WARNING  2   // Unusual condition, not serious by itself but might indicate problems
+#define RT_LOG_INFO     3   // Information on the status of the system
+#define RT_LOG_DEBUG    4   // Debug messages
+#define RT_LOG_TRACE    5   // Very fine-grained debug and status messages
 
 static inline unsigned int rt_debug_config();
 
@@ -43,35 +54,70 @@ static inline int rt_debug_config_warnings();
 
 static inline int rt_debug_config_werror();
 
-
+#ifndef __RT_USE_IO
+  // Comment the following line out to disable all print-outs by the runtime.
+  #define __RT_USE_IO
+#endif
 
 #if defined(__RT_USE_IO)
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#define rt_msg(fmt, x...)                      \
+#define RT_LOG_FATALS(x)    (x >= RT_LOG_FATAL)
+#define RT_LOG_ERRORS(x)    (x >= RT_LOG_ERROR)
+#define RT_LOG_WARNINGS(x)  (x >= RT_LOG_WARNING)
+#define RT_LOG_INFOS(x)     (x >= RT_LOG_INFO)
+#define RT_LOG_DEBUGS(x)    (x >= RT_LOG_DEBUG)
+#define RT_LOG_TRACES(x)    (x >= RT_LOG_TRACE)
+
+#define rt_msg(fmt, x...) \
   do { \
-    printf("[\033[35mRT(%d,%d)\033[0m] " fmt, rt_cluster_id(), rt_core_id(), ##x);                                      \
+    printf("[\033[35mRT(%d,%d)\033[0m] " fmt, rt_cluster_id(), rt_core_id(), ##x); \
   } while(0)
 
-#define rt_warning(x...)                                       \
-  do {                                                          \
-    if (rt_debug_config_warnings()) rt_msg("\033[31mWARNING\033[0m: "x);  \
-    if (rt_debug_config_werror()) abort();  \
+#define rt_debug(fmt, x...) \
+  do { \
+    rt_msg("\033[36mDEBUG\033[0m: " fmt, ##x); \
   } while(0)
 
-#define rt_fatal(msg...)    \
+#define rt_info(fmt, x...) \
   do { \
-    rt_msg("\033[31mFATAL\033[0m: "msg);      \
-    abort();          \
+    rt_msg("\033[34mINFO\033[0m: " fmt, ##x); \
+  } while(0)
+
+#define rt_warning(fmt, x...) \
+  do { \
+    if (rt_debug_config_warnings()) rt_msg("\033[33mWARNING\033[0m: " fmt, ##x); \
+    if (rt_debug_config_werror()) abort(); \
+  } while(0)
+
+#define rt_error(fmt, x...) \
+  do { \
+    rt_msg("\033[31mERROR\033[0m: " fmt, ##x); \
+  } while(0)
+
+#define rt_fatal(msg...) \
+  do { \
+    rt_msg("\033[39mFATAL\033[0m: "msg); \
+    abort(); \
   } while(0)
 
 #else
 
 #define rt_msg(x...) while(0)
+#define rt_debug(x...) while(0)
+#define rt_info(x...) while(0)
+#define rt_error(x...) while(0)
 #define rt_warning(x...) while(0)
-#define rt_fatal(x...) while(0)
+#define rt_fatal(x...) do { abort(); } while(0)
+
+#define RT_LOG_FATALS(x)    0
+#define RT_LOG_ERRORS(x)    0
+#define RT_LOG_WARNINGS(x)  0
+#define RT_LOG_INFOS(x)     0
+#define RT_LOG_DEBUGS(x)    0
+#define RT_LOG_TRACES(x)    0
 
 #endif
 
@@ -83,7 +129,7 @@ static inline int rt_debug_config_werror();
 
 #define rt_assert(cond, msg...)           \
   if (!(cond)) {                          \
-    rt_msg("\033[31mASSERT\033[0m: "msg); \
+    rt_msg("\033[39mASSERT\033[0m: "msg); \
     abort();                              \
   }
 
@@ -114,15 +160,15 @@ static inline int rt_debug_config_werror();
 #define RT_TRACE_SPIM      14
 #define RT_TRACE_FLASH     15
 
-#define rt_trace(trace, x...)            \
-  do {                                          \
-    if (rt_debug_config_trace() & (1<<trace)) rt_msg(x);          \
+#define rt_trace(trace, x...) \
+  do { \
+    if (rt_debug_config_trace() & (1<<trace)) rt_msg(x); \
   } while(0)
 
 #else
 
-#define rt_trace(x...)            \
-  do {                            \
+#define rt_trace(x...) \
+  do { \
   } while(0)
 
 #endif
