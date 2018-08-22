@@ -201,24 +201,41 @@ unsigned int __rt_stack_master_base;
 unsigned int __rt_stacks_slave_base;
 unsigned int __rt_stack_master_size;
 unsigned int __rt_stack_slave_size;
-static RT_L1_TINY_DATA void (* volatile __rt_cluster_fork_entry[ARCHI_CLUSTER_NB_PE-1])(void *);
-static RT_L1_TINY_DATA void * volatile __rt_cluster_fork_arg;
+
+typedef struct {
+  volatile void *entry;
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  int barrier;
+} rt_slave_call_t;
+
+static RT_L1_TINY_DATA rt_slave_call_t __rt_cluster_slave_calls[ARCHI_CLUSTER_NB_PE-1][2];
+static RT_L1_TINY_DATA int __rt_cluster_slave_index[ARCHI_CLUSTER_NB_PE-1];
 static RT_L1_TINY_DATA int __rt_last_fork_nb_cores = ARCHI_CLUSTER_NB_PE;
 
 void __rt_pe_entry()
 {
   int core_id = rt_core_id();
+  int index = 0;
+  rt_slave_call_t *call = __rt_cluster_slave_calls[core_id-1];
   while(1)
   {
-    while(__rt_cluster_fork_entry[core_id-1] == 0)
+    volatile void *entry;
+
+    while((entry = call[index].entry) == NULL)
     {
       eu_evt_maskWaitAndClr(1<<RT_CL_SYNC_EVENT);
     }
 
-    __rt_cluster_fork_entry[core_id-1](__rt_cluster_fork_arg);
-    __rt_cluster_fork_entry[core_id-1] = 0;
+    call[index].entry = NULL;
+    int barrier = call[index].barrier;
+    index ^= 1;
+    __asm__ __volatile__ ("" : : : "memory");
+    ((void (*)(void *, void *, void *))entry)(call->arg0, call->arg1, call->arg2);
 
-    rt_team_barrier();
+    if (barrier)
+      rt_team_barrier();
   }
 }
 
@@ -229,7 +246,11 @@ void __rt_cluster_pe_init(void *master_stack, void *slave_stacks, int master_sta
   __rt_stack_master_size = master_stack_size;
   __rt_stack_slave_size = slave_stack_size;
   for (int i=0; i<ARCHI_CLUSTER_NB_PE-1; i++)
-    __rt_cluster_fork_entry[i] = 0;
+  {
+    __rt_cluster_slave_index[i] = 0;
+    __rt_cluster_slave_calls[i][0].entry = NULL;
+    __rt_cluster_slave_calls[i][1].entry = NULL;
+  }
 }
 
 void __rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
@@ -241,9 +262,15 @@ void __rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
 
   if (nb_cores) __rt_team_config(nb_cores);
   __rt_last_fork_nb_cores = nb_cores;
-  __rt_cluster_fork_arg = arg;
   for (int i=0; i<nb_cores-1; i++)
-    __rt_cluster_fork_entry[i] = entry;
+  {
+    int index = __rt_cluster_slave_index[i];
+    __rt_cluster_slave_index[i] = index ^ 1;
+    __rt_cluster_slave_calls[i][index].arg0 = arg;
+    __rt_cluster_slave_calls[i][index].barrier = 1;
+    __asm__ __volatile__ ("" : : : "memory");
+    __rt_cluster_slave_calls[i][index].entry = entry;
+  }
   eu_evt_trig(eu_evt_trig_addr(RT_CL_SYNC_EVENT), -1);
 
   entry(arg);
