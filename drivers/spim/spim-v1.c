@@ -38,8 +38,6 @@
 #include "rt/rt_api.h"
 #include <stdint.h>
 
-static rt_spim_t __rt_spim[ARCHI_UDMA_NB_SPIM];
-
 static int __rt_spi_get_div(int spi_freq)
 {
   int periph_freq = __rt_freq_periph_get();
@@ -108,11 +106,9 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 
   if (channel == -1) goto error;
 
-  rt_spim_t *spim = &__rt_spim[channel];
+  rt_spim_t *spim = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_spim_t));
+  if (spim == NULL) goto error;
 
-  if (spim->open_count > 0) goto error;
-
-  spim->open_count++;
   spim->channel = ARCHI_UDMA_SPIM_ID(channel) * 2;
 
   spim->wordsize = conf->wordsize;
@@ -160,6 +156,11 @@ void __rt_spim_control(rt_spim_t *handle, rt_spim_control_e cmd, uint32_t arg)
 
 void rt_spim_close(rt_spim_t *handle, rt_event_t *event)
 {
+  int irq = rt_irq_disable();
+
+  rt_free(RT_ALLOC_FC_DATA, handle, sizeof(handle));
+
+  rt_irq_restore(irq);
 }
 
 void __rt_spim_send(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim_cs_e cs_mode, rt_event_t *event)
@@ -218,12 +219,4 @@ void rt_spim_conf_init(rt_spim_conf_t *conf)
   conf->id = -1;
   conf->polarity = 0;
   conf->phase = 0;
-}
-
-RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_spim_init()
-{
-  for (int i=0; i<ARCHI_UDMA_NB_SPIM; i++)
-  {
-    __rt_spim[i].open_count = 0;
-  }
 }
