@@ -38,11 +38,11 @@
 #include "rt/rt_api.h"
 #include <stdint.h>
 
+static int __rt_spim_open_count[ARCHI_UDMA_NB_SPIM];
+
 typedef struct {
     unsigned int cmd[4];
 } rt_spim_cmd_t;
-
-static rt_spim_t __rt_spim[ARCHI_UDMA_NB_SPIM];
 
 static inline int __rt_spim_id(int periph_id)
 {
@@ -109,11 +109,9 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 
   if (channel == -1) goto error;
 
-  rt_spim_t *spim = &__rt_spim[__rt_spim_id(channel)];
+  rt_spim_t *spim = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_spim_t));
+  if (spim == NULL) goto error;
 
-  if (spim->open_count > 0) goto error;
-
-  spim->open_count++;
   spim->channel = channel*2;
 
   spim->wordsize = conf->wordsize;
@@ -129,10 +127,15 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 
   spim->cfg = SPI_CMD_CFG(div, conf->polarity, conf->phase);
 
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
+  __rt_spim_open_count[channel]++;
 
-  soc_eu_fcEventMask_setEvent(channel*2);
-  soc_eu_fcEventMask_setEvent(channel*2 + 1);
+  if (__rt_spim_open_count[channel] == 1)
+  {
+    plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
+
+    soc_eu_fcEventMask_setEvent(channel*2);
+    soc_eu_fcEventMask_setEvent(channel*2 + 1);
+  }
 
   rt_irq_restore(irq);
 
@@ -173,6 +176,23 @@ void __rt_spim_control(rt_spim_t *handle, rt_spim_control_e cmd, uint32_t arg)
 
 void rt_spim_close(rt_spim_t *handle, rt_event_t *event)
 {
+  int irq = rt_irq_disable();
+
+  int channel = handle->channel >> 1;
+
+  __rt_spim_open_count[channel]--;
+
+  if (__rt_spim_open_count[channel] == 0)
+  {
+    plp_udma_cg_set(plp_udma_cg_get() & ~(1<<(handle->channel>>1)));
+
+    soc_eu_fcEventMask_clearEvent(handle->channel);
+    soc_eu_fcEventMask_clearEvent(handle->channel + 1);
+  }
+
+  rt_free(RT_ALLOC_FC_DATA, handle, sizeof(handle));
+
+  rt_irq_restore(irq);
 }
 
 void __rt_spim_send(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim_cs_e cs_mode, rt_event_t *event)
@@ -264,6 +284,6 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_spim_init()
 {
   for (int i=0; i<ARCHI_UDMA_NB_SPIM; i++)
   {
-    __rt_spim[i].open_count = 0;
+    __rt_spim_open_count[i] = 0;
   }
 }
