@@ -236,7 +236,7 @@ void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_s
     *udma_cmd++ = SPI_CMD_EOT(0);
   }
 
-  rt_periph_dual_copy(copy, handle->channel, (unsigned int)cmd, 4*4, (int)data, (len+7)>>3, 2<<1, call_event);
+  rt_periph_dual_copy(copy, handle->channel, (unsigned int)cmd, cs_mode == RT_SPIM_CS_AUTO ? 4*4 : 3*4, (int)data, (len+7)>>3, 2<<1, call_event);
 
   __rt_wait_event_check(event, call_event);
 
