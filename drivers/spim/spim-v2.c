@@ -112,9 +112,11 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 
   spim->cfg = SPI_CMD_CFG(div, conf->polarity, conf->phase);
 
-  __rt_spim_open_count[channel]++;
+  int id = channel - ARCHI_UDMA_SPIM_ID(0);
 
-  if (__rt_spim_open_count[channel] == 1)
+  __rt_spim_open_count[id]++;
+
+  if (__rt_spim_open_count[id] == 1)
   {
     plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
 
@@ -164,10 +166,11 @@ void rt_spim_close(rt_spim_t *handle, rt_event_t *event)
   int irq = rt_irq_disable();
 
   int channel = handle->channel >> 1;
+  int id = channel - ARCHI_UDMA_SPIM_ID(0);
 
-  __rt_spim_open_count[channel]--;
+  __rt_spim_open_count[id]--;
 
-  if (__rt_spim_open_count[channel] == 0)
+  if (__rt_spim_open_count[id] == 0)
   {
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<(handle->channel>>1)));
 
