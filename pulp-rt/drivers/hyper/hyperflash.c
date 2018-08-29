@@ -51,8 +51,14 @@ static rt_flash_t *__rt_hyperflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt
   hyper = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_hyperflash_t));
   if (hyper == NULL) goto error;
 
-  hyper->header.dev = dev;
-  hyper->channel = dev->channel;
+  if (dev)
+  {
+    hyper->channel = dev->channel;
+  }
+  else
+  {
+    hyper->channel = ARCHI_UDMA_HYPER_ID(conf->id);
+  }
 
   // HyperFlash
   hal_hyper_udma_dt1_set(0);

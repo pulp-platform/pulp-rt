@@ -230,10 +230,12 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
 
     if (stacks == NULL) return -1;
 #if defined(EU_VERSION) && EU_VERSION >= 3
+#ifndef ARCHI_HAS_NO_DISPATCH
     eu_dispatch_team_config((1<<rt_nb_active_pe())-1);
     eu_dispatch_push((unsigned int)__rt_set_slave_stack | 1);
     eu_dispatch_push((unsigned int)rt_stack_size_get());
     eu_dispatch_push((unsigned int)stacks);
+#endif
 #else
 #if defined(__riscv__)
     __rt_cluster_pe_init(stacks, rt_stack_size_get());
