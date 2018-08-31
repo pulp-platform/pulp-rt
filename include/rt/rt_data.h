@@ -529,10 +529,13 @@ typedef struct rt_hyperram_req_s {
   void *addr;
   void *hyper_addr;
   int size;
+  int stride;
+  int length;
   rt_event_t event;
   int done;
   unsigned char cid;
   unsigned char is_write;
+  unsigned char is_2d;
 } rt_hyperram_req_t ;
 
 typedef struct rt_hyperram_alloc_req_s {

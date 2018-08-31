@@ -135,7 +135,10 @@ void __rt_hyperram_cluster_req(void *_req)
   rt_event_t *event = &req->event;
   __rt_init_event(event, event->sched, __rt_hyperram_cluster_req_done, (void *)req);
   __rt_event_set_pending(event);
-  __rt_hyper_copy(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, event, REG_MBR0);
+  if(req->is_2d)
+      __rt_hyper_copy_2d(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, req->stride, req->length, event, REG_MBR0);
+  else
+      __rt_hyper_copy(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, event, REG_MBR0);
 }
 
 
@@ -157,6 +160,26 @@ void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
   __rt_cluster_push_fc_event(&req->event);
 }
 
+
+void __rt_hyperram_cluster_copy_2d(rt_hyperram_t *dev,
+  void *addr, void *hyper_addr, int size, int length, int stride, rt_hyperram_req_t *req, int is_write)
+{
+  req->dev = dev;
+  req->addr = addr;
+  req->hyper_addr = hyper_addr;
+  req->size = size;
+  req->stride = stride;
+  req->length = length;
+  req->cid = rt_cluster_id();
+  req->done = 0;
+  req->is_write = is_write;
+  req->is_2d = 1;
+  __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_cluster_req, (void *)req);
+  // Mark it as pending event so that it is not added to the list of free events
+  // as it stands inside the event request
+  __rt_event_set_pending(&req->event);
+  __rt_cluster_push_fc_event(&req->event);
+}
 
 
 void __rt_hyperram_alloc_cluster_req(void *_req)
@@ -241,7 +264,7 @@ void __attribute__((noinline)) __rt_hyper_copy_aligned(int channel,
 
 // Performs a misaligned 2d read without any constraint.
 // This function can be either called directly or as an event callback
-// This function is like a state machine, 
+// This function is like a state machine,
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
@@ -359,7 +382,7 @@ start:
         }
 
         memcpy((void *)addr, &__rt_hyper_temp_buffer[1], size_aligned);
-    
+
         copy->u.hyper.pending_hyper_addr += size_aligned;
         copy->u.hyper.pending_addr += size_aligned;
         copy->u.hyper.pending_size -= size_aligned;
@@ -422,7 +445,7 @@ end:
 
 // Performs a misaligned 2d write without any constraint.
 // This function can be either called directly or as an event callback
-// This function is like a state machine, 
+// This function is like a state machine,
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
@@ -546,7 +569,7 @@ start:
         }
 
         memcpy(&__rt_hyper_temp_buffer[1], (void *)addr, size_aligned);
-    
+
         __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), size_aligned+2, event, mbr);
 
         copy->u.hyper.pending_hyper_addr += size_aligned;
