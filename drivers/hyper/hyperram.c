@@ -102,6 +102,10 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
 
   if (__rt_hyperram_init(hyper, ramsize)) goto error;
 
+  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(channel));
+  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(channel)+1);
+  plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
+
   return hyper;
 
 error:

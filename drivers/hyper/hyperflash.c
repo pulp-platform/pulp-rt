@@ -63,6 +63,10 @@ static rt_flash_t *__rt_hyperflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt
   // HyperFlash
   hal_hyper_udma_dt1_set(0);
 
+  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(hyper->channel));
+  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(hyper->channel)+1);
+  plp_udma_cg_set(plp_udma_cg_get() | (1<<hyper->channel));
+
   if (event) __rt_event_enqueue(event);
 
   return (rt_flash_t *)hyper;
