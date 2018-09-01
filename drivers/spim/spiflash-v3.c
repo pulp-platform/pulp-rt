@@ -176,3 +176,9 @@ rt_flash_dev_t spiflash_desc = {
 };
 
 #endif
+
+rt_flash_dev_t spiflash_desc = {
+  .open      = NULL,
+  .close     = NULL,
+  .read      = NULL
+};
