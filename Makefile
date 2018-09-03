@@ -45,8 +45,8 @@ WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
 
 
 
-#HAL_FILES := $(shell plpfiles copy --item=hal_src_files)
-#PULP_LIB_FC_SRCS_rt += $(HAL_FILES)
+HAL_FILES := $(shell plpfiles copy --item=hal_src_files)
+PULP_LIB_FC_SRCS_rt += $(HAL_FILES)
 
 
 
@@ -66,5 +66,5 @@ $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/$(1): $(PULP_SDK_HOME)/install/src/$(
 
 endef
 
-# $(foreach file, $(HAL_FILES), $(eval $(call halSrcRules,$(patsubst %.c,%.o,$(file)),$(file))))
+$(foreach file, $(HAL_FILES), $(eval $(call halSrcRules,$(patsubst %.c,%.o,$(file)),$(file))))
 
