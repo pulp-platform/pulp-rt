@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef __RT_RT_ALLOC_H__
-#define __RT_RT_ALLOC_H__
+#ifndef __RT_RT_OMP_H__
+#define __RT_RT_OMP_H__
 
 
 /// @cond IMPLEM
+
+#include "omp.h"
 
 int rt_omp_start();
 

@@ -137,6 +137,8 @@ rt_uart_t* __rt_uart_open(int channel, rt_uart_conf_t *conf, rt_event_t *event, 
 {
   int irq = rt_irq_disable();
 
+  __rt_padframe_init();
+  
   int baudrate = __RT_UART_BAUDRATE;
   if (conf) baudrate = conf->baudrate;
 
@@ -161,8 +163,8 @@ rt_uart_t* __rt_uart_open(int channel, rt_uart_conf_t *conf, rt_event_t *event, 
   // First activate uart device
   plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
 
-  soc_eu_fcEventMask_setEvent(UDMA_CHANNEL_ID(channel));
-  soc_eu_fcEventMask_setEvent(UDMA_CHANNEL_ID(channel)+1);
+  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(channel));
+  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(channel)+1);
 
   // Then set it up
   __rt_uart_setup(uart);

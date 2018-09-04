@@ -121,14 +121,6 @@ void __rt_init()
   // Now do individual modules initializations.
   if (__rt_cbsys_exec(RT_CBSYS_START)) goto error;
 
-
-  // TODO move that to hyper driver as soon as moun/unmount feature is integrated
-#ifdef ARCHI_UDMA_HAS_HYPER
-  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_HYPER_RX(0));
-  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_HYPER_TX(0));
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_HYPER_ID(0)));
-#endif
-
   if (__rt_check_clusters_start()) goto error;
 
   return;
