@@ -228,7 +228,7 @@ void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_s
   rt_periph_copy_t *copy = &call_event->copy;
 
   rt_periph_copy_init(copy, 0);
-
+  
   rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
   unsigned int *udma_cmd = (unsigned int *)cmd->cmd;
   *udma_cmd++ = handle->cfg;
@@ -246,10 +246,39 @@ void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_s
   rt_irq_restore(irq);
 }
 
-void rt_spim_transfer(rt_spim_t *handle, void *tx_data, void *rx_data, size_t len, rt_spim_cs_e mode, rt_event_t *event)
+void rt_spim_transfer(rt_spim_t *handle, void *tx_data, void *rx_data, size_t len, rt_spim_cs_e cs_mode, rt_event_t *event)
 {
   rt_trace(RT_TRACE_SPIM, "[SPIM] Transfering bitstream (handle: %p, tx_buffer: %p, rx_buffer: %p, len: 0x%x, keep_cs: %d, event: %p)\n", handle, tx_data, rx_data, len, mode, event);
 
+  int irq = rt_irq_disable();
+
+  rt_event_t *call_event = __rt_wait_event_prepare(event);
+  rt_periph_copy_t *copy = &call_event->copy;
+
+  // First enqueue the header with SPI config, cs, and send command.
+  // The rest will be sent by the assembly code.
+  // First the user data and finally an epilogue with the EOT command.
+  int next_step;
+  if (cs_mode == RT_SPIM_CS_AUTO) next_step = RT_PERIPH_COPY_SPIM_STEP2;
+  else                            next_step = 0;
+  rt_periph_copy_init_ctrl(copy, RT_PERIPH_COPY_SPIM_STEP1 << RT_PERIPH_COPY_CTRL_TYPE_BIT);
+
+  rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
+  unsigned int *udma_cmd = (unsigned int *)cmd->cmd;
+  *udma_cmd++ = handle->cfg;
+  *udma_cmd++ = SPI_CMD_SOT(handle->cs);
+  *udma_cmd++ = SPI_CMD_FUL(len, handle->byte_align);
+
+  copy->cfg = UDMA_CHANNEL_CFG_EN;
+  copy->u.raw.val[2] = (int)tx_data;
+  copy->u.raw.val[0] = (len + 7) >> 3;
+  copy->u.raw.val[1] = next_step;
+
+  rt_periph_dual_copy(copy, handle->channel+1, (unsigned int)cmd, 3*4, (int)rx_data, (len+7)>>3, 2<<1, call_event);
+
+  __rt_wait_event_check(event, call_event);
+
+  rt_irq_restore(irq);
 }
 
 void rt_spim_conf_init(rt_spim_conf_t *conf)
