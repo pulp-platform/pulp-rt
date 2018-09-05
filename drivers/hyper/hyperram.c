@@ -530,11 +530,8 @@ start:
         // This part is very similar to the prologue.
         // Just be careful to split into small transfers to fit the temporary buffer.
 
-        if ((size_aligned & 1) == 0)
-          size_aligned--;
-
-        if (size_aligned > __RT_HYPER_TEMP_BUFFER_SIZE - 2)
-          size_aligned = __RT_HYPER_TEMP_BUFFER_SIZE - 2;
+        if (size_aligned > __RT_HYPER_TEMP_BUFFER_SIZE - 4)
+          size_aligned = __RT_HYPER_TEMP_BUFFER_SIZE - 4;
 
         if (!do_memcpy)
         {
@@ -549,13 +546,13 @@ start:
           event = __rt_wait_event_prepare_blocking();
         }
 
-        memcpy(&__rt_hyper_temp_buffer[1], (void *)addr, size_aligned);
+        memcpy(&__rt_hyper_temp_buffer[1], (void *)addr, size_aligned-1);
     
-        __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), size_aligned+2, event, mbr);
+        __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), size_aligned, event, mbr);
 
-        copy->u.hyper.pending_hyper_addr += size_aligned;
-        copy->u.hyper.pending_addr += size_aligned;
-        copy->u.hyper.pending_size -= size_aligned;
+        copy->u.hyper.pending_hyper_addr += size_aligned-1;
+        copy->u.hyper.pending_addr += size_aligned-1;
+        copy->u.hyper.pending_size -= size_aligned-1;
 
         if (async) goto end;
 
