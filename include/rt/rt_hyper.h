@@ -340,7 +340,7 @@ void __rt_hyper_copy(int channel,
   void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr);
 
 void __rt_hyper_copy_2d(int channel,
-  void *addr, void *hyper_addr, int size, short length, short stride, rt_event_t *event, int mbr);
+  void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event, int mbr);
 
 
 static inline void rt_hyperram_read(rt_hyperram_t *dev,
