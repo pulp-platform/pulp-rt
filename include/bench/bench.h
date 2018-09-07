@@ -207,12 +207,16 @@ static inline void plp_power_stop() {
 
 static inline void rt_bench_power_start()
 {
+#ifdef APB_SOC_CORESTATUS_OFFSET
   pulp_write32(ARCHI_APB_SOC_CTRL_ADDR + APB_SOC_CORESTATUS_OFFSET, 0xABBAABBA);
+#endif
 }
 
 static inline void rt_bench_power_stop()
 {
+#ifdef APB_SOC_CORESTATUS_OFFSET
   pulp_write32(ARCHI_APB_SOC_CTRL_ADDR + APB_SOC_CORESTATUS_OFFSET, 0xDEADCACA);
+#endif
 }
 
 #endif
