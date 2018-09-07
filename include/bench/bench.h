@@ -205,6 +205,10 @@ static inline void plp_power_stop() {
 #endif
 }
 
+#define RT_BENCH_ADDR (ARCHI_APB_SOC_CTRL_ADDR + APB_SOC_CORESTATUS_OFFSET)
+#define RT_BENCH_START_VAL 0xABBAABBA
+#define RT_BENCH_STOP_VAL 0xDEADCACA
+
 static inline void rt_bench_power_start()
 {
 #ifdef APB_SOC_CORESTATUS_OFFSET
