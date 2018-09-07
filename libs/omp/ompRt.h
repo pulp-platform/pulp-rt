@@ -160,7 +160,7 @@ static inline omp_team_t *getCurrentTeam() {
 static inline void criticalStart(omp_team_t *team)
 {
 #if EU_VERSION >= 3
-  eu_mutex_lock(eu_mutex_addr(0));
+  rt_team_critical_enter();
 #else
   plp_swMutex_lock(&team->mutex);
 #endif
@@ -177,7 +177,7 @@ static inline void userCriticalStart(omp_team_t *team)
 static inline void criticalEnd(omp_team_t *team)
 {
 #if EU_VERSION >= 3
-  eu_mutex_unlock(eu_mutex_addr(0));
+  rt_team_critical_exit();
 #else
   plp_swMutex_unlock(&team->mutex);
 #endif
@@ -193,7 +193,7 @@ static inline void userCriticalEnd(omp_team_t *team)
 
 static inline __attribute__((always_inline)) void doBarrier(omp_team_t *team) {
 #if EU_VERSION >= 3
-  eu_bar_trig_wait_clr(eu_bar_addr(0));
+  rt_team_barrier();
 #else
   pulp_barrier_notify(0);
   pulp_evt_wait();
@@ -281,7 +281,6 @@ static inline __attribute__((always_inline)) unsigned int sectionGet()
     }
 
     eu_mutex_unlock(eu_mutex_addr(0));
-
     return start;
   }
   else

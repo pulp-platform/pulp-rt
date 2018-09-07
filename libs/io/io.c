@@ -56,6 +56,15 @@ void free(void *ptr)
   rt_free(RT_ALLOC_CL_DATA, (void *)((uint32_t *)ptr--), size);
 }
 
+void *l1malloc(size_t size)
+{
+  return malloc(size);
+}
+
+void l1free(void *ptr)
+{
+  free(ptr);
+}
 
 int strcmp(const char *s1, const char *s2)
 {
