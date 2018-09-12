@@ -39,7 +39,8 @@ static rt_event_t *__rt_io_event_current;
 
 hal_debug_struct_t HAL_DEBUG_STRUCT_NAME = HAL_DEBUG_STRUCT_INIT;
 
-int __errno;
+static int errno;
+int *__errno() { return &errno; } 
 
 void *malloc(size_t size)
 {
