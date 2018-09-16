@@ -25,7 +25,12 @@ RT_FC_TINY_DATA void *__rt_udma_callback[ARCHI_NB_PERIPH];
 RT_FC_TINY_DATA void *__rt_udma_callback_data[ARCHI_NB_PERIPH];
 volatile RT_FC_TINY_DATA unsigned int __rt_socevents_status[ARCHI_SOC_EVENT_NB_TOTAL/32];
 
-#if 0
+
+  // TODO this should disappearas soon as all peripherals are
+  // using the new periph structure
+RT_FC_TINY_DATA rt_periph_channel_t periph_channels[ARCHI_NB_PERIPH*2];
+
+
 #if defined(ARCHI_UDMA_HAS_HYPER)
 static inline __attribute__((always_inline)) void handle_hyper_copy(rt_periph_channel_t *channel, unsigned int base, rt_periph_copy_t *copy, unsigned int addr,
   unsigned int size, unsigned int cfg)
@@ -54,12 +59,10 @@ static inline __attribute__((always_inline)) void __rt_handle_special_copy(rt_pe
 #endif
   }
 }
-#endif
 
 void rt_periph_copy(rt_periph_copy_t *copy, int channel_id, unsigned int addr, int size,
   unsigned int cfg, rt_event_t *event)
 {
-  #if 0
   rt_trace(RT_TRACE_UDMA_COPY, "[UDMA] Enqueueing UDMA copy (node: 0x%x, l2Addr: 0x%x, size: 0x%x, channelId: %d)\n", (int)copy, addr, size, channel_id);
 
   int irq = rt_irq_disable();
@@ -97,10 +100,7 @@ void rt_periph_copy(rt_periph_copy_t *copy, int channel_id, unsigned int addr, i
   __rt_wait_event_check(event, call_event);
 
   rt_irq_restore(irq);
-  #endif
 }
-
-#if 0
 
 
 
@@ -139,14 +139,12 @@ void rt_periph_single_copy(rt_periph_copy_t *copy, int channel_id, unsigned int 
 
   rt_irq_restore(irq);
 }
-#endif
 
 
 void rt_periph_dual_copy_safe(rt_periph_copy_t *copy, int rx_channel_id,
   unsigned int tx_addr, int tx_size, unsigned int rx_addr, int rx_size,
   unsigned int cfg)
 {
-  #if 0
   rt_trace(RT_TRACE_UDMA_COPY, "[UDMA] Enqueueing UDMA copy (node: 0x%x, tx_l2Addr: 0x%x, tx_size: 0x%x, rx_l2Addr: 0x%x, rx_size: 0x%x, rx_channel_id: %d)\n", (int)copy, tx_addr, tx_size, rx_addr, rx_size, rx_channel_id);
 
   // Dual copies assumes that more copies are always pushed to the TX channels than
@@ -180,11 +178,9 @@ void rt_periph_dual_copy_safe(rt_periph_copy_t *copy, int rx_channel_id,
     copy->enqueue_callback = 0;
     __rt_channel_enqueue(channel, copy, tx_addr, tx_size, cfg);
   }
-  #endif
 
 }
 
-#if 0
 void __rt_periph_dual_copy_noshadow_safe(rt_periph_copy_t *copy, int rx_channel_id,
   unsigned int tx_addr, int tx_size, unsigned int rx_addr, int rx_size,
   unsigned int cfg)
@@ -223,7 +219,6 @@ void __rt_periph_dual_copy_noshadow_safe(rt_periph_copy_t *copy, int rx_channel_
   }
 
 }
-#endif
 
 int __rt_periph_get_event(int event)
 {
@@ -285,10 +280,20 @@ void __rt_periph_clear_event(int event)
 RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()
 {
   for (unsigned int i=0; i<ARCHI_NB_PERIPH; i++) {
-    __rt_udma_callback[i] = NULL;
+    __rt_udma_callback[i] = udma_event_handler;
   }
   for (unsigned int i=0; i<ARCHI_SOC_EVENT_NB_TOTAL/32; i++)
   {
     __rt_socevents_status[i] = 0;
+  }
+
+  // TODO this should disappearas soon as all peripherals are
+  // using the new periph structure
+  for (unsigned int i=0; i<ARCHI_NB_PERIPH*2; i++) {
+    rt_periph_channel_t *channel = &periph_channels[i];
+    channel->first = NULL;
+    channel->firstToEnqueue = NULL;
+    channel->base = hal_udma_channel_base(i);
+    channel->callback = udma_event_handler;
   }
 }

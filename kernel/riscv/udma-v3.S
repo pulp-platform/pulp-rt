@@ -27,8 +27,27 @@
 #endif
 
 
+
   .global udma_event_handler
 udma_event_handler:
+
+  // TODO this should disappearas soon as all peripherals are
+  // using the new periph structure
+  
+  // We have the channel ID in x10, get pointer to the corresponding channel
+
+#if defined(ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT) && ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT > 2
+  andi   x8, x10, 1
+  srli   x10, x10, 1
+  or     x10, x10, x8
+#endif
+
+  la     x8, periph_channels
+  slli   x9, x10, RT_PERIPH_CHANNEL_T_SIZEOF_LOG2
+  add    x9, x9, x8
+
+  lw   x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
+
 
   // Dequeue the transfer which have just finished and mark it as done
   lw   x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
