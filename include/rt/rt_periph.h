@@ -35,7 +35,7 @@
 
 /// @cond IMPLEM
 
-extern volatile unsigned int __rt_socevents_status[2];
+extern RT_FC_TINY_DATA volatile unsigned int __rt_socevents_status[];
 
 #define RT_PERIPH_COPY_L2   0
 
@@ -125,11 +125,21 @@ static inline void rt_periph_copy_init_ctrl(rt_periph_copy_t *copy, int ctrl)
   copy->repeat = 0;
 }
 
-extern rt_periph_channel_t periph_channels[];
+#if UDMA_VERSION <= 2
+
+extern RT_FC_TINY_DATA rt_periph_channel_t periph_channels[];
+extern RT_FC_TINY_DATA void *__rt_udma_extra_callback[];
 
 static inline rt_periph_channel_t *__rt_periph_channel(int channel) {
   return &periph_channels[channel];
 }
+
+#else
+
+extern RT_FC_TINY_DATA void *__rt_udma_callback[ARCHI_NB_PERIPH];
+extern RT_FC_TINY_DATA void *__rt_udma_callback_data[ARCHI_NB_PERIPH];
+
+#endif
 
 int __rt_periph_get_event(int event);
 
@@ -159,6 +169,20 @@ void rt_periph_copy_spi(rt_periph_copy_t *copy, int channel_id, unsigned int add
   unsigned int cfg, unsigned int spi_status, rt_event_t *event);
   
 #endif
+
+void __rt_spim_handle_event();
+
+void __rt_spim_enqueue_eot();
+
+void __rt_spim_do_nothing();
+
+void udma_event_handler_end();
+
+void __rt_spim_handle_eot();
+
+void __rt_spim_handle_tx_end();
+
+void udma_event_handler();
 
 /// @endcond
 

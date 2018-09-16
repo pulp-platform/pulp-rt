@@ -29,22 +29,6 @@
   .global udma_event_handler
 udma_event_handler:
 
-  // We have the channel ID in x10, get pointer to the corresponding channel
-  li     x9, RT_PERIPH_CHANNEL_T_SIZEOF
-
-#if defined(ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT) && ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT > 2
-  andi   x8, x10, 1
-  srli   x10, x10, 1
-  or     x10, x10, x8
-#endif
-
-
-#ifndef CORE_NO_MUL
-  p.mul  x9, x9, x10
-#endif
-  la     x8, periph_channels
-  add    x9, x9, x8
-
   // Dequeue the transfer which have just finished and mark it as done
   lw   x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
   lw   x11, RT_PERIPH_CHANNEL_T_FIRST_TO_ENQUEUE(x9)   // This is used later on, just put here to fill the slot
@@ -68,7 +52,11 @@ resume_after_special_end:
   // Update the FIFO pointers and just copy from node to UDMA
   lw  x12, RT_PERIPH_COPY_T_ENQUEUE_CALLBACK(x11)
   lw  x10, RT_PERIPH_COPY_T_NEXT(x11)
-  bnez x12, __rt_udma_call_enqueue_callback
+  beqz x12, __rt_udma_call_enqueue_callback_resume
+
+  la  x9, __rt_udma_call_enqueue_callback_resume
+  jr  x12
+
 __rt_udma_call_enqueue_callback_resume:
   lw  x12, RT_PERIPH_CHANNEL_T_BASE(x9)
   sw  x10, RT_PERIPH_CHANNEL_T_FIRST_TO_ENQUEUE(x9)
@@ -251,24 +239,19 @@ handle_special_end:
 
 // TODO there are now too many cases, switch it to a handler as on udma v1
 #ifdef RV_ISA_RV32
-  li          x12, RT_PERIPH_COPY_SPIM_STEP1
-  beq         x10, x12, spim_step1
-  li          x12, RT_PERIPH_COPY_SPIM_STEP2
-  beq         x10, x12, spim_step2
   li          x12, RT_PERIPH_COPY_I2C_STEP1
   beq         x10, x12, i2c_step1
   li          x12, RT_PERIPH_COPY_I2C_STEP2
   beq         x10, x12, i2c_step2
 #else
-  p.beqimm    x10, RT_PERIPH_COPY_SPIM_STEP1, spim_step1  
-  p.beqimm    x10, RT_PERIPH_COPY_SPIM_STEP2, spim_step2
   p.beqimm    x10, RT_PERIPH_COPY_I2C_STEP1, i2c_step1  
   p.beqimm    x10, RT_PERIPH_COPY_I2C_STEP2, i2c_step2
 #endif
 
   j           resume_after_special_end
 
-spim_step1:
+
+spim_step3:
   // The current copy was enqueued to configure spi, cs and send command
   // now we need to reenqueue the same copy with the user buffer.
   lw          x10, RT_PERIPH_COPY_T_RAW_VAL1(x8)
@@ -392,7 +375,3 @@ i2c_step2:
 
 
 
-
-__rt_udma_call_enqueue_callback:
-  la          x9, __rt_udma_call_enqueue_callback_resume
-  jr          x12
