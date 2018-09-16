@@ -279,6 +279,7 @@ RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()
     channel->first = NULL;
     channel->firstToEnqueue = NULL;
     channel->base = hal_udma_channel_base(i);
+    channel->callback = udma_event_handler;
   }
   __rt_socevents_status[0] = 0;
   __rt_socevents_status[1] = 0;
