@@ -125,7 +125,7 @@ static inline void rt_periph_copy_init_ctrl(rt_periph_copy_t *copy, int ctrl)
   copy->repeat = 0;
 }
 
-#if UDMA_VERSION <= 2
+#if defined(UDMA_VERSION) && UDMA_VERSION < 3
 
 extern RT_FC_TINY_DATA rt_periph_channel_t periph_channels[];
 extern RT_FC_TINY_DATA void *__rt_udma_extra_callback[];
@@ -134,7 +134,7 @@ static inline rt_periph_channel_t *__rt_periph_channel(int channel) {
   return &periph_channels[channel];
 }
 
-#else
+#elif defined(UDMA_VERSION) && UDMA_VERSION >= 3
 
 extern RT_FC_TINY_DATA void *__rt_udma_callback[ARCHI_NB_PERIPH];
 extern RT_FC_TINY_DATA void *__rt_udma_callback_data[ARCHI_NB_PERIPH];
