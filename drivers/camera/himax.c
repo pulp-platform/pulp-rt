@@ -127,7 +127,7 @@ static himax_reg_cfg_t himaxRegInit[] = {
     {0x3060, 0x01},
 //    {0x3060, 0x25}, //Clock gating and clock divisors
     {0x3068, 0x20}, //PCLK0 polarity
-    {IMG_ORIENTATION, 0x01}, // change the orientation
+    {IMG_ORIENTATION, 0x00}, // change the orientation
     {0x0104, 0x01}
 };
 
