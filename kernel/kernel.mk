@@ -37,7 +37,7 @@ endif
 
 ifneq '$(udma)' ''
 PULP_LIB_FC_SRCS_rt     += kernel/periph-v$(udma/archi).c
-PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma.S
+PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma-v$(udma/archi).S kernel/$(fc_archi)/udma_spim-v$(udma/spim/version).S
 endif
 
 ifneq '$(soc/fll)' ''
@@ -51,7 +51,7 @@ endif
 
 ifneq '$(soc_eu/version)' ''
 ifneq '$(fc_itc)' ''
-PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/soc_event_itc.S
+PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/soc_event_itc-v$(soc_eu/version).S
 else
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/soc_event_eu.S
 endif

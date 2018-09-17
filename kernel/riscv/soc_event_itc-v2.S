@@ -24,6 +24,11 @@
 
   .global __rt_fc_socevents_handler
 __rt_fc_socevents_handler:
+
+  //
+  // Context saving
+  //
+
 // The stack is first adjusted to have stack-based load/store compressed
   add sp, sp, -128
   sw  x8, 0(sp)
@@ -32,36 +37,72 @@ __rt_fc_socevents_handler:
   sw  x11, 12(sp)
   sw  x12, 16(sp)
 
+
+
+  //
+  // SOC event fifo handing
+  //
+  
   // Pop one element from the FIFO
   li   x8, ARCHI_FC_ITC_ADDR
   lw   x10, ARCHI_ITC_FIFO_OFFSET(x8)
 
-  // UDMA CHANNEL EVENTS
-  li x9, ((ARCHI_SOC_EVENT_UDMA_FIRST_EVT + ARCHI_SOC_EVENT_UDMA_NB_EVT + 1) & 0xfffffffe) + ARCHI_SOC_EVENT_UDMA_NB_TGEN_EVT
-  blt x10, x9, udma_event_handler
-  
 
+
+
+  //
+  // UDMA events handling
+  //
+
+  li x9, ARCHI_SOC_EVENT_UDMA_NB_EVT
+  bge x10, x9, __rt_fc_socevents_no_udma
+
+  // We have the event ID in x10, get periph info
+  andi x12, x10, 0xfffffffc
+
+  // Load callback and callback data and call it if specified
+  lw   x11, %tiny(__rt_udma_callback)(x12)
+  lw   x8, %tiny(__rt_udma_callback_data)(x12)
+
+  beqz x11, __rt_fc_socevents_register
+
+  jr   x11
+
+
+
+__rt_fc_socevents_no_udma:
+
+
+  //
+  // SOC event status register
+  //
+
+__rt_fc_socevents_register:
   // If the event is not handled, store it in the soc event status mask
-  la      x9, __rt_socevents_status
-  li      x11, 32
-  blt     x10, x11, socevents_set
-  addi    x9, x9, 4
-  addi    x10, x10, -32
+  srli    x11, x10, 5
+  lw      x12, %tiny(__rt_socevents_status)(x11)
+  andi    x10, x10, 0xff
 
-socevents_set:
-  lw      x11, 0(x9)
 #ifdef RV_ISA_RV32
   li      x8, 1
   sll     x10, x8, x10
-  or      x12, x11, x10
+  or      x12, x12, x10
 #else
-  p.bsetr x12, x11, x10
+  p.bsetr x12, x12, x10
 #endif
-  sw      x12, 0(x9)
-  
 
-  .global udma_event_handler_end
-udma_event_handler_end:
+  sw      x12, %tiny(__rt_socevents_status)(x11)
+
+
+
+
+
+  //
+  // Context restore
+  //
+
+  .global __rt_fc_socevents_handler_exit
+__rt_fc_socevents_handler_exit:
   lw  x8, 0(sp)
   lw  x9, 4(sp)
   lw  x10, 8(sp)
