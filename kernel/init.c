@@ -68,6 +68,11 @@ void __rt_deinit()
 
 void __rt_init()
 {
+  // Notify the debug bridge that the chip is ready to be used
+  hal_bridge_t *bridge = hal_bridge_get();
+  bridge->target.available = 1;
+  apb_soc_jtag_reg_write(apb_soc_jtag_reg_loc(apb_soc_jtag_reg_read()) | 2);
+
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
 
 #if defined(ARCHI_HAS_FC)
