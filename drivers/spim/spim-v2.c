@@ -99,8 +99,6 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 
   spim->channel = channel*2;
 
-  __rt_periph_channel(spim->channel+1)->callback = __rt_spim_handle_tx_end;
-
   spim->wordsize = conf->wordsize;
   spim->big_endian = conf->big_endian;
   spim->polarity = conf->polarity;
@@ -123,6 +121,9 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
     plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
 
     __rt_udma_extra_callback[ARCHI_SOC_EVENT_SPIM0_EOT - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + id] = __rt_spim_handle_eot;
+    __rt_periph_channel(spim->channel+1)->callback = __rt_spim_handle_tx_end;
+    __rt_periph_channel(spim->channel)->callback = __rt_spim_handle_rx_end;
+
 
     soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_SPIM0_EOT + id);
   }
@@ -176,6 +177,8 @@ void rt_spim_close(rt_spim_t *handle, rt_event_t *event)
   if (__rt_spim_open_count[id] == 0)
   {
     __rt_udma_extra_callback[ARCHI_SOC_EVENT_SPIM0_EOT - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + id] = __rt_soc_evt_no_udma;
+    __rt_periph_channel(handle->channel+1)->callback = udma_event_handler;
+    __rt_periph_channel(handle->channel)->callback = udma_event_handler;
     soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_SPIM0_EOT + id);
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<(handle->channel>>1)));
   }
@@ -269,7 +272,7 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
     copy->u.raw.val[2] = 3*4;
     copy->u.raw.val[3] = (int)data;
     copy->u.raw.val[4] = size;
-    copy->u.raw.val[5] = cs_mode == RT_SPIM_CS_AUTO ? 1 : 2;
+    copy->u.raw.val[6] = (int)(cs_mode == RT_SPIM_CS_AUTO ? __rt_spim_single_eot : __rt_spim_single_no_eot);
   }
 
   rt_irq_restore(irq);
@@ -300,6 +303,8 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
 
   rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
 
+  int channel_id = handle->channel;
+
   int cmd_size = 3*4;
   cmd->cmd[0] = handle->cfg;
   cmd->cmd[1] = SPI_CMD_SOT(handle->cs);
@@ -309,8 +314,10 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
     cmd->cmd[3] = SPI_CMD_EOT(1);
     cmd_size += 4;
   }
-
-  int channel_id = handle->channel;
+  else
+  {
+    soc_eu_fcEventMask_setEvent(channel_id);
+  }
 
   rt_periph_channel_t *channel = __rt_periph_channel(channel_id);
   int size = (len + 7) >> 3;
@@ -329,7 +336,7 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
     copy->u.raw.val[2] = cmd_size;
     copy->u.raw.val[3] = (int)data;
     copy->u.raw.val[4] = size;
-    copy->u.raw.val[5] = 0;
+    copy->u.raw.val[6] = (int)(cs_mode == RT_SPIM_CS_AUTO ? __rt_spim_single_eot : __rt_spim_single_no_eot);
   }
 
   rt_irq_restore(irq);
@@ -376,21 +383,23 @@ void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, siz
 
   if (__rt_spim_enqueue_to_channel(channel, copy))
   {
-    if (cs_mode != RT_SPIM_CS_AUTO)
-    {
-      soc_eu_fcEventMask_setEvent(channel_id+1);
-    }
-
-    plp_udma_enqueue(tx_base, (unsigned int)cmd, 3*4, UDMA_CHANNEL_CFG_EN);
-    plp_udma_enqueue(rx_base, (unsigned int)rx_data, size, UDMA_CHANNEL_CFG_EN | (2<<1));
-    plp_udma_enqueue(tx_base, (unsigned int)tx_data, size, UDMA_CHANNEL_CFG_EN);
-
     if (cs_mode == RT_SPIM_CS_AUTO)
     {
+      plp_udma_enqueue(tx_base, (unsigned int)cmd, 3*4, UDMA_CHANNEL_CFG_EN);
+      plp_udma_enqueue(rx_base, (unsigned int)rx_data, size, UDMA_CHANNEL_CFG_EN | (2<<1));
+      plp_udma_enqueue(tx_base, (unsigned int)tx_data, size, UDMA_CHANNEL_CFG_EN);
+
       while(!plp_udma_canEnqueue(tx_base));
 
       cmd->cmd[0] = SPI_CMD_EOT(1);
       plp_udma_enqueue(tx_base, (unsigned int)cmd, 1*4, UDMA_CHANNEL_CFG_EN);
+    }
+    else
+    {
+      plp_udma_enqueue(tx_base, (unsigned int)cmd, 3*4, UDMA_CHANNEL_CFG_EN);
+      soc_eu_fcEventMask_setEvent(channel_id);
+      plp_udma_enqueue(rx_base, (unsigned int)rx_data, size, UDMA_CHANNEL_CFG_EN | (2<<1));
+      plp_udma_enqueue(tx_base, (unsigned int)tx_data, size, UDMA_CHANNEL_CFG_EN);
     }
   }
   else
@@ -398,9 +407,10 @@ void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, siz
     copy->u.raw.val[0] = rx_base;
     copy->u.raw.val[1] = (int)cmd;
     copy->u.raw.val[2] = 3*4;
-    copy->u.raw.val[3] = (int)tx_data;
+    copy->u.raw.val[3] = (int)rx_data;
     copy->u.raw.val[4] = size;
-    copy->u.raw.val[5] = cs_mode == RT_SPIM_CS_AUTO ? 1 : 2;
+    copy->u.raw.val[5] = (int)tx_data;
+    copy->u.raw.val[6] = (int)(cs_mode == RT_SPIM_CS_AUTO ? __rt_spim_dup_eot : __rt_spim_dup_no_eot);
   }
 
   rt_irq_restore(irq);

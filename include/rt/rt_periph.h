@@ -183,9 +183,19 @@ void __rt_spim_handle_eot();
 
 void __rt_spim_handle_tx_end();
 
+void __rt_spim_handle_rx_end();
+
 void udma_event_handler();
 
 void __rt_soc_evt_no_udma();
+
+void __rt_spim_dup_no_eot();
+
+void __rt_spim_dup_eot();
+
+void __rt_spim_single_no_eot();
+
+void __rt_spim_single_eot();
 
 /// @endcond
 
