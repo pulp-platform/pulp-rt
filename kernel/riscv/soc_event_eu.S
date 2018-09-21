@@ -83,7 +83,7 @@ __rt_soc_evt_no_udma_channel:
 
   jr   x11
 
-
+  .global __rt_soc_evt_no_udma
 __rt_soc_evt_no_udma:
   // GPIO EVENT
   li      x9, ARCHI_SOC_EVENT_GPIO

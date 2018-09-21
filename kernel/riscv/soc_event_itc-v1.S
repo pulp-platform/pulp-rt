@@ -69,7 +69,7 @@ __rt_soc_evt_no_udma_channel:
 
   jr   x11
 
-
+  .global __rt_soc_evt_no_udma
 __rt_soc_evt_no_udma:
   // If the event is not handled, store it in the soc event status mask
   la      x9, __rt_socevents_status

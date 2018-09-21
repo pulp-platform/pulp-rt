@@ -185,6 +185,8 @@ void __rt_spim_handle_tx_end();
 
 void udma_event_handler();
 
+void __rt_soc_evt_no_udma();
+
 /// @endcond
 
 #endif

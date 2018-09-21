@@ -281,6 +281,12 @@ RT_BOOT_CODE void __attribute__((constructor)) __rt_periph_init()
     channel->base = hal_udma_channel_base(i);
     channel->callback = udma_event_handler;
   }
+  
+  for (int i=0; i<ARCHI_SOC_EVENT_UDMA_NB_EXTRA_EVT; i++)
+  {
+    __rt_udma_extra_callback[i] = __rt_soc_evt_no_udma;
+  }
+
   __rt_socevents_status[0] = 0;
   __rt_socevents_status[1] = 0;
 }
