@@ -139,11 +139,21 @@ __rt_spim_handle_eot:
   // x9: channel, x10:event, x8,x11,x12:temp
 __rt_spim_handle_tx_end:
 
+  // This handler is only used for CS keep mode where
+  // EOT can not be used for the termination
+  // TX soc event was temporarly activated due to that, now we
+  // have to deactivate it
+
   li     x12, ARCHI_SOC_EU_ADDR
   lw     x11, SOC_FC_MASK_LSB(x12)
   li     x8, 1
   sll    x8, x8, x10
   or     x8, x8, x11
   sw     x8, SOC_FC_MASK_LSB(x12)
+
+  la     x8, periph_channels
+  addi   x12, x10, -1
+  slli   x9, x12, RT_PERIPH_CHANNEL_T_SIZEOF_LOG2
+  add    x9, x9, x8
 
   j      __rt_spim_handle_copy

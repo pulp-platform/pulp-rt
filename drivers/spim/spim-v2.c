@@ -121,6 +121,10 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
   if (__rt_spim_open_count[id] == 1)
   {
     plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
+
+    __rt_udma_extra_callback[ARCHI_SOC_EVENT_SPIM0_EOT - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + id] = __rt_spim_handle_eot;
+
+    soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_SPIM0_EOT + id);
   }
 
   rt_irq_restore(irq);
@@ -171,10 +175,9 @@ void rt_spim_close(rt_spim_t *handle, rt_event_t *event)
 
   if (__rt_spim_open_count[id] == 0)
   {
+    __rt_udma_extra_callback[ARCHI_SOC_EVENT_SPIM0_EOT - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + id] = __rt_soc_evt_no_udma;
+    soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_SPIM0_EOT + id);
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<(handle->channel>>1)));
-
-    soc_eu_fcEventMask_clearEvent(handle->channel);
-    soc_eu_fcEventMask_clearEvent(handle->channel + 1);
   }
 
   rt_free(RT_ALLOC_FC_DATA, handle, sizeof(handle));
@@ -228,20 +231,35 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
 
   if (__rt_spim_enqueue_to_channel(channel, copy))
   {
-    if (cs_mode != RT_SPIM_CS_AUTO)
-    {
-      soc_eu_fcEventMask_setEvent(channel_id+1);
-    }
-
-    plp_udma_enqueue(base, (unsigned int)cmd, 3*4, UDMA_CHANNEL_CFG_EN);
-    plp_udma_enqueue(base, (unsigned int)data, size, UDMA_CHANNEL_CFG_EN);
-
     if (cs_mode == RT_SPIM_CS_AUTO)
     {
+      // CS auto mode. We handle the termination with an EOT so we have to enqueue
+      // 3 transfers.
+      // Enqueue fist SOT and user buffer.
+      plp_udma_enqueue(base, (unsigned int)cmd, 3*4, UDMA_CHANNEL_CFG_EN);
+      plp_udma_enqueue(base, (unsigned int)data, size, UDMA_CHANNEL_CFG_EN);
+
+      // Then wait until first one is finished
       while(!plp_udma_canEnqueue(base));
 
+      // And finally enqueue the EOT.
+      // The user notification will be sent as soon as the last transfer
+      // is done and next pending transfer will be enqueued
       cmd->cmd[0] = SPI_CMD_EOT(1);
       plp_udma_enqueue(base, (unsigned int)cmd, 1*4, UDMA_CHANNEL_CFG_EN);
+    }
+    else
+    {
+      // CS keep mode.
+      // We cannot use EOT due to HW limitations, so we have to use TX event instead.
+      // TX event is current inactive, enqueue first transfer first EOT.
+      plp_udma_enqueue(base, (unsigned int)cmd, 3*4, UDMA_CHANNEL_CFG_EN);
+      // Then wait until it is finished (should be very quick).
+      while(plp_udma_busy(base));
+      // Then activateTX event and enqueue user buffer.
+      // User notification and next pending transfer will be handled in the handler.
+      soc_eu_fcEventMask_setEvent(channel_id+1);
+      plp_udma_enqueue(base, (unsigned int)data, size, UDMA_CHANNEL_CFG_EN);
     }
   }
   else
@@ -418,12 +436,5 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_spim_init()
   for (int i=0; i<ARCHI_UDMA_NB_SPIM; i++)
   {
     __rt_spim_open_count[i] = 0;
-  }
-
-  for (int i=0; i<ARCHI_UDMA_NB_SPIM; i++)
-  {
-    __rt_udma_extra_callback[ARCHI_SOC_EVENT_SPIM0_EOT - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + i] = __rt_spim_handle_eot;
-
-    soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_SPIM0_EOT + i);
   }
 }
