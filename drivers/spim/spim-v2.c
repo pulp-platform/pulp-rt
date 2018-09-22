@@ -272,6 +272,7 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
     copy->u.raw.val[2] = 3*4;
     copy->u.raw.val[3] = (int)data;
     copy->u.raw.val[4] = size;
+    copy->u.raw.val[5] = channel_id + 1;
     copy->u.raw.val[6] = (int)(cs_mode == RT_SPIM_CS_AUTO ? __rt_spim_single_eot : __rt_spim_single_no_eot);
   }
 
@@ -314,10 +315,6 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
     cmd->cmd[3] = SPI_CMD_EOT(1);
     cmd_size += 4;
   }
-  else
-  {
-    soc_eu_fcEventMask_setEvent(channel_id);
-  }
 
   rt_periph_channel_t *channel = __rt_periph_channel(channel_id);
   int size = (len + 7) >> 3;
@@ -325,6 +322,11 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
 
   if (__rt_spim_enqueue_to_channel(channel, copy))
   {
+    if (cs_mode != RT_SPIM_CS_AUTO)
+    {
+      soc_eu_fcEventMask_setEvent(channel_id);
+    }
+
     unsigned int tx_base = hal_udma_channel_base(channel_id + 1);
     plp_udma_enqueue(rx_base, (unsigned int)data, size, UDMA_CHANNEL_CFG_EN | (2<<1));
     plp_udma_enqueue(tx_base, (unsigned int)cmd, cmd_size, UDMA_CHANNEL_CFG_EN);
@@ -336,7 +338,8 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
     copy->u.raw.val[2] = cmd_size;
     copy->u.raw.val[3] = (int)data;
     copy->u.raw.val[4] = size;
-    copy->u.raw.val[6] = (int)(cs_mode == RT_SPIM_CS_AUTO ? __rt_spim_single_eot : __rt_spim_single_no_eot);
+    copy->u.raw.val[5] = channel_id;
+    copy->u.raw.val[6] = (int)(cs_mode == RT_SPIM_CS_AUTO ? __rt_spim_single_rx_eot : __rt_spim_single_rx_no_eot);
   }
 
   rt_irq_restore(irq);
@@ -411,6 +414,7 @@ void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, siz
     copy->u.raw.val[4] = size;
     copy->u.raw.val[5] = (int)tx_data;
     copy->u.raw.val[6] = (int)(cs_mode == RT_SPIM_CS_AUTO ? __rt_spim_dup_eot : __rt_spim_dup_no_eot);
+    copy->u.raw.val[7] = channel_id;
   }
 
   rt_irq_restore(irq);

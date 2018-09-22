@@ -197,6 +197,10 @@ void __rt_spim_single_no_eot();
 
 void __rt_spim_single_eot();
 
+void __rt_spim_single_rx_no_eot();
+
+void __rt_spim_single_rx_eot();
+
 /// @endcond
 
 #endif

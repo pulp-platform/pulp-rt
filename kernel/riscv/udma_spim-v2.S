@@ -50,10 +50,39 @@ __rt_spim_handle_copy:
   jr     x12
 
 
+
+
+
+
+
+
+
+  // x8: copy, x9:channel, x11: pending copy
   .global __rt_spim_single_no_eot
 __rt_spim_single_no_eot:
   // Completion with no eot
+
+  // Now enqueue the pending copy to the udma
+
+  // First the command buffer
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL0(x11)
+  lw     x10, RT_PERIPH_COPY_T_RAW_VAL1(x11)
+  ori    x9, x12, UDMA_CHANNEL_TX_OFFSET
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL2(x11)
+  sw     x10, UDMA_CHANNEL_SADDR_OFFSET(x9)
+  sw     x12, UDMA_CHANNEL_SIZE_OFFSET(x9)
+  li     x10 , UDMA_CHANNEL_CFG_EN
+  sw     x10, UDMA_CHANNEL_CFG_OFFSET(x9)
+
+  // Wait until it is done so that we can activate the TX event
+__rt_spim_no_eot_wait:
+  lw     x10, UDMA_CHANNEL_CFG_OFFSET(x9)
+  andi   x10, x10, UDMA_CHANNEL_CFG_EN
+  bnez   x10, __rt_spim_no_eot_wait
+
+  // Now activate the TX event as there is no EOT
   // We must activate tx event
+  lw     x10, RT_PERIPH_COPY_T_RAW_VAL5(x11)
   li     x12, 1
   sll    x10, x12, x10
   not    x10, x10
@@ -62,6 +91,27 @@ __rt_spim_single_no_eot:
   and    x10, x10, x12
   li     x12, ARCHI_SOC_EU_ADDR
   sw     x10, SOC_FC_MASK_LSB(x12)
+
+  // Then the user buffer
+  lw     x9, RT_PERIPH_COPY_T_RAW_VAL0(x11)
+  lw     x10, RT_PERIPH_COPY_T_RAW_VAL3(x11)
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL4(x11)
+  sw     x10, UDMA_CHANNEL_SADDR_OFFSET(x9)
+  sw     x12, UDMA_CHANNEL_SIZE_OFFSET(x9)
+  li     x10 , UDMA_CHANNEL_CFG_EN | (2<<1)
+  sw     x10, UDMA_CHANNEL_CFG_OFFSET(x9)
+
+  // x8: copy
+  lw     x11, RT_PERIPH_COPY_T_EVENT(x8)
+
+  la     x9, udma_event_handler_end
+  bne    x11, zero, __rt_event_enqueue
+
+
+
+
+
+
 
 
 
@@ -89,10 +139,6 @@ __rt_spim_single_eot:
   li     x10 , UDMA_CHANNEL_CFG_EN | (2<<1)
   sw     x10, UDMA_CHANNEL_CFG_OFFSET(x9)
 
-  // Check if we have to generate eot
-  //lw     x12, RT_PERIPH_COPY_T_RAW_VAL5(x11)
-  //beqz   x12, __rt_spim_no_eot
-
   // If so we must first wait until udma is ready as we
   // have just pushed 2 transfers
   lw     x11, RT_PERIPH_COPY_T_RAW_VAL1(x11)
@@ -112,7 +158,6 @@ __rt_spim_wait_done:
 
 
   // x8: copy
-__rt_spim_no_eot:
 __rt_spim_no_pending:
   lw     x11, RT_PERIPH_COPY_T_EVENT(x8)
 
@@ -124,11 +169,68 @@ __rt_spim_no_pending:
 
 
 
+
+  .global __rt_spim_single_rx_no_eot
+__rt_spim_single_rx_no_eot:
+  // Completion with no eot
+  // We must activate rx event
+  lw     x10, RT_PERIPH_COPY_T_RAW_VAL5(x11)
+  li     x12, 1
+  sll    x10, x12, x10
+  not    x10, x10
+  li     x12, ARCHI_SOC_EU_ADDR
+  lw     x12, SOC_FC_MASK_LSB(x12)
+  and    x10, x10, x12
+  li     x12, ARCHI_SOC_EU_ADDR
+  sw     x10, SOC_FC_MASK_LSB(x12)
+
+
+
+
+  // x8: copy, x9:channel, x11: pending copy
+  .global __rt_spim_single_rx_eot
+__rt_spim_single_rx_eot:
+
+  // Now enqueue the pending copy to the udma
+  // First the command buffer
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL0(x11)
+  lw     x10, RT_PERIPH_COPY_T_RAW_VAL1(x11)
+  ori    x9, x12, UDMA_CHANNEL_TX_OFFSET
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL2(x11)
+  sw     x10, UDMA_CHANNEL_SADDR_OFFSET(x9)
+  sw     x12, UDMA_CHANNEL_SIZE_OFFSET(x9)
+  li     x10 , UDMA_CHANNEL_CFG_EN
+  sw     x10, UDMA_CHANNEL_CFG_OFFSET(x9)
+
+  // Then the user buffer
+  lw     x9, RT_PERIPH_COPY_T_RAW_VAL0(x11)
+  lw     x10, RT_PERIPH_COPY_T_RAW_VAL3(x11)
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL4(x11)
+  sw     x10, UDMA_CHANNEL_SADDR_OFFSET(x9)
+  sw     x12, UDMA_CHANNEL_SIZE_OFFSET(x9)
+  li     x10 , UDMA_CHANNEL_CFG_EN | (2<<1)
+  sw     x10, UDMA_CHANNEL_CFG_OFFSET(x9)
+
+
+  // x8: copy
+  lw     x11, RT_PERIPH_COPY_T_EVENT(x8)
+
+  la     x9, udma_event_handler_end
+  bne    x11, zero, __rt_event_enqueue
+
+
+
+
+
+
+
+
   // x8: copy, x10: event, x11: pending copy
 
   .global __rt_spim_dup_no_eot
 __rt_spim_dup_no_eot:
 
+  lw     x10, RT_PERIPH_COPY_T_RAW_VAL7(x11)
   li     x12, 1
   sll    x10, x12, x10
   not    x10, x10
@@ -174,7 +276,7 @@ __rt_spim_dup_eot:
 
   // Check if we have to generate eot
   lw     x12, RT_PERIPH_COPY_T_RAW_VAL6(x11)
-  beqz   x12, __rt_spim_no_eot
+  beqz   x12, __rt_spim_dup_no_eot_gen
 
   // If so we must first wait until udma is ready as we
   // have just pushed 2 transfers
@@ -192,12 +294,16 @@ __rt_spim_dup_wait_done:
   li     x10, UDMA_CHANNEL_CFG_EN
   sw     x10, UDMA_CHANNEL_CFG_OFFSET(x9)
 
-  
+__rt_spim_dup_no_eot_gen:
   // Finally handle completion
   lw     x11, RT_PERIPH_COPY_T_EVENT(x8)
 
   la     x9, udma_event_handler_end
   bne    x11, zero, __rt_event_enqueue
+
+
+
+
 
 
 
