@@ -60,11 +60,9 @@ __rt_fc_socevents_handler:
   // We have the event ID in x10, get periph info
   andi x12, x10, 0xfffffffc
 
-  // Load callback and callback data and call it if specified
+  // Load callback and callback data and call it
   lw   x11, %tiny(__rt_udma_callback)(x12)
   lw   x8, %tiny(__rt_udma_callback_data)(x12)
-
-  beqz x11, __rt_fc_socevents_register
 
   jr   x11
 

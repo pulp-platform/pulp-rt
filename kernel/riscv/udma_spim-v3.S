@@ -38,9 +38,56 @@ __rt_spim_handle_eot:
 
   lw     x12, RT_PERIPH_SPIM_T_PENDING1(x8)
   lw     x10, RT_PERIPH_SPIM_T_PENDING0(x8)
+  lw     x9, RT_PERIPH_SPIM_T_FIRST_WAITING(x8)
   sw     x12, RT_PERIPH_SPIM_T_PENDING0(x8)
 
-  lw     x11, RT_PERIPH_COPY_T_EVENT(x10)
+  bnez   x9, __rt_spim_handle_pending
 
+  sw     x0, RT_PERIPH_SPIM_T_PENDING1(x8)
+  lw     x11, RT_PERIPH_COPY_T_EVENT(x10)
   la     x9, __rt_fc_socevents_handler_exit
-  bne    x11, zero, __rt_event_enqueue
+  j      __rt_event_enqueue
+
+
+
+
+__rt_spim_handle_pending:
+  sw     x9, RT_PERIPH_SPIM_T_PENDING1(x8)
+  lw     x11, RT_PERIPH_COPY_T_NEXT(x9)
+  sw     x11, RT_PERIPH_SPIM_T_FIRST_WAITING(x8)
+
+  // Now enqueue the pending copy to the udma
+  // First the RX user buffer
+  lw     x11, RT_PERIPH_COPY_T_RAW_VAL5(x9)
+  lw     x8, RT_PERIPH_COPY_T_RAW_VAL1(x9)
+  beqz   x11, __rt_spim_no_pending_rx
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL4(x9)
+  sw     x11, UDMA_CHANNEL_SADDR_OFFSET+UDMA_CHANNEL_RX_OFFSET(x8)
+  sw     x12, UDMA_CHANNEL_SIZE_OFFSET+UDMA_CHANNEL_RX_OFFSET(x8)
+  li     x11 , UDMA_CHANNEL_CFG_SIZE_32 | UDMA_CHANNEL_CFG_EN
+  sw     x11, UDMA_CHANNEL_CFG_OFFSET+UDMA_CHANNEL_RX_OFFSET(x8)
+
+__rt_spim_no_pending_rx:
+  // Then the command buffer
+  lw     x11, RT_PERIPH_COPY_T_RAW_VAL2(x9)
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL3(x9)
+  sw     x11, UDMA_CHANNEL_SADDR_OFFSET+ARCHI_SPIM_CMD_OFFSET(x8)
+  sw     x12, UDMA_CHANNEL_SIZE_OFFSET+ARCHI_SPIM_CMD_OFFSET(x8)
+  li     x11, UDMA_CHANNEL_CFG_SIZE_32 | UDMA_CHANNEL_CFG_EN
+  sw     x11, UDMA_CHANNEL_CFG_OFFSET+ARCHI_SPIM_CMD_OFFSET(x8)
+
+  // And finally the TX buffer
+  lw     x12, RT_PERIPH_COPY_T_RAW_VAL6(x9)
+  lw     x11, RT_PERIPH_COPY_T_RAW_VAL4(x9)
+  beqz   x12, __rt_spim_no_pending_tx
+  sw     x11, UDMA_CHANNEL_SIZE_OFFSET+UDMA_CHANNEL_TX_OFFSET(x8)
+  sw     x12, UDMA_CHANNEL_SADDR_OFFSET+UDMA_CHANNEL_TX_OFFSET(x8)
+  li     x11 , UDMA_CHANNEL_CFG_SIZE_32 | UDMA_CHANNEL_CFG_EN
+  sw     x11, UDMA_CHANNEL_CFG_OFFSET+UDMA_CHANNEL_TX_OFFSET(x8)
+
+__rt_spim_no_pending_tx:
+  lw     x11, RT_PERIPH_COPY_T_EVENT(x10)
+  la     x9, __rt_fc_socevents_handler_exit
+  j      __rt_event_enqueue
+
+  

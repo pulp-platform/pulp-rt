@@ -185,95 +185,20 @@ void rt_spim_close(rt_spim_t *handle, rt_event_t *event)
   rt_irq_restore(irq);
 }
 
-static inline void __rt_spim_copy(rt_periph_copy_t *copy, int channel_id, unsigned int buffer_addr, int buffer_size, unsigned int cmd_addr, int cmd_size,
-  unsigned int cfg)
+static inline int __rt_spim_periph_push_waiting(rt_periph_spim_t *periph, rt_periph_copy_t *copy)
 {
-  #if 0
-  rt_periph_channel_t *channel = __rt_periph_channel(channel_id);
-  unsigned int periph_base = hal_udma_periph_base(channel_id >> 1);
-  unsigned int cmd_base = periph_base + ARCHI_SPIM_CMD_OFFSET;
-  unsigned int channel_base = periph_base + (channel_id & 1) * UDMA_CHANNEL_SIZE;
-
-  cfg |= UDMA_CHANNEL_CFG_EN;
-  copy->size = buffer_size;
-
-  __rt_channel_push(channel, copy);
-
-  if (likely(!channel->firstToEnqueue))
-  {
-    plp_udma_enqueue(cmd_base, cmd_addr, cmd_size, cfg);
-    plp_udma_enqueue(channel_base, buffer_addr, buffer_size, cfg);
-  } else {
-    //copy->u.dual.rx_addr = rx_addr;
-    //copy->u.dual.rx_size = rx_size;
-    //copy->enqueue_callback = 0;
-    //__rt_channel_enqueue(channel, copy, tx_addr, tx_size, cfg);
-  }
-#endif
-}
-
-static inline void __rt_spim_copy_dual(rt_periph_copy_t *copy, int channel_id, unsigned int tx_buffer_addr, unsigned int rx_buffer_addr, int buffer_size, unsigned int cmd_addr, int cmd_size,
-  unsigned int cfg)
-{
-#if 0
-  // Dual copies assumes that more copies are always pushed to the TX channels than
-  // to the RX channel, as an RX copy always needs a header in the TX channel.
-  // Thus only the TX channel is checked to know if the transfer can be enqueued
-  // directly.
-
-  // The copy is enqueued to the RX channel so that the event is notified when the receive
-  // is done.
-  rt_periph_channel_t *channel = __rt_periph_channel(channel_id);
-  unsigned int periph_base = hal_udma_periph_base(channel_id >> 1);
-  unsigned int cmd_base = periph_base + ARCHI_SPIM_CMD_OFFSET;
-  unsigned int tx_channel_base = periph_base + UDMA_CHANNEL_TX_OFFSET;
-  unsigned int rx_channel_base = periph_base + UDMA_CHANNEL_RX_OFFSET;
-
-  cfg |= UDMA_CHANNEL_CFG_EN;
-  copy->size = buffer_size;
-
-  __rt_channel_push(channel, copy);
-
-  // If less than 2 transfers are enqueued in the channel, we can directly enqueue it
-  // Otherwise enqueue it in the SW queue, it will be handled later on by the interrupt handler
-  // We have to check if there is no transfer already waiting as since we masked interrupts, the
-  // UDMA could have finished one transfer and we want to keep the transfers in-order
-  if (likely(!channel->firstToEnqueue && plp_udma_canEnqueue(cmd_base)))
-  {
-    plp_udma_enqueue(cmd_base, cmd_addr, cmd_size, cfg);
-    plp_udma_enqueue(tx_channel_base, tx_buffer_addr, buffer_size, cfg);
-    plp_udma_enqueue(rx_channel_base, rx_buffer_addr, buffer_size, cfg);
-  } else {
-    //copy->u.dual.rx_addr = rx_addr;
-    //copy->u.dual.rx_size = rx_size;
-    //copy->enqueue_callback = 0;
-    //__rt_channel_enqueue(channel, copy, tx_addr, tx_size, cfg);
-  }
-#endif
-}
-
-static inline int __rt_spim_enqueue_to_channel(rt_periph_channel_t *channel, rt_periph_copy_t *copy)
-{
-  if (!channel->first)
-  {
-    channel->first = copy;
-    return 1;
-  }
+  if (periph->first_waiting)
+    periph->last_waiting->next = copy;
   else
-  {
-    if (channel->firstToEnqueue)
-      channel->last->next = copy;
-    else
-      channel->firstToEnqueue = copy;
-    copy->next = NULL;
-    channel->last = copy;
-    return 0;
-  }
+    periph->first_waiting = copy;
+  copy->next = NULL;
+  periph->last_waiting = copy;
+  return 0;
 }
 
-static inline int __rt_spim_periph_push(rt_periph_spim_t *periph, rt_periph_copy_t *copy)
+static inline __attribute__((always_inline)) int __rt_spim_periph_push(rt_periph_spim_t *periph, rt_periph_copy_t *copy)
 {
-  if (periph->pendings[1] == NULL)
+  if (likely(periph->pendings[1] == NULL))
   {
     if (periph->pendings[0] == NULL)
       periph->pendings[0] = copy;
@@ -283,8 +208,7 @@ static inline int __rt_spim_periph_push(rt_periph_spim_t *periph, rt_periph_copy
   }
   else
   {
-    //__rt_channel_push(channel, copy);
-    return 0;
+    return __rt_spim_periph_push_waiting(periph, copy);
   }
 }
 
@@ -310,7 +234,7 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
   cmd->cmd[2] = SPI_CMD_TX_DATA(len/32, SPI_CMD_1_WORD_PER_TRANSF, 32, qspi, SPI_CMD_MSB_FIRST);
   cmd->cmd[3] = SPI_CMD_EOT(1);
 
-  if (__rt_spim_periph_push(periph, copy))
+  if (likely(__rt_spim_periph_push(periph, copy)))
   {
     int cfg = UDMA_CHANNEL_CFG_SIZE_32 | UDMA_CHANNEL_CFG_EN;
     plp_udma_enqueue(cmd_base, (int)cmd, 4*4, cfg);
@@ -318,11 +242,12 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
   }
   else
   {
-    copy->u.raw.val[0] = channel_base;
-    copy->u.raw.val[1] = (int)cmd;
-    copy->u.raw.val[2] = 4*4;
-    copy->u.raw.val[3] = (int)data;
+    copy->u.raw.val[1] = periph_base;
+    copy->u.raw.val[2] = (int)cmd;
+    copy->u.raw.val[3] = 4*4;
     copy->u.raw.val[4] = buffer_size;
+    copy->u.raw.val[5] = 0;
+    copy->u.raw.val[6] = (int)data;
   }
 
   rt_irq_restore(irq);
@@ -371,11 +296,12 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
   }
   else
   {
-    copy->u.raw.val[0] = channel_base;
-    copy->u.raw.val[1] = (int)cmd;
-    copy->u.raw.val[2] = 4*4;
-    copy->u.raw.val[3] = (int)data;
+    copy->u.raw.val[1] = periph_base;
+    copy->u.raw.val[2] = (int)cmd;
+    copy->u.raw.val[3] = 4*4;
     copy->u.raw.val[4] = buffer_size;
+    copy->u.raw.val[5] = (int)data;
+    copy->u.raw.val[6] = 0;
   }
 
   rt_irq_restore(irq);
@@ -426,6 +352,12 @@ void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, siz
   }
   else
   {
+    copy->u.raw.val[1] = periph_base;
+    copy->u.raw.val[2] = (int)cmd;
+    copy->u.raw.val[3] = 4*4;
+    copy->u.raw.val[4] = buffer_size;
+    copy->u.raw.val[5] = (int)rx_data;
+    copy->u.raw.val[6] = (int)tx_data;
   }
 
   rt_irq_restore(irq);
@@ -460,6 +392,10 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_spim_init()
 {
   for (int i=0; i<ARCHI_UDMA_NB_SPIM; i++)
   {
-    __rt_spim_open_count[i] = 0;
+    __rt_spim_open_count[i] = 0;    
+    rt_periph_spim_t *periph = &__rt_spim_periph[i];
+    periph->first_waiting = NULL;
+    periph->pendings[0] = NULL;
+    periph->pendings[1] = NULL;
   }
 }
