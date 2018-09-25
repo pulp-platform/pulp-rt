@@ -232,7 +232,7 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
   cmd->cmd[0] = handle->cfg;
   cmd->cmd[1] = SPI_CMD_SOT(handle->cs);
   cmd->cmd[2] = SPI_CMD_TX_DATA(len/32, SPI_CMD_1_WORD_PER_TRANSF, 32, qspi, SPI_CMD_MSB_FIRST);
-  cmd->cmd[3] = SPI_CMD_EOT(1);
+  cmd->cmd[3] = SPI_CMD_EOT(1, cs_mode == RT_SPIM_CS_KEEP);
 
   if (likely(__rt_spim_periph_push(periph, copy)))
   {
@@ -286,7 +286,7 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
   cmd->cmd[0] = handle->cfg;
   cmd->cmd[1] = SPI_CMD_SOT(handle->cs);
   cmd->cmd[2] = SPI_CMD_RX_DATA(len/32, SPI_CMD_1_WORD_PER_TRANSF, 32, qspi, SPI_CMD_MSB_FIRST);
-  cmd->cmd[3] = SPI_CMD_EOT(1);
+  cmd->cmd[3] = SPI_CMD_EOT(1, cs_mode == RT_SPIM_CS_KEEP);
 
   if (__rt_spim_periph_push(periph, copy))
   {
@@ -341,7 +341,7 @@ void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, siz
   cmd->cmd[0] = handle->cfg;
   cmd->cmd[1] = SPI_CMD_SOT(handle->cs);
   cmd->cmd[2] = SPI_CMD_FUL(len/32, SPI_CMD_1_WORD_PER_TRANSF, 32, SPI_CMD_MSB_FIRST);
-  cmd->cmd[3] = SPI_CMD_EOT(1);
+  cmd->cmd[3] = SPI_CMD_EOT(1, mode == RT_SPIM_CS_KEEP);
 
   if (__rt_spim_periph_push(periph, copy))
   {

@@ -271,65 +271,6 @@ handle_special_end:
   j           resume_after_special_end
 
 
-spim_step3:
-  // The current copy was enqueued to configure spi, cs and send command
-  // now we need to reenqueue the same copy with the user buffer.
-  lw          x10, RT_PERIPH_COPY_T_RAW_VAL1(x8)
-  sw          x10, RT_PERIPH_COPY_T_CTRL(x8)
-
-  // Reenqueue the same copy to the list of pending copies as it has been removed
-  lw          x10, RT_PERIPH_CHANNEL_T_FIRST(x9)
-  sw          x10, RT_PERIPH_COPY_T_NEXT(x8)
-  sw          x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
-
-  // And rearm the transfer in the udma
-  lw          x12, RT_PERIPH_CHANNEL_T_BASE(x9)
-  lw          x10, RT_PERIPH_COPY_T_RAW_VAL2(x8)
-  sw          x10, UDMA_CHANNEL_SADDR_OFFSET(x12)
-  lw          x10, RT_PERIPH_COPY_T_RAW_VAL0(x8)
-  sw          x10, UDMA_CHANNEL_SIZE_OFFSET(x12)
-  lw          x10, RT_PERIPH_COPY_T_CFG(x8)
-  sw          x10, UDMA_CHANNEL_CFG_OFFSET(x12)
-
-  j           __rt_fc_socevents_handler_exit
-
-spim_step2:
-  // Now that the user data has been pushed, we must push an EOT command
-  sw          x0, RT_PERIPH_COPY_T_CTRL(x8)
-  
-  // Reenqueue the same copy to the list of pending copies as it has been removed
-  lw          x10, RT_PERIPH_CHANNEL_T_FIRST(x9)
-  sw          x10, RT_PERIPH_COPY_T_NEXT(x8)
-  sw          x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
-
-  // And rearm the transfer in the udma
-  #if PULP_CHIP == CHIP_GAP
-
-  lw          x8, RT_PERIPH_COPY_T_PERIPH_DATA(x8)
-  li          x12, SPI_CMD_EOT(0)
-  sw          x12, 0(x8)
-  lw          x12, RT_PERIPH_CHANNEL_T_BASE(x9)
-  sw          x8, UDMA_CHANNEL_SADDR_OFFSET(x12)
-
-  #else
-
-  li          x12, SPI_CMD_EOT(0)
-  sw          x12, RT_PERIPH_COPY_T_PERIPH_DATA(x8)
-  lw          x12, RT_PERIPH_CHANNEL_T_BASE(x9)
-  addi        x10, x8, RT_PERIPH_COPY_T_PERIPH_DATA
-  sw          x10, UDMA_CHANNEL_SADDR_OFFSET(x12)
-
-  #endif
-
-  li          x10, 4
-  sw          x10, UDMA_CHANNEL_SIZE_OFFSET(x12)
-  li          x10, UDMA_CHANNEL_CFG_EN
-  sw          x10, UDMA_CHANNEL_CFG_OFFSET(x12)
-
-  j           __rt_fc_socevents_handler_exit
-
-
-
 
 
 /*
