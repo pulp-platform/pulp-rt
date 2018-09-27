@@ -283,7 +283,7 @@ spim_step2:
   sw          x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
 
   // And rearm the transfer in the udma
-  #if PULP_CHIP == CHIP_GAP
+  #if PULP_CHIP_FAMILY == CHIP_GAP
 
   lw          x8, RT_PERIPH_COPY_T_PERIPH_DATA(x8)
   li          x12, SPI_CMD_EOT(0)
@@ -348,7 +348,7 @@ i2c_step2:
   sw          x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
 
   // And rearm the transfer in the udma
-  #if PULP_CHIP == CHIP_GAP
+  #if PULP_CHIP_FAMILY == CHIP_GAP
 
   lw          x8, RT_PERIPH_COPY_T_PERIPH_DATA(x8)
   li          x12, I2C_CMD_STOP

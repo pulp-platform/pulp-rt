@@ -41,7 +41,7 @@ PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma-v$(udma/archi).S kernel/$(fc_
 endif
 
 ifneq '$(soc/fll)' ''
-ifneq '$(pulp_chip)' 'gap'
+ifneq '$(pulp_chip_family)' 'gap'
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
 else
@@ -75,7 +75,7 @@ ifeq '$(pulp_chip_family)' 'vega'
 PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c
 endif
 
-ifeq '$(pulp_chip)' 'gap'
+ifeq '$(pulp_chip_family)' 'gap'
 PULP_LIB_FC_SRCS_rt += kernel/gap/maestro.c kernel/gap/pmu_driver.c
 endif
 

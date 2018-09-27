@@ -373,7 +373,7 @@ extern unsigned char __l2_shared_heap_size;
 
 #else
 
-#if PULP_CHIP == CHIP_GAP
+#if PULP_CHIP_FAMILY == CHIP_GAP
 
 extern unsigned char __l2_end;
 extern unsigned char __fc_tcdm_end;
@@ -638,7 +638,7 @@ static inline int rt_l2_size() { return 0; }
 
 #if defined(ARCHI_HAS_L2)
 
-#if PULP_CHIP == CHIP_GAP
+#if PULP_CHIP_FAMILY == CHIP_GAP
 
 static inline void *rt_l2_base() { return (void *)&__l2_end; }
 
