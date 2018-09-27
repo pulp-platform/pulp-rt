@@ -77,6 +77,7 @@ endif
 # RTC
 
 ifeq '$(CONFIG_RTC_ENABLED)' '1'
+PULP_LIB_FC_CFLAGS += -DRT_CONFIG_RTC_ENABLED
 ifneq '$(rtc)' ''
 PULP_LIB_FC_SRCS_rt += drivers/dolphin/rtc.c
 PULP_LIB_FC_ASM_SRCS_rt += drivers/dolphin/rtc_asm.S
@@ -87,6 +88,7 @@ endif
 # GPIO
 
 ifeq '$(CONFIG_GPIO_ENABLED)' '1'
+PULP_LIB_FC_CFLAGS += -DRT_CONFIG_GPIO_ENABLED
 ifneq '$(gpio/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/gpio/gpio-v$(gpio/version).c
 ifeq '$(gpio/version)' '2'

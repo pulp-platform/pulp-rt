@@ -85,15 +85,19 @@ __rt_soc_evt_no_udma_channel:
 
   .global __rt_soc_evt_no_udma
 __rt_soc_evt_no_udma:
+#ifdef RT_CONFIG_GPIO_ENABLED
   // GPIO EVENT
   li      x9, ARCHI_SOC_EVENT_GPIO
   beq     x10, x9, __rt_gpio_handler
+#endif
 
+#ifdef RT_CONFIG_RTC_ENABLED
   // RTC EVENTS
   li      x9, ARCHI_SOC_EVENT_RTC_FIRST_EVT
   beq     x9, x10, rtc_event_handler
   li      x9, ARCHI_SOC_EVENT_RTC_IRQ
   beq     x9, x10, rtc_event_handler
+#endif
 
   // If the event is not handled, store it in the soc event status mask
   la      x9, __rt_socevents_status

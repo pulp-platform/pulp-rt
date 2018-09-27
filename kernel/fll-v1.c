@@ -98,13 +98,13 @@ unsigned int __rt_fll_init(int fll)
 {
   rt_trace(RT_TRACE_INIT, "Initializing FLL (fll: %d)\n", fll);
   
-  hal_fll_reg1_t reg1 = { .raw = hal_fll_conf_reg1_get(fll) };
+  fll_reg_conf1_t reg1 = { .raw = hal_fll_conf_reg1_get(fll) };
 
   // Only lock the fll if it is not already done by the boot code
   if (reg1.mode == 0)
   {
     /* Set Clock Ref lock assert count */
-    hal_fll_reg2_t reg2 = { .raw = hal_fll_conf_reg2_get(fll) };
+    fll_reg_conf2_t reg2 = { .raw = hal_fll_conf_reg2_get(fll) };
     reg2.assert_cycles = 6;
     reg2.lock_tolerance = 0x50;
     hal_fll_conf_reg2_set(fll, reg2.raw);
@@ -115,7 +115,7 @@ unsigned int __rt_fll_init(int fll)
     // in lock mode faster.
     /* We are in open loop, prime the fll forcing dco input, approx 70 MHz */
     rt_trace(RT_TRACE_INIT, "Priming FLL in open loop (fll: %d)\n", fll);
-    hal_fll_integrator_t reg_int = { .raw = hal_fll_integrator_get(fll) };
+    fll_reg_integrator_t reg_int = { .raw = hal_fll_integrator_get(fll) };
 
   #if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN
     // TODO don't know how to choose the right, 332 is too agressive for
