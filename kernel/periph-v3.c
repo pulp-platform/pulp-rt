@@ -224,12 +224,8 @@ int __rt_periph_get_event(int event)
 {
   int irq = rt_irq_disable();
 
-  int index = 0;
-  if (event >= 32)
-  {
-    index = 1;
-    event -= 32;
-  }
+  int index = event >> 5;
+  event &= 0x1f;
 
   int result = (__rt_socevents_status[index] >> event) & 1;
 
@@ -242,12 +238,8 @@ void __rt_periph_wait_event(int event, int clear)
 {
   int irq = rt_irq_disable();
 
-  int index = 0;
-  if (event >= 32)
-  {
-    index = 1;
-    event -= 32;
-  }
+  int index = event >> 5;
+  event &= 0x1f;
 
   while(!((__rt_socevents_status[index] >> event) & 1))
   {
@@ -265,12 +257,8 @@ void __rt_periph_clear_event(int event)
 {
   int irq = rt_irq_disable();
 
-  int index = 0;
-  if (event >= 32)
-  {
-    index = 1;
-    event -= 32;
-  }
+  int index = event >> 5;
+  event &= 0x1f;
 
   __rt_socevents_status[index] &= ~(1<<event);
 

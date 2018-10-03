@@ -78,8 +78,9 @@ __rt_fc_socevents_no_udma:
 __rt_fc_socevents_register:
   // If the event is not handled, store it in the soc event status mask
   srli    x11, x10, 5
+  slli    x11, x11, 2
   lw      x12, %tiny(__rt_socevents_status)(x11)
-  andi    x10, x10, 0xff
+  andi    x10, x10, 0x1f
 
 #ifdef RV_ISA_RV32
   li      x8, 1

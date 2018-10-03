@@ -38,15 +38,13 @@ udma_event_handler:
 
 #if defined(ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT) && ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT > 2
   andi   x8, x10, 1
-  srli   x10, x10, 1
-  or     x10, x10, x8
+  srli   x12, x10, 1
+  or     x12, x12, x8
 #endif
 
   la     x8, periph_channels
-  slli   x9, x10, RT_PERIPH_CHANNEL_T_SIZEOF_LOG2
+  slli   x9, x12, RT_PERIPH_CHANNEL_T_SIZEOF_LOG2
   add    x9, x9, x8
-
-  lw   x8, RT_PERIPH_CHANNEL_T_FIRST(x9)
 
 
   // Dequeue the transfer which have just finished and mark it as done
@@ -241,12 +239,21 @@ not_last:
 
 
 __rt_udma_no_copy:
-  la      x9, __rt_socevents_status
-  lw      x8, 0(x9)
-  li      x11, 1
-  sll     x10, x11, x10
-  or      x8, x8, x10
-  sw      x8, 0(x9)
+  srli    x11, x10, 5
+  slli    x11, x11, 2
+  lw      x12, %tiny(__rt_socevents_status)(x11)
+  andi    x10, x10, 0x1f
+
+#ifdef RV_ISA_RV32
+  li      x8, 1
+  sll     x10, x8, x10
+  or      x12, x12, x10
+#else
+  p.bsetr x12, x12, x10
+#endif
+
+  sw      x12, %tiny(__rt_socevents_status)(x11)
+
   j __rt_fc_socevents_handler_exit
   
 
