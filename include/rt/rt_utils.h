@@ -354,22 +354,9 @@ extern unsigned char __l2_scm_end;
 
 #endif
 
-#if PULP_CHIP == CHIP_VIVOSOC3 || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_WOLFE
-
 extern unsigned char __l2_priv0_end;
 extern unsigned char __l2_priv1_end;
 extern unsigned char __l2_shared_end;
-
-#else
-
-extern unsigned char __l2_priv0_heap_start;
-extern unsigned char __l2_priv0_heap_size;
-extern unsigned char __l2_priv1_heap_start;
-extern unsigned char __l2_priv1_heap_size;
-extern unsigned char __l2_shared_heap_start;
-extern unsigned char __l2_shared_heap_size;
-
-#endif
 
 #else
 
@@ -556,7 +543,7 @@ static inline int rt_l2_shared_size() {
   return ARCHI_L2_SHARED_ADDR + ARCHI_L2_SHARED_SIZE - (int)&__l2_shared_end;
 }
 
-#elif PULP_CHIP == CHIP_VIVOSOC3 || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_WOLFE
+#else
 
 static inline void *rt_l2_priv0_base() {
   if ((int)&__l2_priv0_end >= ARCHI_L2_PRIV1_ADDR)
@@ -593,20 +580,6 @@ static inline void *rt_l2_shared_base() {
 static inline int rt_l2_shared_size() {
   return ARCHI_L2_SHARED_ADDR + ARCHI_L2_SHARED_SIZE - (int)&__l2_shared_end;
 }
-
-#else
-
-static inline void *rt_l2_priv0_base(){ return (void *)&__l2_priv0_heap_start; }
-
-static inline int rt_l2_priv0_size() { return (int)&__l2_priv0_heap_size; }
-
-static inline void *rt_l2_priv1_base() { return (void *)&__l2_priv1_heap_start; }
-
-static inline int rt_l2_priv1_size() { return (int)&__l2_priv1_heap_size; }
-
-static inline void *rt_l2_shared_base() { return (void *)&__l2_shared_heap_start; }
-
-static inline int rt_l2_shared_size() { return (int)&__l2_shared_heap_size; }
 
 #endif
 
