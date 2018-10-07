@@ -409,6 +409,13 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
     __rt_bridge_target_status_sync(NULL);
   }
 
+#if 0
+  PMURetentionState.Fields.ExternalWakeUpSource = 0;
+  PMURetentionState.Fields.ExternalWakeUpMode   = 0x00;
+  PMURetentionState.Fields.ExternalWakeupEnable = 1;
+  PMURetentionState.Fields.WakeupCause          = 1;
+  #endif
+
   if (Retentive) {
     PMURetentionState.Fields.BootMode = BOOT_FROM_L2;
     PMURetentionState.Fields.BootType = RETENTIVE_BOOT;
