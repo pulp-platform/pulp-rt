@@ -162,17 +162,11 @@ SECTIONS
     . = ALIGN(4);
     sdata  =  .;
     _sdata  =  .;
-    *(.data_fc)
-    *(.data_fc.*)
     *(.data);
     *(.data.*)
     *(.sdata);
     *(.sdata.*)
     *(.heapl2ram)
-    *(.fcTcdm)
-    *(.fcTcdm.*)
-    *(.fcTcdm_g)
-    *(.fcTcdm_g.*)
     . = ALIGN(4);
     edata  =  .;
     _edata  =  .;
@@ -196,8 +190,6 @@ SECTIONS
     . = ALIGN(4);
     *(.l2_data)
     *(.l2_data.*)
-    *(.data_fc_shared)
-    *(.data_fc_shared.*)
     . = ALIGN(4);
   } > L2
 
@@ -236,6 +228,14 @@ SECTIONS
     *(.l1cluster_g.*)
     *(.data_l1)
     *(.data_l1.*)
+    *(.data_fc_shared)
+    *(.data_fc_shared.*)
+    *(.data_fc)
+    *(.data_fc.*)
+    *(.fcTcdm)
+    *(.fcTcdm.*)
+    *(.fcTcdm_g)
+    *(.fcTcdm_g.*)
     . = ALIGN(4);
     _libgomp_start = .;
     *(.libgomp)

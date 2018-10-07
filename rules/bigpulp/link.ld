@@ -116,8 +116,6 @@ SECTIONS
     . = ALIGN(4);
     *(.l2_data)
     *(.l2_data.*)
-    *(.data_fc_shared)
-    *(.data_fc_shared.*)
     . = ALIGN(4);
   } > L2
 
@@ -164,6 +162,8 @@ SECTIONS
     *(.fcTcdm.*)
     *(.fcTcdm_g)
     *(.fcTcdm_g.*)
+    *(.data_fc_shared)
+    *(.data_fc_shared.*)
     . = ALIGN(4);
     _libgomp_start = .;
     *(.libgomp)
