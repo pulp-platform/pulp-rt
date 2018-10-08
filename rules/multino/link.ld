@@ -127,14 +127,6 @@ SECTIONS
   } > L2
 
 
-  .stack : {
-    . = ALIGN(4);
-    . = ALIGN(16);
-    . = . + 0x800;
-    stack = .;
-  } > L2
-
-
   .data : {
     . = ALIGN(4);
     sdata  =  .;
@@ -258,6 +250,14 @@ SECTIONS
     *(.libgomp.*)
     . = ALIGN(4);
   } > L1
+
+  .stack : {
+    . = ALIGN(4);
+    . = ALIGN(16);
+    . = . + 0x800;
+    stack = .;
+  } > L1
+
 
   .bss_l1 : {
     . = ALIGN(4);
