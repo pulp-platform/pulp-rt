@@ -359,12 +359,17 @@ __rt_io_unlock();
 
 static void __attribute__((noreturn)) __wait_forever()
 {
+  // TODO find a better solution. On some architectures or platforms
+  // the execution starts immediately and is stuck here as it is 
+  // impossible to force the core to leave clock-gating
+#if 0
 #if defined(ITC_VERSION)
   hal_itc_enable_clr(0xffffffff);
   while(1) hal_itc_wait_for_interrupt();
 #elif defined(EU_VERSION) && EU_VERSION >=3
   eu_evt_maskClr(0xffffffff);
   eu_evt_wait();
+#endif
 #endif
   while(1);
 }
