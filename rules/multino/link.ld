@@ -210,6 +210,8 @@ SECTIONS
     . = ALIGN(4);
   } > L2
 
+  __l2_shared_end = LOADADDR(.l2_data) + SIZEOF(.l2_data);
+
 
   /* Following sections are keeping the cluster data
    * in L2 until the cluster is powered up */
@@ -267,8 +269,6 @@ SECTIONS
   } > L1
 
   __l1_end = ALIGN(4);
-
-  __l2_shared_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
 
 
 
