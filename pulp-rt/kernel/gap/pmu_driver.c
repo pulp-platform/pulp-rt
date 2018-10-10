@@ -391,7 +391,7 @@ unsigned int PMU_set_voltage(unsigned int Voltage, unsigned int CheckFrequencies
  PMUState.State  = NewState;
  PMUState.DCDC_Settings[REGULATOR_STATE(NewState)] = NewDCDCVal;
 
- rt_irq_disable(irq);
+ rt_irq_enable(irq);
 
  return 0;
 }
@@ -410,6 +410,11 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
   PMURetentionState.Fields.ClusterWakeUpState = CLUSTER_STATE(WakeUpState);
 
   PMURetentionState.Fields.L2Retention = 0xF;
+
+  //To Use RTC
+  PMURetentionState.Fields.ExternalWakeupEnable = 0 ;   // Enable external wake up
+  PMURetentionState.Fields.WakeupCause = 0;             // Wake up  0: RTC, 1: External event
+
 
   PMUState.State = PMUState.State & 0x6; // Clear cluster on in case since at wake up it will not be on
   SetRetentiveState(PMURetentionState.Raw);
