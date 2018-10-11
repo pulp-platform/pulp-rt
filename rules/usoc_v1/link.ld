@@ -7,6 +7,30 @@ MEMORY
   L2_aliased   : ORIGIN = 0x00000004, LENGTH = 0x00003ffc
 }
 
+__ZERO = DEFINED(__ZERO) ?  __ZERO : 0;
+__USE_UART = DEFINED(__USE_UART) ?  __USE_UART : 0;
+__RT_DEBUG_CONFIG = DEFINED(__RT_DEBUG_CONFIG) ?  __RT_DEBUG_CONFIG : 0;
+__FC = DEFINED(__FC) ?  __FC : 1;
+__L2 = DEFINED(__L2) ?  __L2 : 0x80000;
+__L1Cl = DEFINED(__L1Cl) ?  __L1Cl : 0x10000;
+__FETCH_ALL = DEFINED(__FETCH_ALL) ?  __FETCH_ALL : 0;
+__ACTIVE_FC = DEFINED(__ACTIVE_FC) ?  __ACTIVE_FC : 1;
+__rt_stack_size = DEFINED(__rt_stack_size) ?  __rt_stack_size : 0x800;
+__rt_platform = DEFINED(__rt_platform) ?  __rt_platform : 3;
+__rt_iodev = DEFINED(__rt_iodev) ?  __rt_iodev : 0;
+__rt_iodev_uart_value = DEFINED(__rt_iodev_uart_value) ?  __rt_iodev_uart_value : 1;
+__rt_iodev_uart_channel = DEFINED(__rt_iodev_uart_channel) ?  __rt_iodev_uart_channel : 0;
+__rt_iodev_uart_baudrate = DEFINED(__rt_iodev_uart_baudrate) ?  __rt_iodev_uart_baudrate : 625000;
+__rt_iodev_default_value = DEFINED(__rt_iodev_default_value) ?  __rt_iodev_default_value : 0;
+__rt_cl_master_stack_size = DEFINED(__rt_cl_master_stack_size) ?  __rt_cl_master_stack_size : 0x400;
+__rt_cl_slave_stack_size = DEFINED(__rt_cl_slave_stack_size) ?  __rt_cl_slave_stack_size : 0x400;
+__rt_config = DEFINED(__rt_config) ?  __rt_config : 0x0;
+__rt_debug_init_config = DEFINED(__rt_debug_init_config) ?  __rt_debug_init_config : 0x3;
+__rt_debug_init_config_trace = DEFINED(__rt_debug_init_config_trace) ?  __rt_debug_init_config_trace : 0x0;
+
+
+GROUP( -lgloss -lgcc )
+
 /*
  * This linker script try to put FC data in L2 private bank0 and FC code 
  * in L2 private bank1 to avoid contention between FC code and data
