@@ -391,7 +391,7 @@ unsigned int PMU_set_voltage(unsigned int Voltage, unsigned int CheckFrequencies
  PMUState.State  = NewState;
  PMUState.DCDC_Settings[REGULATOR_STATE(NewState)] = NewDCDCVal;
 
- rt_irq_enable(irq);
+ rt_irq_restore(irq);
 
  return 0;
 }
