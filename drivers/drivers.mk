@@ -94,6 +94,11 @@ ifeq '$(gpio/version)' '2'
 PULP_LIB_FC_ASM_SRCS_rt += kernel/riscv/gpio.S
 endif
 endif
+
+ifeq '$(pulp_chip_family)' 'usoc_v1'
+PULP_LIB_FC_SRCS_rt += kernel/usoc_v1/gpio.c
+endif
+
 endif
 
 
