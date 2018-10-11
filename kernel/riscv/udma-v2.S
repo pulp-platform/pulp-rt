@@ -26,6 +26,13 @@
 #include "archi/udma/udma_v3.h"
 #endif
 
+#ifdef ARCHI_UDMA_HAS_HYPER
+#include "archi/udma/hyper/udma_hyper_v1.h"
+#endif
+
+#include "archi/udma/spim/udma_spim_v2.h"
+#include "archi/udma/i2c/udma_i2c_v2.h"
+
   .global udma_event_handler
 udma_event_handler:
 

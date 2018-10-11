@@ -30,6 +30,7 @@
 #else
 #include "archi/soc_eu/soc_eu_v1.h"
 #endif
+#include "archi/udma/spim/udma_spim_v2.h"
 
 
   // x9: channel, x10: event, x8,x11,x12:temp
