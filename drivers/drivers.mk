@@ -50,8 +50,8 @@ endif
 # I2S
 
 ifeq '$(CONFIG_I2S_ENABLED)' '1'
-ifneq '$(udma/i2s)' ''
-PULP_LIB_FC_SRCS_rt += drivers/i2s/i2s.c
+ifneq '$(udma/i2s/version)' ''
+PULP_LIB_FC_SRCS_rt += drivers/i2s/i2s-v$(udma/i2s/version).c
 endif
 endif
 

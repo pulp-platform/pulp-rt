@@ -430,7 +430,7 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_bridge_init()
   bridge->first_bridge_req = 0;
 
 #ifdef ITC_VERSION
-  bridge->notif_req_addr = ARCHI_FC_ITC_ADDR + ARCHI_ITC_STATUS_SET_OFFSET;
+  bridge->notif_req_addr = ARCHI_FC_ITC_ADDR + ITC_STATUS_SET_OFFSET;
   bridge->notif_req_value = 1<<RT_BRIDGE_ENQUEUE_EVENT;
 #else
 #if defined(EU_VERSION) && EU_VERSION >= 3
