@@ -78,7 +78,9 @@ typedef enum {
  * Can only be called from fabric controller.
  * This operation is asynchronous and its termination can be managed through an event.
  *
+ * \param wait_bridge If 1, this will block the caller until the bridge is connected.
  * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
+ * \return          1 if the connection was successfull, 0 otherwise.
  */
 int rt_bridge_connect(int wait_bridge, rt_event_t *event);
 

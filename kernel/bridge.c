@@ -105,13 +105,13 @@ static void __rt_bridge_post_req(rt_bridge_req_t *req, rt_event_t *event)
 
 static void __rt_bridge_efuse_access(int is_write, int index, unsigned int value)
 {
-  printf("Writing efuse (index: %d, value: 0x%x)\n", index, value);
-  
+  //printf("Writing efuse (index: %d, value: 0x%x)\n", index, value);
+#ifdef EFUSE_VERSION
   plp_efuse_configTimings (250 << 20 | 50 << 10 | 5);
-
   plp_efuse_startProgram ();
   plp_efuse_writeByte(index, value);
   plp_efuse_sleep();
+#endif
 }
 
 static void __rt_bridge_handle_req(void *arg)
