@@ -53,6 +53,7 @@
 #define RISCV_VERSION       4
 #define HWCE_VERSION        4
 #define MCHAN_VERSION       6
+#define EFUSE_VERSION       1
 
 
 /*
@@ -70,6 +71,7 @@
 
 //#define ARCHI_HAS_NO_BARRIER    1
 //#define ARCHI_HAS_NO_DISPATCH   1
+//#define ARCHI_HAS_NO_MUTEX   1
 
 
 
@@ -146,9 +148,11 @@
  * SOC EVENTS
  */
 
-#define ARCHI_SOC_EVENT_UDMA_FIRST_EVT   0
-#define ARCHI_SOC_EVENT_UDMA_NB_EVT      19
-#define ARCHI_SOC_EVENT_UDMA_NB_TGEN_EVT 0
+#define ARCHI_SOC_EVENT_UDMA_FIRST_EVT    0
+#define ARCHI_SOC_EVENT_UDMA_NB_EVT       19
+#define ARCHI_SOC_EVENT_UDMA_NB_TGEN_EVT  0
+#define ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT 20
+#define ARCHI_SOC_EVENT_UDMA_NB_EXTRA_EVT 10
 
 #define ARCHI_SOC_EVENT_LVDS_HP0     20
 #define ARCHI_SOC_EVENT_LVDS_HP1     21
@@ -206,19 +210,19 @@
  * CLUSTER EVENTS
  */
 
-#define ARCHI_EVT_DMA0        8
-#define ARCHI_EVT_DMA1        9
+#define ARCHI_CL_EVT_DMA0        8
+#define ARCHI_CL_EVT_DMA1        9
 #define ARCHI_EVT_TIMER0      10
 #define ARCHI_EVT_TIMER1      11
-#define ARCHI_EVT_ACC0        12
-#define ARCHI_EVT_ACC1        13
-#define ARCHI_EVT_ACC2        14
-#define ARCHI_EVT_ACC3        15
-#define ARCHI_EVT_BAR         16
-#define ARCHI_EVT_MUTEX       17
-#define ARCHI_EVT_DISPATCH    18
+#define ARCHI_CL_EVT_ACC0        12
+#define ARCHI_CL_EVT_ACC1        13
+#define ARCHI_CL_EVT_ACC2        14
+#define ARCHI_CL_EVT_ACC3        15
+#define ARCHI_CL_EVT_BAR         16
+#define ARCHI_CL_EVT_MUTEX       17
+#define ARCHI_CL_EVT_DISPATCH    18
 #define ARCHI_EVT_MPU_ERROR   28
-#define ARCHI_EVT_SOC_EVT     30
+#define ARCHI_CL_EVT_SOC_EVT     30
 #define ARCHI_EVT_SOC_FIFO    31
 
 
@@ -227,8 +231,8 @@
  * FC EVENTS
  */
 
-#define ARCHI_FC_EVT_TIMER0           10
-#define ARCHI_FC_EVT_TIMER1           11
+#define ARCHI_FC_EVT_TIMER0_LO           10
+#define ARCHI_FC_EVT_TIMER0_HI           11
 #define ARCHI_FC_EVT_SOC_EVT          27
 
 

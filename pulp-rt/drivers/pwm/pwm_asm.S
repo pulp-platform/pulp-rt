@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2018 GreenWaves Technologies
  *
@@ -14,18 +15,27 @@
  * limitations under the License.
  */
 
+/*
+ *Author: Yao ZHANG, GreenWaves Technologies. yao.zhang@greenwaves-technologies.com
+ */
 
-#ifndef __ARCHI_CHIPS_GAP_PULP_H__
-#define __ARCHI_CHIPS_GAP_PULP_H__
+#include "rt/rt_data.h"
+#include "archi/pulp.h"
+#include "archi/eu/eu_v3.h"
 
-#include "archi/chips/gap/properties.h"
+  .global pwm_event_handler
+pwm_event_handler:
+  addi  x8, x8, -ARCHI_SOC_EVENT_ADV_TIMER_FIRST_EVT
+  andi  x8, x8, 255
+  la   x9, pwmEventsStatus
+  addi  x11, x0, 1
+  lw   x10, 0(x9)
+  p.insertr x10, x11, x8
+  sw   x10, 0(x9)
 
-#include "archi/riscv/priv_1_9.h"
-#include "archi/riscv/pcer_v1.h"
+  // continue with sw event raising
+  li   x9, ARCHI_EU_DEMUX_ADDR + EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT + (PLP_RT_NOTIF_EVENT << 2)
+  li   x10, -1
+  sw   x10, 0(x9)
 
-#include "archi/chips/gap/memory_map.h"
-#include "archi/chips/gap/apb_soc.h"
-#include "archi/chips/gap/padframe.h"
-#include "archi/stdout/stdout_v3.h"
-
-#endif
+  j udma_event_handler_end

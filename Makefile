@@ -27,7 +27,6 @@ CFLAGS        = $(COMMON) -MMD -MP -c
 #------------------------------------------
 RT_LIB        = $(TARGET_INSTALL_DIR)/libs/librt.a
 IO_LIB		  = $(TARGET_INSTALL_DIR)/libs/libio.a
-IMG_IO_LIB	  = $(TARGET_INSTALL_DIR)/libs/libimgIO.a
 
 HEADER_DIR    = $(TARGET_INSTALL_DIR)/include/pulp-os
 BUILD_RT  	  ?= $(BUILD_DIR)/rt
@@ -42,8 +41,6 @@ RT_C_OBJECTS     = $(patsubst %.c, $(BUILD_RT)/%.o, $(wildcard $(shell find $(RU
 RT_OBJECTS       = $(RT_S_OBJECTS) $(RT_C_OBJECTS)
 
 IO_C_OBJECTS     = $(patsubst %.c, $(BUILD_RT)/%.o, $(wildcard $(shell find $(RUNTIME_PATH)/pulp-rt/libs/io -name "*.c")))
-
-IMG_IO_C_OBJECTS     = $(patsubst %.c, $(BUILD_RT)/%.o, $(wildcard $(shell find $(RUNTIME_PATH)/pulp-rt/libs/imgIO -name "*.c")))
 
 INC_DEFINE    = -include $(TARGET_INSTALL_DIR)/include/pulp-os/gap_config.h
 
@@ -83,15 +80,7 @@ $(IO_LIB): $(IO_C_OBJECTS)
 	@mkdir -p $(dir $@)
 	$(AR) -r $(IO_LIB) $(IO_C_OBJECTS)
 
-$(IMG_IO_C_OBJECTS) : $(BUILD_RT)/%.o : %.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $< $(INC_PATH) -o $@
-
-$(IMG_IO_LIB): $(IMG_IO_C_OBJECTS)
-	@mkdir -p $(dir $@)
-	$(AR) -r $(IMG_IO_LIB) $(IMG_IO_C_OBJECTS)
-
-all: install_headers $(OBJECTS) $(RT_LIB) $(IO_LIB) $(IMG_IO_LIB)
+all: install_headers $(OBJECTS) $(RT_LIB) $(IO_LIB)
 
 
 

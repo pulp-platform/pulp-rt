@@ -397,8 +397,25 @@ unsigned int PMU_set_voltage(unsigned int Voltage, unsigned int CheckFrequencies
 }
 
 void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
-
 {
+  // Notify the bridge that the chip is going to be inaccessible.
+  // We don't do anything until we know that the bridge received the
+  // notification to avoid any race condition.
+  hal_bridge_t *bridge = hal_bridge_get();
+  bridge->target.available = 0;  
+  if (bridge->bridge.connected)
+  {
+    apb_soc_jtag_reg_write(apb_soc_jtag_reg_loc(apb_soc_jtag_reg_read()) & ~2);
+    __rt_bridge_target_status_sync(NULL);
+  }
+
+#if 0
+  PMURetentionState.Fields.ExternalWakeUpSource = 0;
+  PMURetentionState.Fields.ExternalWakeUpMode   = 0x00;
+  PMURetentionState.Fields.ExternalWakeupEnable = 1;
+  PMURetentionState.Fields.WakeupCause          = 1;
+  #endif
+
   if (Retentive) {
     PMURetentionState.Fields.BootMode = BOOT_FROM_L2;
     PMURetentionState.Fields.BootType = RETENTIVE_BOOT;
@@ -410,11 +427,6 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
   PMURetentionState.Fields.ClusterWakeUpState = CLUSTER_STATE(WakeUpState);
 
   PMURetentionState.Fields.L2Retention = 0xF;
-
-  //To Use RTC
-  PMURetentionState.Fields.ExternalWakeupEnable = 0 ;   // Enable external wake up
-  PMURetentionState.Fields.WakeupCause = 0;             // Wake up  0: RTC, 1: External event
-
 
   PMUState.State = PMUState.State & 0x6; // Clear cluster on in case since at wake up it will not be on
   SetRetentiveState(PMURetentionState.Raw);
