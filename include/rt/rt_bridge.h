@@ -80,7 +80,7 @@ typedef enum {
  *
  * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
  */
-void rt_bridge_connect(rt_event_t *event);
+int rt_bridge_connect(int wait_bridge, rt_event_t *event);
 
 
 

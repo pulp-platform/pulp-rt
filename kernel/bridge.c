@@ -103,23 +103,69 @@ static void __rt_bridge_post_req(rt_bridge_req_t *req, rt_event_t *event)
 
 }
 
-
-
-void rt_bridge_connect(rt_event_t *event)
+static void __rt_bridge_efuse_access(int is_write, int index, unsigned int value)
 {
+  printf("Writing efuse (index: %d, value: 0x%x)\n", index, value);
+  
+  plp_efuse_configTimings (250 << 20 | 50 << 10 | 5);
+
+  plp_efuse_startProgram ();
+  plp_efuse_writeByte(index, value);
+  plp_efuse_sleep();
+}
+
+static void __rt_bridge_handle_req(void *arg)
+{
+  rt_event_t *event = (rt_event_t *)arg;
+  rt_bridge_req_t *req = &event->bridge_req;
+
+  if (req->header.type == HAL_BRIDGE_TARGET_REQ_EFUSE_ACCESS)
+  {
+    __rt_bridge_efuse_access(req->header.efuse_access.is_write, req->header.efuse_access.index, req->header.efuse_access.value);
+  }
+
+
+  hal_bridge_reply(&req->header);
+  __rt_bridge_post_req(req, event);
+}
+
+
+int rt_bridge_connect(int wait_bridge, rt_event_t *event)
+{
+  hal_bridge_t *bridge = hal_bridge_get();
+
+  if (!wait_bridge && !bridge->bridge.connected)
+    return -1;
+
   int irq = rt_irq_disable();
 
-  hal_bridge_t *bridge = hal_bridge_get();
+  if (rt_event_alloc(NULL, 1))
+    goto error;
+  
+  rt_event_t *bridge_req_event = rt_event_get(NULL, __rt_bridge_handle_req, NULL);
+  __rt_event_set_pending(bridge_req_event);
+  bridge_req_event->arg = (void *)bridge_req_event;
+  rt_bridge_req_t *bridge_req = &bridge_req_event->bridge_req;
+  bridge_req->event = bridge_req_event;
+
+  bridge->first_bridge_free_req = (uint32_t)bridge_req;
+  bridge_req->header.next = 0;
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_connect(&req->header);
   __rt_bridge_post_req(req, call_event);
 
   __rt_wait_event_check(event, call_event);
 
   rt_irq_restore(irq);
+  return 0;
+
+error:
+  rt_irq_restore(irq);
+  return -1;
 }
 
 
@@ -418,6 +464,15 @@ void __rt_bridge_handle_notif()
     req = next;
   }
 
+  // Also process bridge to target requests
+  if (bridge->target_req)
+  {
+    rt_bridge_req_t *req = (rt_bridge_req_t *)bridge->target_req;
+    bridge->target_req = 0;
+    rt_event_t *event = (rt_event_t *)req->event;
+    __rt_event_enqueue(event);
+  }
+
   // Then check if we must update the bridge queue
   __rt_bridge_check_bridge_req();
 }
@@ -428,6 +483,7 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_bridge_init()
   
   bridge->first_req = 0;
   bridge->first_bridge_req = 0;
+  bridge->target_req = 0;
 
 #ifdef ITC_VERSION
   bridge->notif_req_addr = ARCHI_FC_ITC_ADDR + ITC_STATUS_SET_OFFSET;
