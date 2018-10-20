@@ -4,7 +4,7 @@ ENTRY( _start )
 MEMORY
 {
   L2                 : ORIGIN = 0x1c000000, LENGTH = 0x00080000
-  fc_tcdm            : ORIGIN = 0x1b000000, LENGTH = 0x00004000
+  fc_tcdm            : ORIGIN = 0x1b000004, LENGTH = 0x00003ffc
   fc_tcdm_aliased    : ORIGIN = 0x00000004, LENGTH = 0x00003ffc
   L1                 : ORIGIN = 0x10000004, LENGTH = 0x0000fffc
   L1_aliased         : ORIGIN = 0x00000004, LENGTH = 0x0000fffc

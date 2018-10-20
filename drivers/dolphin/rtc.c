@@ -63,7 +63,8 @@ static void  rt_rtc_reg_config(unsigned char iAddr, unsigned int conf){
   rt_apb_int_apb_clear(APB_RTC_WRITE);
 }
 
-void __rt_int_rtc_handler(void *arg){
+void __rt_int_rtc_handler(void *arg)
+{
   rt_rtc_t *rtc = (rt_rtc_t *) arg;
   rt_rtc_reg_read(RTC_IRQ_Flag_Addr);
   switch (rtc->conf.mode){

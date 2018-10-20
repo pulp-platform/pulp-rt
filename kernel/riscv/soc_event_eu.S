@@ -91,6 +91,10 @@ __rt_soc_evt_no_udma:
   beq     x10, x9, __rt_gpio_handler
 #endif
 
+  li      x9, ARCHI_SOC_EVENT_RTC_IRQ
+  beq     x9, x10, rtc_event_handler
+
+
   // If the event is not handled, store it in the soc event status mask
   la      x9, __rt_socevents_status
   li      x11, 32
@@ -115,5 +119,7 @@ udma_event_handler_end:
   mret
 
 
-
-
+rtc_event_handler:
+  lw    x11, __rtc_handler
+  la    x9, udma_event_handler_end
+  j   __rt_event_enqueue
