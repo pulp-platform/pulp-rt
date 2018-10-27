@@ -103,13 +103,13 @@ static void __rt_bridge_post_req(rt_bridge_req_t *req, rt_event_t *event)
 
 }
 
-static void __rt_bridge_efuse_access(int is_write, int index, unsigned int value)
+static void __rt_bridge_efuse_access(int is_write, int index, unsigned int value, unsigned int mask)
 {
-  //printf("Writing efuse (index: %d, value: 0x%x)\n", index, value);
+  printf("Writing efuse (index: %d, value: 0x%x, mask: 0x%x)\n", index, value, mask);
 #ifdef EFUSE_VERSION
   plp_efuse_configTimings (250 << 20 | 50 << 10 | 5);
   plp_efuse_startProgram ();
-  plp_efuse_writeByte(index, value);
+  plp_efuse_writeByte(index, value & mask);
   plp_efuse_sleep();
 #endif
 }
@@ -121,7 +121,7 @@ static void __rt_bridge_handle_req(void *arg)
 
   if (req->header.type == HAL_BRIDGE_TARGET_REQ_EFUSE_ACCESS)
   {
-    __rt_bridge_efuse_access(req->header.efuse_access.is_write, req->header.efuse_access.index, req->header.efuse_access.value);
+    __rt_bridge_efuse_access(req->header.efuse_access.is_write, req->header.efuse_access.index, req->header.efuse_access.value, req->header.efuse_access.mask);
   }
 
 
@@ -156,6 +156,7 @@ int rt_bridge_connect(int wait_bridge, rt_event_t *event)
   rt_bridge_req_t *req = &call_event->bridge_req;
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_connect(&req->header);
+  bridge->target.connected = 1;
   __rt_bridge_post_req(req, call_event);
 
   __rt_wait_event_check(event, call_event);
