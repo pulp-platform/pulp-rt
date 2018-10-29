@@ -41,11 +41,16 @@ PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma-v$(udma/archi).S kernel/$(fc_
 endif
 
 ifneq '$(soc/fll)' ''
-ifneq '$(pulp_chip_family)' 'gap'
+ifeq '$(pulp_chip_family)' 'gap'
+PULP_LIB_FC_SRCS_rt     += kernel/gap/freq.c kernel/gap/pm.c
+else
+ifeq '$(pulp_chip)' 'arnold'
+PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
+PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
+else
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
-else
-PULP_LIB_FC_SRCS_rt     += kernel/gap/freq.c kernel/gap/pm.c
+endif
 endif
 endif
 
