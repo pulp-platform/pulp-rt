@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef __HAL_UDMA_UDMA_PERIPH_I2S_V2_H__
-#define __HAL_UDMA_UDMA_PERIPH_I2S_V2_H__
+#ifndef __HAL_UDMA_UDMA_PERIPH_I2S_V1_H__
+#define __HAL_UDMA_UDMA_PERIPH_I2S_V1_H__
 
+#include "archi/udma/i2s/udma_i2s_v1.h"
+#include "hal/riscv/riscv_v4.h"
 
 static inline void hal_i2s_ext_clk_set(int i2s, unsigned int value);
 

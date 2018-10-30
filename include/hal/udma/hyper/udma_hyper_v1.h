@@ -19,6 +19,14 @@
 
 #include <archi/pulp.h>
 
+#define UDMA_HYPER_OFFSET(id)         UDMA_PERIPH_OFFSET(ARCHI_UDMA_HYPER_ID(id))
+#define UDMA_HYPER_RX_ADDR(id)         (ARCHI_UDMA_ADDR + UDMA_HYPER_OFFSET(id) + UDMA_CHANNEL_RX_OFFSET)
+#define UDMA_HYPER_TX_ADDR(id)         (ARCHI_UDMA_ADDR + UDMA_HYPER_OFFSET(id) + UDMA_CHANNEL_TX_OFFSET)
+#define UDMA_HYPER_CUSTOM_ADDR(id)     (ARCHI_UDMA_ADDR + UDMA_HYPER_OFFSET(id) + UDMA_CHANNEL_CUSTOM_OFFSET)
+#define ARCHI_SOC_EVENT_HYPER_RX(id)    (ARCHI_SOC_EVENT_PERIPH_FIRST_EVT(ARCHI_UDMA_HYPER_ID(id)) + ARCHI_UDMA_HYPER_RX_EVT)
+#define ARCHI_SOC_EVENT_HYPER_TX(id)    (ARCHI_SOC_EVENT_PERIPH_FIRST_EVT(ARCHI_UDMA_HYPER_ID(id)) + ARCHI_UDMA_HYPER_TX_EVT)
+
+#include "archi/udma/hyper/udma_hyper_v1.h"
 /*
  * set Hyper IP ext_addr configuration with value
  */
@@ -551,5 +559,31 @@ static inline void hal_hyper_stop_ip()
   plp_trace(RT_TRACE_INIT, "Hyper driver initialization done\n");
   }
 */
+
+
+static inline void hal_hyper_ext_addr_set(unsigned int value)
+{
+    pulp_write32(ARCHI_UDMA_ADDR + HYPER_EXT_ADDR_OFFSET, value);
+}
+
+static inline void hal_hyper_ram_ext_addr_set(unsigned int value) {return hal_hyper_ext_addr_set(REG_MBR0 | value);}
+
+static inline void hal_hyper_flash_ext_addr_set(unsigned int value) {return hal_hyper_ext_addr_set(REG_MBR1 | value);}
+
+static inline void hal_hyper_enqueue(unsigned channelBase, unsigned int l2Addr, unsigned int ext_addr, unsigned int size, unsigned int cfg) {
+  hal_hyper_ext_addr_set(ext_addr);
+  plp_udma_enqueue(channelBase, l2Addr, size, cfg);
+}
+
+static inline void hal_hyper_ram_enqueue(unsigned channelBase, unsigned int l2Addr, unsigned int ext_addr, unsigned int size, unsigned int cfg) {
+  hal_hyper_ram_ext_addr_set(ext_addr);
+  plp_udma_enqueue(channelBase, l2Addr, size, cfg);
+}
+
+static inline void hal_hyper_flash_enqueue(unsigned channelBase, unsigned int l2Addr, unsigned int ext_addr, unsigned int size, unsigned int cfg) {
+  hal_hyper_flash_ext_addr_set(ext_addr);
+  plp_udma_enqueue(channelBase, l2Addr, size, cfg);
+}
+
 
 #endif
