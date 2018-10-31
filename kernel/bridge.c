@@ -154,6 +154,8 @@ int rt_bridge_connect(int wait_bridge, rt_event_t *event)
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  // Init request to 0 otherwise the CRC computation on RTL platform
+  // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_connect(&req->header);
   bridge->target.connected = 1;
@@ -180,6 +182,9 @@ void rt_bridge_disconnect(rt_event_t *event)
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  // Init request to 0 otherwise the CRC computation on RTL platform
+  // is invalid.
+  memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_disconnect(&req->header);
   __rt_bridge_post_req(req, call_event);
 
@@ -199,6 +204,9 @@ int rt_bridge_open(const char* name, int flags, int mode, rt_event_t *event)
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  // Init request to 0 otherwise the CRC computation on RTL platform
+  // is invalid.
+  memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_open(&req->header, __rt_bridge_strlen(name), name, flags, mode);
   __rt_bridge_post_req(req, call_event);
 
@@ -243,6 +251,9 @@ int rt_bridge_close(int file, rt_event_t *event)
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  // Init request to 0 otherwise the CRC computation on RTL platform
+  // is invalid.
+  memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_close(&req->header, file);
   __rt_bridge_post_req(req, call_event);
 
@@ -287,6 +298,9 @@ int rt_bridge_read(int file, void* ptr, int len, rt_event_t *event)
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  // Init request to 0 otherwise the CRC computation on RTL platform
+  // is invalid.
+  memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_read(&req->header, file, ptr, len);
   __rt_bridge_post_req(req, call_event);
 
@@ -329,6 +343,9 @@ int rt_bridge_write(int file, void* ptr, int len, rt_event_t *event)
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  // Init request to 0 otherwise the CRC computation on RTL platform
+  // is invalid.
+  memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_write(&req->header, file, ptr, len);
   __rt_bridge_post_req(req, call_event);
 
@@ -355,6 +372,9 @@ uint64_t rt_bridge_fb_open(const char* name, int width, int height, rt_fb_format
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  // Init request to 0 otherwise the CRC computation on RTL platform
+  // is invalid.
+  memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_fb_open(&req->header, __rt_bridge_strlen(name), name, width, height, format);
   __rt_bridge_post_req(req, call_event);
 
@@ -397,6 +417,9 @@ void rt_bridge_fb_update(uint64_t fb, unsigned int addr, int posx, int posy, int
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   rt_bridge_req_t *req = &call_event->bridge_req;
+  // Init request to 0 otherwise the CRC computation on RTL platform
+  // is invalid.
+  memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
   hal_bridge_fb_update(&req->header, fb, addr, posx, posy, width, height);
   __rt_bridge_post_req(req, call_event);
 
@@ -435,6 +458,9 @@ void __rt_bridge_target_status_sync(rt_event_t *event)
     rt_event_t *call_event = __rt_wait_event_prepare(event);
 
     rt_bridge_req_t *req = &call_event->bridge_req;
+    // Init request to 0 otherwise the CRC computation on RTL platform
+    // is invalid.
+    memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
     hal_bridge_target_status_sync(&req->header);
     __rt_bridge_post_req(req, call_event);
 
