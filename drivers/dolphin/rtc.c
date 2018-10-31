@@ -66,6 +66,7 @@ static void  rt_rtc_reg_config(unsigned char iAddr, unsigned int conf){
 void __rt_int_rtc_handler(void *arg)
 {
   rt_rtc_t *rtc = (rt_rtc_t *) arg;
+  __rtc_handler = NULL;
   rt_rtc_reg_read(RTC_IRQ_Flag_Addr);
   switch (rtc->conf.mode){
     case MODE_CALIBR:
@@ -243,9 +244,8 @@ void rt_rtc_close(rt_rtc_t *rtc, rt_event_t *event)
 void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_t *event )
 {
   if (event){
-      rt_event_sched_t *sched = event->sched;
       rtc->event = event;
-      __rtc_handler = rt_event_get(sched,  __rt_int_rtc_handler, rtc);
+      __rtc_handler = rt_event_get(NULL,  __rt_int_rtc_handler, rtc);
   }
   switch (rtc_cmd){
     case RTC_START:
@@ -311,4 +311,5 @@ void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_
 
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_rtc_init()
 {
+  __rtc_handler = NULL;
 }
