@@ -114,6 +114,11 @@ void __rt_init()
   __rt_utils_init();
   __rt_allocs_init();
 
+  // Schedulers are also initialized now as other modules are accessing directly
+  // some of their variables.
+  __rt_thread_sched_init();
+  __rt_event_sched_init();
+
   // Call global and static constructors
   // Each module may do private initializations there
   do_ctors();

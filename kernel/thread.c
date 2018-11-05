@@ -127,7 +127,7 @@ void *rt_thread_join(rt_thread_t *thread)
   return status;
 }
 
-RT_BOOT_CODE void __attribute__((constructor)) __rt_thread_sched_init()
+void __rt_thread_sched_init()
 {
   __rt_thread_queue_init(&__rt_ready_queue);
   __rt_thread_init(&__rt_thread_main, NULL, NULL, 0, 0);

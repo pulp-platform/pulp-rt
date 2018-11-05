@@ -423,6 +423,8 @@ static inline __attribute__((always_inline)) void __rt_push_event(rt_event_sched
   __rt_wakeup_thread(sched);
 }
 
+void __rt_event_sched_init();
+
 /// @endcond
 
 #endif

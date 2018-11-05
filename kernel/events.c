@@ -261,7 +261,7 @@ __rt_wait_event(event);
   rt_irq_restore(irq);
 }
 
-RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_event_sched_init()
+void __rt_event_sched_init()
 {
   __rt_first_free = NULL;
   rt_event_sched_init(&__rt_sched);
