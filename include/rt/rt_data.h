@@ -259,6 +259,7 @@ typedef struct rt_event_s {
   struct rt_event_sched_s *sched;
   struct rt_thread_s *thread;
   int pending;
+  int keep;
   void (*saved_callback)(void *);
   void *saved_arg;
   int saved_pending;

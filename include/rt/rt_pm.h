@@ -75,6 +75,8 @@ typedef enum {
 } rt_pm_wakeup_e;
 
 
+void rt_pm_wakeup_clear_all();
+
 
 /** \brief Switch power state.
  *

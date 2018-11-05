@@ -262,6 +262,11 @@ void rt_event_push_delayed(rt_event_t *event, int time_us);
 extern RT_FC_TINY_DATA rt_event_t        *__rt_first_free;
 extern RT_FC_TINY_DATA rt_event_sched_t   __rt_sched;
 
+static inline rt_event_sched_t *__rt_event_get_current_sched()
+{
+  return __rt_thread_current->sched;
+}
+
 static inline void __rt_event_release(rt_event_t *event)
 {
   event->next = __rt_first_free;
@@ -290,6 +295,11 @@ static inline void __rt_event_set_pending(rt_event_t *event)
   event->pending = 1;  
 }
 
+static inline void __rt_event_set_keep(rt_event_t *event)
+{
+  event->keep = 1;  
+}
+
 void __rt_event_execute(rt_event_sched_t *sched, int wait);
 
 
@@ -298,7 +308,7 @@ void __rt_event_yield(rt_event_sched_t *sched);
 static inline void rt_event_execute(rt_event_sched_t *sched, int wait)
 {
   int irq = rt_irq_disable();
-  __rt_event_execute(sched, wait);
+  __rt_event_execute(__rt_event_get_current_sched(), wait);
   rt_irq_restore(irq);
 }
 
@@ -314,8 +324,8 @@ static inline rt_event_sched_t *rt_event_internal_sched()
 
 static inline void rt_event_thread_sched(rt_thread_t *thread, rt_event_sched_t *sched)
 {
-  if (thread == NULL) thread = __rt_thread_current;
-  thread->sched = sched;
+  //if (thread == NULL) thread = __rt_thread_current;
+  //thread->sched = sched;
 }
 
 void __rt_wait_event(rt_event_t *event);

@@ -66,20 +66,36 @@ static void  rt_rtc_reg_config(unsigned char iAddr, unsigned int conf){
 void __rt_int_rtc_handler(void *arg)
 {
   rt_rtc_t *rtc = (rt_rtc_t *) arg;
-  __rtc_handler = NULL;
-  rt_rtc_reg_read(RTC_IRQ_Flag_Addr);
-  switch (rtc->conf.mode){
-    case MODE_CALIBR:
-      rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Calibration_Flag);
-      break;
-    case MODE_CNTDOWN:
-      rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Timer1_Flag);
-      break;
-    case MODE_ALARM:
-      rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Alarm1_Flag);
-      break;
+
+  unsigned int flags = rt_rtc_reg_read(RTC_IRQ_Flag_Addr);
+
+  // Clear and handle any interrupt which occured as the 3 modes can be used
+  // at the same time
+
+  if (flags & RTC_Irq_Calibration_Flag)
+  {
+    rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Calibration_Flag);
+
+    if (rtc->calib_event)
+      __rt_event_enqueue(rtc->calib_event);
   }
-  __rt_event_enqueue(rtc->event);
+
+  if (flags & RTC_Irq_Timer1_Flag)
+  {
+    rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Timer1_Flag);
+
+    if (rtc->countdown_event)
+      __rt_event_enqueue(rtc->countdown_event);
+    
+  }
+
+  if (flags & RTC_Irq_Alarm1_Flag)
+  {
+    rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Alarm1_Flag);
+
+    if (rtc->alarm_event)
+      __rt_event_enqueue(rtc->alarm_event);
+  }
 }
 
 static void  rt_rtc_enable(){
@@ -217,6 +233,9 @@ static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
   rt_rtc_set_clk(rtc->conf.clkDivider);
   rt_rtc_calendar(&rtc->conf.calendar);
   rtc->conf.mode = MODE_CALENDAR;
+  rtc->alarm_event = NULL;
+  rtc->countdown_event = NULL;
+  rtc->calib_event = NULL;
 }
 
 rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *rtc_conf, rt_event_t *event)
@@ -225,6 +244,18 @@ rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *rtc_conf, rt_event_t *event)
   rt_rtc_init(&dev_rtc, rtc_conf);
   if (event) __rt_event_enqueue(event);
   dev_rtc.open_count++;
+
+  // We need a permanent event to clear the RTC interrupt when it occurs
+  // as we can't do it from interrupt handler as we need to wait for RTC APB
+  // interrupt when writing to RTC
+  if (!__rtc_handler)
+  {
+    rt_event_alloc(NULL, 1);
+    __rtc_handler = rt_event_get(NULL,  __rt_int_rtc_handler, &dev_rtc);
+    // Mark the event as permanent so that it is not given back to the scheduler
+    __rt_event_set_keep(__rtc_handler);
+  }
+
   return &dev_rtc;
 
 error:
@@ -241,13 +272,21 @@ void rt_rtc_close(rt_rtc_t *rtc, rt_event_t *event)
   if (event) __rt_event_enqueue(event);
 }
 
+static void check_user_event(rt_event_t *event, rt_event_t **rtc_event, int repeat)
+{
+  if (event)
+  {
+    *rtc_event = event;
+
+    // In case the user event is more a repeat mode, we must make sure the event
+    // is not freed when it is executed
+    if (repeat)
+      __rt_event_set_keep(event);
+  }
+}
+
 void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_t *event )
 {
-  if (event){
-      rt_event_sched_t *sched = event->sched;
-      rtc->event = event;
-      __rtc_handler = rt_event_get(sched,  __rt_int_rtc_handler, rtc);
-  }
   switch (rtc_cmd){
     case RTC_START:
       rt_rtc_enable();
@@ -266,14 +305,17 @@ void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_
     case RTC_ALARM_SET:
       memcpy(&rtc->conf.alarm, value, sizeof(rt_rtc_alarm_t));
       rt_rtc_set_alarm(&rtc->conf.alarm);
+      check_user_event(event, &rtc->alarm_event, rtc->conf.alarm.repeat_mode == 1);
       break;
     case RTC_ALARM_START:
+      check_user_event(event, &rtc->alarm_event, rtc->conf.alarm.repeat_mode == 1);
       if (rtc->conf.mode != MODE_CALENDAR)
           rt_rtc_control(rtc, RTC_CALENDAR_START, NULL, NULL);
       rt_rtc_alarm_start(&rtc->conf.alarm);
       rtc->conf.mode = MODE_ALARM;
       break;
     case RTC_ALARM_STOP:
+      // TODO we should cancel and free pending events
       rt_rtc_alarm_stop();
       break;
     case RTC_CALENDAR_SET:
@@ -290,15 +332,19 @@ void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_
     case RTC_CNTDOWN_SET:
       memcpy(&rtc->conf.cntDwn, value, sizeof(rt_rtc_cntDwn_t));
       rt_rtc_countDown(&rtc->conf.cntDwn);
+      check_user_event(event, &rtc->countdown_event, rtc->conf.cntDwn.repeat_en == 1);
       break;
     case RTC_CNTDOWN_START:
+      check_user_event(event, &rtc->countdown_event, rtc->conf.cntDwn.repeat_en == 1);
       rt_rtc_cntDwn_start(&rtc->conf.cntDwn);
       rtc->conf.mode = MODE_CNTDOWN;
       break;
     case RTC_CNTDOWN_STOP:
+      // TODO we should cancel and free pending events
       rt_rtc_cntDwn_stop();
       break;
     case RTC_CALIBRATION:
+      check_user_event(event, &rtc->calib_event, 0);
       rt_rtc_calibration();
       break;
     case RTC_GET_TIME:

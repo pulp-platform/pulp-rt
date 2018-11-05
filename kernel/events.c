@@ -46,7 +46,7 @@ rt_event_t *__rt_wait_event_prepare_blocking()
   __rt_first_free = event->next;
   __rt_event_min_init(event);
   event->pending = 1;
-  event->sched = &__rt_sched;
+  event->sched = __rt_event_get_current_sched();
   event->callback = NULL;
   return event;
 }
@@ -55,7 +55,7 @@ int rt_event_alloc(rt_event_sched_t *sched, int nb_events)
 {
   int irq = rt_irq_disable();
 
-  if (!sched) sched = __rt_thread_current->sched;
+  sched = __rt_event_get_current_sched();
 
   int flags;
   if (rt_is_fc()) flags = RT_ALLOC_FC_DATA;
@@ -107,7 +107,7 @@ static inline __attribute__((always_inline)) rt_event_t *__rt_get_event(rt_event
 rt_event_t *rt_event_get(rt_event_sched_t *sched, void (*callback)(void *), void *arg)
 {
   int irq = rt_irq_disable();
-  if (!sched) sched = __rt_thread_current->sched;
+  sched = __rt_event_get_current_sched();
   rt_event_t *event = __rt_get_event(sched, callback, arg);
   if (event) event->sched = sched;
   rt_irq_restore(irq);
@@ -117,7 +117,7 @@ rt_event_t *rt_event_get(rt_event_sched_t *sched, void (*callback)(void *), void
 rt_event_t *rt_event_get_blocking(rt_event_sched_t *sched)
 {
   int irq = rt_irq_disable();
-  if (!sched) sched = __rt_thread_current->sched;
+  sched = __rt_event_get_current_sched();
   rt_event_t *event = __rt_get_event(sched, NULL, NULL);
   if (event) {
     event->sched = sched;
@@ -137,6 +137,7 @@ void rt_event_push(rt_event_t *event)
 int rt_event_push_callback(rt_event_sched_t *sched, void (*callback)(void *), void *arg)
 {
   int irq = rt_irq_disable();
+  sched = __rt_event_get_current_sched();
   rt_event_t *event = __rt_get_event(sched, callback, arg);
   if (event == NULL) return -1;
   __rt_push_event(sched, event);
@@ -182,7 +183,7 @@ void __rt_event_yield(rt_event_sched_t *sched)
 
 void __rt_event_execute(rt_event_sched_t *sched, int wait)
 {
-  if (sched == NULL) sched = __rt_thread_current->sched;
+  sched = __rt_event_get_current_sched();
   rt_event_t *event = sched->first;
 
   if (event == NULL) {
@@ -219,7 +220,7 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
     void *arg = event->arg;
 
     // Free the event now so that it can be used directly from the callback
-    if (!event->pending)
+    if (!event->pending && !event->keep)
     {
       __rt_event_release(event);
     }
@@ -243,7 +244,7 @@ void __rt_wait_event(rt_event_t *event)
 {
   while (event->pending) {
     event->thread = __rt_thread_current;
-    __rt_event_execute(__rt_thread_current->sched, 1);
+    __rt_event_execute(__rt_event_get_current_sched(), 1);
   }
 
   rt_event_sched_t *sched = event->sched;
