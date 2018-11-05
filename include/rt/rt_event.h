@@ -286,6 +286,7 @@ static inline void __rt_event_min_init(rt_event_t *event)
 {
   event->thread = NULL;
   event->pending = 0;
+  event->keep = 0;
 }
 
 void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched);
