@@ -177,6 +177,7 @@ typedef struct{
   unsigned int     frameDrop_value;       /*!< Define how many frames need to be dropped */
   unsigned int     cpiCfg;                /*!< Width of CPI interface*/
   int id;                                 /*!< If it is different from -1, this specifies on which CPI interface the device is connected. */
+  int control_id;                                 /*!< If it is different from -1, this specifies on which interface the control interface of the device is connected. */
   rt_cam_type_e type;   /*!< Camera type. */
 }rt_cam_conf_t;
 

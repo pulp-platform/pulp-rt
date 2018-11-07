@@ -338,7 +338,16 @@ rt_camera_t* __rt_himax_open(int channel, rt_cam_conf_t* cam, rt_event_t*event){
 
         rt_i2c_conf_init(&camera->i2c_conf);
         camera->i2c_conf.cs = 0x48;
-        camera->i2c_conf.id = 1;
+        camera->i2c_conf.id = cam->control_id;
+
+        if (camera->i2c_conf.id == -1)
+        {
+#if PULP_CHIP_FAMILY == CHIP_GAP
+          camera->i2c_conf.id = 1;
+#else
+          camera->i2c_conf.id = 0;
+#endif
+        }
         camera->i2c_conf.max_baudrate = 200000;
 
         camera->i2c = rt_i2c_open(NULL, &camera->i2c_conf, NULL);

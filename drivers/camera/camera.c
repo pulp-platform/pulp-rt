@@ -161,6 +161,7 @@ void rt_camera_conf_init(rt_cam_conf_t *conf)
   conf->cpiCfg = UDMA_CHANNEL_CFG_SIZE_16;
   conf->id = -1;
   conf->type = RT_CAM_TYPE_HIMAX;
+  conf->control_id = -1;
 }
 
 
