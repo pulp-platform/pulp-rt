@@ -64,7 +64,9 @@
  * external bridge when updating a framebuffer.
  */
 typedef enum {
-  RT_FB_FORMAT_GRAY = HAL_BRIDGE_REQ_FB_FORMAT_GRAY   /*!< Each pixel is gray on 8 bits. */
+  RT_FB_FORMAT_GRAY = HAL_BRIDGE_REQ_FB_FORMAT_GRAY,   /*!< Each pixel is gray on 8 bits. */
+  RT_FB_FORMAT_RGB = HAL_BRIDGE_REQ_FB_FORMAT_RGB,     /*!< Each pixel is 3 x8bits channels (RGB). */
+  RT_FB_FORMAT_RAW = HAL_BRIDGE_REQ_FB_FORMAT_RAW     /*!< Each pixel is 3 x8bits channels (RGB). */
 } rt_fb_format_e;
 
 
