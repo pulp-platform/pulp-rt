@@ -166,7 +166,6 @@ unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
         rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, 2, 1, NULL);
         rt_i2c_read(cam->i2c, &valRegHimax, 1, 0, NULL);
     }
-    printf("Read register %x: %x\n", addr, valRegHimax);
     return valRegHimax;
 }
 
