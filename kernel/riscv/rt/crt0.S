@@ -150,6 +150,12 @@ _fini:
 .section .vectors, "ax"
 .option norvc;
 
+#ifdef ARCHI_CORE_HAS_1_10
+  j _start
+#else
+  j __rt_no_irq_handler
+#endif
+
   j __rt_no_irq_handler
   j __rt_no_irq_handler
   j __rt_no_irq_handler
@@ -184,7 +190,10 @@ _fini:
   j __rt_no_irq_handler
 
 
+#ifdef ARCHI_CORE_HAS_1_10
+#else
   .org 0x80
+#endif
   .global _start
 _start:
   jal x0, _entry
