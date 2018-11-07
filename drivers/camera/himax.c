@@ -151,7 +151,8 @@ RT_FC_DATA unsigned char camera_isAwaked;
 
 
 void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
-    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+    if (rt_platform() != ARCHI_PLATFORM_RTL)
+    {
         i2c_req.wr.value = value;
         i2c_req.wr.addr = ((addr >> 8) & 0xff) | ((addr & 0xff) << 8);
         rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, 3, 0, NULL);
@@ -159,11 +160,13 @@ void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
 }
 
 unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
-    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+    if (rt_platform() != ARCHI_PLATFORM_RTL)
+    {
         i2c_req.rd.addr = ((addr >> 8) & 0xff) | ((addr & 0xff) << 8);
         rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, 2, 1, NULL);
         rt_i2c_read(cam->i2c, &valRegHimax, 1, 0, NULL);
     }
+    printf("Read register %x: %x\n", addr, valRegHimax);
     return valRegHimax;
 }
 
@@ -257,7 +260,7 @@ static void _himaxConfig(rt_cam_conf_t *cam){
 void __rt_himax_close(rt_camera_t *dev_cam, rt_event_t *event){
     int irq = rt_irq_disable();
     _camera_stop();
-    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD)
+    if (rt_platform() != ARCHI_PLATFORM_RTL)
         rt_i2c_close(dev_cam->i2c, NULL);
     rt_free(RT_ALLOC_FC_DATA, (void*)dev_cam, sizeof(rt_camera_t));
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
@@ -317,24 +320,21 @@ static void __rt_camera_conf_init(rt_camera_t *dev, rt_cam_conf_t* cam){
     _himaxParamInit(dev, cam);
 }
 
-rt_camera_t* __rt_himax_open(rt_dev_t *dev, rt_cam_conf_t* cam, rt_event_t*event){
+rt_camera_t* __rt_himax_open(int channel, rt_cam_conf_t* cam, rt_event_t*event){
 
     rt_trace(RT_TRACE_DEV_CTRL, "[CAM] Opening Himax camera\n");
 
     rt_camera_t *camera = NULL;
-    if (dev == NULL) return NULL;
+
     camera = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_camera_t));
     if (camera == NULL) return NULL;
 
-    camera->dev = dev;
-    if (dev->channel != -1)
-        camera->channel = dev->channel & 0xf;
-    else
-        camera->channel = dev->itf + ARCHI_UDMA_CAM_ID(dev->itf);
+    camera->channel = channel;
 
     __rt_camera_conf_init(camera, cam);
 
-    if (rt_platform() == ARCHI_PLATFORM_FPGA || rt_platform() == ARCHI_PLATFORM_BOARD){
+    if (rt_platform() != ARCHI_PLATFORM_RTL)
+    {
 
         rt_i2c_conf_init(&camera->i2c_conf);
         camera->i2c_conf.cs = 0x48;

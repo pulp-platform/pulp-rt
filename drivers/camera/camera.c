@@ -105,13 +105,34 @@ rt_camera_t* rt_camera_open(char *dev_name, rt_cam_conf_t *conf, rt_event_t*even
 
   rt_trace(RT_TRACE_DEV_CTRL, "[CAM] Opening camera device (name: %s)\n", dev_name);
 
-  rt_dev_t *dev = rt_dev_get(dev_name);
-  if (dev == NULL) goto error;
+  rt_cam_dev_t *desc;
+  int channel;
 
-  rt_cam_dev_t *desc = (rt_cam_dev_t *)dev->desc;
-  if (desc == NULL) goto error;
+  if (dev_name)
+  {
+    rt_dev_t *dev = rt_dev_get(dev_name);
+    if (dev == NULL) goto error;
 
-  rt_camera_t *cam = desc->open(dev, conf, event);
+    desc = (rt_cam_dev_t *)dev->desc;
+    if (desc == NULL) goto error;
+
+    if (dev->channel != -1)
+        channel = dev->channel & 0xf;
+    else
+        channel = dev->itf + ARCHI_UDMA_CAM_ID(dev->itf);
+  }
+  else
+  {
+    channel = ARCHI_UDMA_CAM_ID(conf->itf);
+    if (conf->type == RT_CAM_TYPE_HIMAX)
+      desc = &himax_desc;
+    else if (conf->type == RT_CAM_TYPE_OV7670)
+      desc = &ov7670_desc;
+    else
+      goto error;
+  }
+
+  rt_camera_t *cam = desc->open(channel, conf, event);
   if (cam == NULL) goto error;
 
   memcpy((void *)&cam->desc, (void *)desc, sizeof(rt_cam_dev_t));
@@ -121,6 +142,8 @@ rt_camera_t* rt_camera_open(char *dev_name, rt_cam_conf_t *conf, rt_event_t*even
   return cam;
 
 error:
+  rt_irq_restore(irq);
+
   rt_warning("[CAM] Failed to open camera device\n");
   return NULL;
 }
@@ -136,6 +159,8 @@ void rt_camera_conf_init(rt_cam_conf_t *conf)
   conf->frameDrop_en = DISABLE;
   conf->frameDrop_value = 0;
   conf->cpiCfg = UDMA_CHANNEL_CFG_SIZE_16;
+  conf->id = -1;
+  conf->type = RT_CAM_TYPE_HIMAX;
 }
 
 
