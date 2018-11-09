@@ -30,6 +30,7 @@
  * This is used to configure GPIO aspects.
  */
 typedef enum {
+  RT_GPIO_NONE
 } rt_gpio_conf_e;
 
 
@@ -37,6 +38,7 @@ typedef enum {
  * \brief List of pads which can be specified when a pad is being configured.
  */
 typedef enum {
+  RT_PAD_NONE
 } rt_pad_e;
 
 /** \enum rt_pad_func_e
@@ -45,6 +47,7 @@ typedef enum {
  * This can be used to specify which function a pad is using.
  */
 typedef enum {
+  RT_PAD_FUNC_NONE
 } rt_pad_func_e;
 
 //!@}
