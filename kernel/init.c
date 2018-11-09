@@ -119,8 +119,10 @@ void __rt_init()
   __rt_thread_sched_init();
   __rt_event_sched_init();
 
+#ifdef PADS_VERSION
   // Initialize now the default padframe so that the user can overwrite it
   __rt_padframe_init();
+#endif
 
   // Call global and static constructors
   // Each module may do private initializations there
