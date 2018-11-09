@@ -19,8 +19,7 @@
  */
 
   .section .text
-
-
+  
     .global __rt_illegal_instr
 __rt_illegal_instr:
     sw   ra, -4(sp)

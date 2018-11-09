@@ -152,7 +152,7 @@ _fini:
 
 
 #ifdef ARCHI_CORE_HAS_1_10
-  j _start
+  j __rt_illegal_instr
 #else
   j __rt_no_irq_handler
 #endif
@@ -190,9 +190,7 @@ _fini:
   j __rt_no_irq_handler
 
 
-#ifndef ARCHI_CORE_HAS_1_10
   .org 0x80
-#endif
   .global _start
 _start:
   jal x0, _entry
