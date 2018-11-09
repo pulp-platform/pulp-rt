@@ -34,57 +34,69 @@
 
 #include "rt/rt_api.h"
 
-#if defined(APB_SOC_VERSION)
+
+/**
+* @ingroup groupDrivers
+*/
+
+
+
+/**
+ * @defgroup PADFRAME Padframe
+ *
+ * The padframe driver provides support for controlling PADs.
+ *
+ */
+
+/**
+ * @addtogroup PADFRAME
+ * @{
+ */
+
+/**@{*/
+
+
+/** \brief Set the pad function
+ *
+ * This function can be used to configure the function of the specified pad
+ * in case it can have several functions.
+ *
+ * \param pad  Pad number. See the chip specific configuration for more details.
+ * \param function Pad function. See the chip specific configuration for more details.
+ */
+void rt_pad_set_function(rt_pad_e pad, rt_pad_func_e function);
+
+
+
+//!@}
+
+
+
+/**
+ * @} end of GPIO PADFRAME
+ */
+
 
 /// @cond IMPLEM
+
+#if 0
+/** \enum rt_pad_cmd_e
+ * \brief Padframe commands.
+ *
+ * This enum defines the commands which which can be used to control the padframe.
+ */
+typedef enum {
+  RT_PAD_CMD_FUNC = 0,       /*!< Command for configuring the Resolution. */
+} rt_pad_cmd_e;
+
+void rt_pad_control(rt_pad_cmd_e cmd, void *arg);
+#endif
+
 
 void __rt_padframe_init();
 rt_padframe_profile_t *rt_pad_profile_get(char *profile_string) ;
 void rt_padframe_set(rt_padframe_profile_t *profile) ;
 
-void rt_pad_apply(int pad);
-
-static inline void rt_pad_set_power(int pad, int is_on);
-
-static inline void rt_pad_set_function(int pad, int function);
-
-void rt_pad_config(int pad, int function);
-
-
-
-typedef union {
-  struct {
-#if APB_SOC_VERSION == 1
-    uint8_t function :1;
-
-#elif APB_SOC_VERSION >= 2
-    uint8_t function :2;
-    uint8_t is_on    :1;
-
-#endif
-  };
-  uint8_t raw;
-} rt_pad_cfg_t;
-
-
-extern rt_pad_cfg_t __rt_pads_config[];
-
-
-static inline void rt_pad_set_function(int pad_id, int function)
-{
-  rt_pad_cfg_t *pad = &__rt_pads_config[pad_id];
-  pad->function = function;
-}
-
-static inline void rt_pad_set_power(int pad_id, int is_on)
-{
-#if APB_SOC_VERSION >= 2
-  rt_pad_cfg_t *pad = &__rt_pads_config[pad_id];
-  pad->is_on = is_on;
-#endif
-}
-
-#endif
 
 /// @endcond
 

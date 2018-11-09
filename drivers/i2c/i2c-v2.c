@@ -152,9 +152,6 @@ rt_i2c_t *rt_i2c_open(char *dev_name, rt_i2c_conf_t *i2c_conf, rt_event_t *event
 {
   int irq = rt_irq_disable();
 
-  __rt_padframe_init();
-
-
   rt_i2c_conf_t def_conf;
 
   if (i2c_conf == NULL)

@@ -67,8 +67,6 @@ rt_spim_t *rt_spim_open(char *dev_name, rt_spim_conf_t *conf, rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
-  __rt_padframe_init();
-
   rt_spim_conf_t def_conf;
 
   if (conf == NULL)

@@ -1,21 +1,6 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich and University of Bologna and
+ * GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -226,7 +211,45 @@ void rt_gpio_wait(uint8_t group, uint8_t gpio);
  */
 void rt_gpio_clear(uint8_t group, uint8_t gpio);
 
+
+
+/** \brief Configure a GPIO.
+ *
+ * This function is used to configure a GPIO.
+ * The specified configuration is applied to the GPIO.
+ * Can only be called from fabric-controller side.
+ *
+ * \param group  GPIO group. Must always be 0 for now.
+ * \param gpio   The GPIO number. Must be between 0 and 31.
+ * \param flags  The configuration to be applied to the GPIO. Check the description of rt_gpio_conf_e for further information.
+ * \return 0 if the operation is successfull, 1 otherwise
+ */
+
+static inline int rt_gpio_pin_configure(uint8_t group, int gpio, rt_gpio_conf_e flags);
+
+
+/** \brief Configure a set of GPIOs.
+ *
+ * This function is used to configure a set of GPIO.
+ * The specified configuration is applied to the set of GPIOs.
+ * Can only be called from fabric-controller side.
+ *
+ * \param group  GPIO group. Must always be 0 for now.
+ * \param mask   A mask of GPIOs to be configured.
+ *               There is one bit per GPIO, bit 0 is GPIO 0 and bit 31 GPIO 31.
+ *               The configuration will be set for all GPIOs which have their
+ *               corresponding bit set to 1.
+ * \param flags  The configuration to be applied to the set of GPIOs. Check the description of rt_gpio_conf_e for further information.
+ * \return 0 if the operation is successfull, 1 otherwise
+ */
+
+int rt_gpio_configure(uint8_t group, uint32_t mask, rt_gpio_conf_e flags);
+
+
+
 //!@}
+
+
 
 /**
  * @} end of GPIO master
@@ -289,6 +312,11 @@ static inline void rt_gpio_set_pin_value(uint8_t group, uint8_t pin, uint8_t val
   int irq = rt_irq_disable();
   hal_gpio_set_pin_value(pin, value);
   rt_irq_restore(irq);
+}
+
+static inline int rt_gpio_pin_configure(uint8_t group, int gpio, rt_gpio_conf_e flags)
+{
+  return rt_gpio_configure(group, 1<<gpio, flags);
 }
 
 /// @endcond
