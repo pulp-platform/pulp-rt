@@ -223,9 +223,8 @@ static void  rt_rtc_set_alarm(rt_rtc_alarm_t* alarm){
 
 static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
 {
-  unsigned int Val = soc_eu_eventMask_get(SOC_FC_MASK_MSB);
-  Val = Val & ~((1<<(RTC_RTC_INT_EVENT-32)) | (1<<(RTC_RTC_APB_EVENT-32)));
-  soc_eu_eventMask_set(SOC_FC_MASK_MSB, Val);
+  soc_eu_fcEventMask_setEvent(RTC_RTC_INT_EVENT);
+  soc_eu_fcEventMask_setEvent(RTC_RTC_APB_EVENT);
   rt_rtc_reset();
   rtc->conf.mode = MODE_CALENDAR;
   memcpy(&rtc->conf, rtc_conf, sizeof(rt_rtc_conf_t));
@@ -266,9 +265,8 @@ error:
 void rt_rtc_close(rt_rtc_t *rtc, rt_event_t *event)
 {
   rt_rtc_disable();
-  unsigned int Val = soc_eu_eventMask_get(SOC_FC_MASK_MSB);
-  Val = Val | ((1<<(RTC_RTC_INT_EVENT-32)) | (1<<(RTC_RTC_APB_EVENT-32)));
-  soc_eu_eventMask_set(SOC_FC_MASK_MSB, Val);
+  soc_eu_fcEventMask_clearEvent(RTC_RTC_INT_EVENT);
+  soc_eu_fcEventMask_clearEvent(RTC_RTC_APB_EVENT);
   if (event) __rt_event_enqueue(event);
 }
 
