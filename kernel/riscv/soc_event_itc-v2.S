@@ -70,9 +70,10 @@ __rt_fc_socevents_handler:
 
 __rt_fc_socevents_no_udma:
 
+#ifdef RTC_VERSION
   li      x9, ARCHI_SOC_EVENT_RTC_IRQ
   beq     x9, x10, rtc_event_handler
-
+#endif
 
   //
   // SOC event status register
@@ -114,9 +115,10 @@ __rt_fc_socevents_handler_exit:
   mret
 
 
-
+#ifdef RTC_VERSION
 rtc_event_handler:
   lw    x11, __rtc_handler
   la    x9, __rt_fc_socevents_handler_exit
   j   __rt_event_enqueue
+#endif
 
