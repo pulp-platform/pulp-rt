@@ -396,6 +396,12 @@ unsigned int PMU_set_voltage(unsigned int Voltage, unsigned int CheckFrequencies
  return 0;
 }
 
+
+int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_event_t *event)
+{
+  return PMU_set_voltage(new_voltage, 0);
+}
+
 void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
 {
   int irq = rt_irq_disable();
