@@ -113,7 +113,7 @@ void rt_gpio_deinit(uint8_t group, int gpio);
 /** \brief Set direction for a group of GPIO.
  *
  * This function can be used to specify if the GPIO is an output or an input.
- * An input GPIO will allow sending data from the chip to another device while
+ * An output GPIO will allow sending data from the chip to another device while
  * an input will allow receiving data.
  *
  * \param group  GPIO group. Must always be 0 for now.
@@ -218,7 +218,7 @@ void rt_gpio_wait(uint8_t group, uint8_t gpio);
 
 /** \brief Clear pending GPIO notifications.
  *
- * This can be used to clear pending notifications for the 
+ * This can be used to clear pending notifications for the
  * specified GPIO.
  *
  * \param group  GPIO group. Must always be 0 for now.
