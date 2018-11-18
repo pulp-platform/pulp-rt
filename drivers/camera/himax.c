@@ -149,9 +149,18 @@ RT_L2_DATA unsigned char valRegHimax;
 // TODO: write a status var for cam
 RT_FC_DATA unsigned char camera_isAwaked;
 
+static inline int is_i2c_active()
+{
+#if PULP_CHIP == CHIP_VEGA
+  return 0;
+#else
+  return rt_platform() != ARCHI_PLATFORM_RTL;
+#endif
+}
+
 
 void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
-    if (rt_platform() != ARCHI_PLATFORM_RTL)
+    if (is_i2c_active())
     {
         i2c_req.wr.value = value;
         i2c_req.wr.addr = ((addr >> 8) & 0xff) | ((addr & 0xff) << 8);
@@ -160,7 +169,7 @@ void himaxRegWrite(rt_camera_t *cam, unsigned int addr, unsigned char value){
 }
 
 unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
-    if (rt_platform() != ARCHI_PLATFORM_RTL)
+    if (is_i2c_active())
     {
         i2c_req.rd.addr = ((addr >> 8) & 0xff) | ((addr & 0xff) << 8);
         rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, 2, 1, NULL);
@@ -259,7 +268,7 @@ static void _himaxConfig(rt_cam_conf_t *cam){
 void __rt_himax_close(rt_camera_t *dev_cam, rt_event_t *event){
     int irq = rt_irq_disable();
     _camera_stop();
-    if (rt_platform() != ARCHI_PLATFORM_RTL)
+    if (is_i2c_active())
         rt_i2c_close(dev_cam->i2c, NULL);
     rt_free(RT_ALLOC_FC_DATA, (void*)dev_cam, sizeof(rt_camera_t));
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
@@ -332,7 +341,7 @@ rt_camera_t* __rt_himax_open(int channel, rt_cam_conf_t* cam, rt_event_t*event){
 
     __rt_camera_conf_init(camera, cam);
 
-    if (rt_platform() != ARCHI_PLATFORM_RTL)
+    if (is_i2c_active())
     {
 
         rt_i2c_conf_init(&camera->i2c_conf);
