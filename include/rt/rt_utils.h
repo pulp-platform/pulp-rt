@@ -706,8 +706,10 @@ static inline unsigned int __rt_get_fc_vector_base()
   return ARCHI_L2_ADDR;
 #else
   if (rt_is_fc()) {
-#if defined(ARCHI_CORE_HAS_SECURITY) || defined(ARCHI_CORE_HAS_1_10)
+#if defined(ARCHI_CORE_HAS_SECURITY)
     return __builtin_pulp_spr_read(SR_MTVEC);
+#elif defined(ARCHI_CORE_HAS_1_10)
+    return __builtin_pulp_spr_read(SR_MTVEC) & ~1;
 #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
     return apb_soc_bootaddr_get();
 #endif
@@ -730,8 +732,10 @@ static inline void __rt_set_fc_vector_base(unsigned int base)
 #if defined(APB_SOC_VERSION) && APB_SOC_VERSION == 1
 #else
   if (rt_is_fc()) {
-#if defined(ARCHI_CORE_HAS_SECURITY) || defined(ARCHI_CORE_HAS_1_10)
+#if defined(ARCHI_CORE_HAS_SECURITY)
     __builtin_pulp_spr_write(SR_MTVEC, base);
+#elif defined(ARCHI_CORE_HAS_1_10)
+    __builtin_pulp_spr_write(SR_MTVEC, base | 1);
 #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
     apb_soc_bootaddr_set(base);
 #endif
