@@ -706,7 +706,7 @@ static inline unsigned int __rt_get_fc_vector_base()
   return ARCHI_L2_ADDR;
 #else
   if (rt_is_fc()) {
-#if defined(ARCHI_CORE_HAS_SECURITY)
+#if defined(ARCHI_CORE_HAS_SECURITY) || defined(ARCHI_CORE_HAS_1_10)
     return __builtin_pulp_spr_read(SR_MTVEC);
 #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
     return apb_soc_bootaddr_get();
