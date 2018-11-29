@@ -190,17 +190,25 @@ int rt_bridge_connect(int wait_bridge, rt_event_t *event)
 
   int irq = rt_irq_disable();
 
-  if (rt_event_alloc(NULL, 1))
+  if (rt_event_alloc(NULL, 2))
     goto error;
-  
-  rt_event_t *bridge_req_event = rt_event_get(NULL, __rt_bridge_handle_req, NULL);
-  __rt_event_set_keep(bridge_req_event);
-  bridge_req_event->arg = (void *)bridge_req_event;
-  rt_bridge_req_t *bridge_req = &bridge_req_event->bridge_req;
-  bridge_req->event = bridge_req_event;
 
-  bridge->first_bridge_free_req = (uint32_t)bridge_req;
-  bridge_req->header.next = 0;
+  bridge->first_bridge_free_req = 0;
+
+  // We allocated 2 events for bridge to target requests as he will only do one
+  // at the same time but he could  try to allocate a new one while we are
+  // releasing the last one
+  for (int i=0; i<2; i++)
+  {
+    rt_event_t *bridge_req_event = rt_event_get(NULL, __rt_bridge_handle_req, NULL);
+    __rt_event_set_keep(bridge_req_event);
+    bridge_req_event->arg = (void *)bridge_req_event;
+    rt_bridge_req_t *bridge_req = &bridge_req_event->bridge_req;
+    bridge_req->event = bridge_req_event;
+
+    bridge_req->header.next = bridge->first_bridge_free_req;
+    bridge->first_bridge_free_req = (uint32_t)bridge_req;
+  }
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
