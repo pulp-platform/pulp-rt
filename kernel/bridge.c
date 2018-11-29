@@ -134,6 +134,7 @@ static void __rt_bridge_efuse_access(int is_write, int index, unsigned int value
 
 static int __rt_bridge_eeprom_access(unsigned int itf, unsigned int cs, int is_write, unsigned int addr, unsigned int buffer, int size)
 {
+#ifdef ARCHI_UDMA_HAS_I2C
   printf("Eeprom access (is_write: %d, addr: 0x%x, buffer: 0x%x, size: 0x%x)\n", is_write, addr, buffer, size);
 
   if (__rt_bridge_eeprom_handle == NULL)
@@ -150,6 +151,7 @@ static int __rt_bridge_eeprom_access(unsigned int itf, unsigned int cs, int is_w
     rt_eeprom_write(__rt_bridge_eeprom_handle, addr, (uint8_t *)buffer, size, NULL);
   else
     rt_eeprom_read(__rt_bridge_eeprom_handle, addr, (uint8_t *)buffer, size, NULL);
+#endif
 
   return 0;
 }
