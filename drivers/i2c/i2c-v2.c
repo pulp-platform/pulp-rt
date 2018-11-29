@@ -68,10 +68,12 @@ void __rt_i2c_control(rt_i2c_t *handle, rt_i2c_control_e cmd, uint32_t arg)
 
 void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_pending, rt_event_t *event)
 {
+
   int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   rt_periph_copy_t *copy = &call_event->copy;
+
   rt_i2c_cmd_t *cmd = (rt_i2c_cmd_t *)copy->periph_data;
 
   int seq_index = 0;

@@ -37,6 +37,9 @@
 #include "rt/rt_api.h"
 #include "hal/debug_bridge/debug_bridge.h"
 
+static RT_FC_TINY_DATA rt_eeprom_t *__rt_bridge_eeprom_handle;
+
+
 static int __rt_bridge_strlen(const char *str)
 {
   int result = 0;
@@ -78,16 +81,13 @@ static void __rt_bridge_check_bridge_req()
 }
 
 
-
-// This function can be called by the API layer to commit a new request to 
-// the bridge
-static void __rt_bridge_post_req(rt_bridge_req_t *req, rt_event_t *event)
+static void __rt_bridge_post_common(rt_bridge_req_t *req, rt_event_t *event)
 {
   hal_bridge_t *bridge = hal_bridge_get();
 
   req->header.next = 0;
-  req->header.done = 0;
   req->header.popped = 0;
+
   req->header.size = sizeof(rt_bridge_req_t);
   req->event = event;
 
@@ -100,7 +100,25 @@ static void __rt_bridge_post_req(rt_bridge_req_t *req, rt_event_t *event)
   req->header.next = 0;
 
   __rt_bridge_check_bridge_req();
+}
 
+
+// This function can be called by the API layer to commit a new request to 
+// the bridge
+static void __rt_bridge_post_req(rt_bridge_req_t *req, rt_event_t *event)
+{
+  req->header.done = 0;
+  req->header.bridge_to_target = 0;
+  __rt_bridge_post_common(req, event);
+}
+
+// This function can be called by the API layer to commit a new request to 
+// the bridge
+static void __rt_bridge_post_reply(rt_bridge_req_t *req, rt_event_t *event)
+{
+  req->header.done = 1;
+  req->header.bridge_to_target = 1;
+  __rt_bridge_post_common(req, event);
 }
 
 static void __rt_bridge_efuse_access(int is_write, int index, unsigned int value, unsigned int mask)
@@ -114,6 +132,28 @@ static void __rt_bridge_efuse_access(int is_write, int index, unsigned int value
 #endif
 }
 
+static int __rt_bridge_eeprom_access(unsigned int itf, unsigned int cs, int is_write, unsigned int addr, unsigned int buffer, int size)
+{
+  printf("Eeprom access (is_write: %d, addr: 0x%x, buffer: 0x%x, size: 0x%x)\n", is_write, addr, buffer, size);
+
+  if (__rt_bridge_eeprom_handle == NULL)
+  {
+    rt_eeprom_conf_t conf;
+    conf.cs = cs;
+    conf.id = itf;
+    __rt_bridge_eeprom_handle = rt_eeprom_open(NULL, &conf, NULL);
+    if (__rt_bridge_eeprom_handle == NULL)
+      return -1;
+  }
+
+  if (is_write)
+    rt_eeprom_write(__rt_bridge_eeprom_handle, addr, (uint8_t *)buffer, size, NULL);
+  else
+    rt_eeprom_read(__rt_bridge_eeprom_handle, addr, (uint8_t *)buffer, size, NULL);
+
+  return 0;
+}
+
 static void __rt_bridge_handle_req(void *arg)
 {
   rt_event_t *event = (rt_event_t *)arg;
@@ -123,10 +163,21 @@ static void __rt_bridge_handle_req(void *arg)
   {
     __rt_bridge_efuse_access(req->header.efuse_access.is_write, req->header.efuse_access.index, req->header.efuse_access.value, req->header.efuse_access.mask);
   }
-
+  else if (req->header.type == HAL_BRIDGE_TARGET_REQ_BUFFER_ALLOC)
+  {
+    req->header.buffer_alloc.buffer = (unsigned int)rt_alloc(RT_ALLOC_PERIPH, req->header.buffer_alloc.size);
+  }
+  else if (req->header.type == HAL_BRIDGE_TARGET_REQ_BUFFER_FREE)
+  {
+    rt_free(RT_ALLOC_PERIPH, (void *)req->header.buffer_free.buffer, req->header.buffer_free.size);
+  }
+  else if (req->header.type == HAL_BRIDGE_TARGET_REQ_EEPROM_ACCESS)
+  {
+    req->header.eeprom_access.retval = __rt_bridge_eeprom_access(req->header.eeprom_access.itf, req->header.eeprom_access.cs, req->header.eeprom_access.is_write, req->header.eeprom_access.addr, req->header.eeprom_access.buffer, req->header.eeprom_access.size);
+  }
 
   hal_bridge_reply(&req->header);
-  __rt_bridge_post_req(req, event);
+  __rt_bridge_post_reply(req, event);
 }
 
 
@@ -143,7 +194,7 @@ int rt_bridge_connect(int wait_bridge, rt_event_t *event)
     goto error;
   
   rt_event_t *bridge_req_event = rt_event_get(NULL, __rt_bridge_handle_req, NULL);
-  __rt_event_set_pending(bridge_req_event);
+  __rt_event_set_keep(bridge_req_event);
   bridge_req_event->arg = (void *)bridge_req_event;
   rt_bridge_req_t *bridge_req = &bridge_req_event->bridge_req;
   bridge_req->event = bridge_req_event;
@@ -486,7 +537,15 @@ void __rt_bridge_handle_notif()
     rt_bridge_req_t *next = (rt_bridge_req_t *)req->header.next;
     bridge->first_req = (uint32_t)next;
 
-    rt_event_enqueue(req->event);
+    if (req->header.bridge_to_target)
+    {
+      req->header.next = bridge->first_bridge_free_req;
+      bridge->first_bridge_free_req = (unsigned int)req;
+    }
+    else
+    {
+      rt_event_enqueue(req->event);
+    }
 
     req = next;
   }
@@ -523,4 +582,6 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_bridge_init()
 #endif
 #endif
 #endif
+
+  __rt_bridge_eeprom_handle = NULL;
 }
