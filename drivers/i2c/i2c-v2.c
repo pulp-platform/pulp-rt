@@ -66,9 +66,8 @@ void __rt_i2c_control(rt_i2c_t *handle, rt_i2c_control_e cmd, uint32_t arg)
 
 
 
-void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_pending, rt_event_t *event)
+void rt_i2c_write_common(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_pending, rt_event_t *event, int start)
 {
-
   int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
@@ -90,9 +89,12 @@ void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_p
   udma_cmd[seq_index++] = I2C_CMD_CFG;
   udma_cmd[seq_index++] = (dev_i2c->div >> 8) & 0xFF;
   udma_cmd[seq_index++] = (dev_i2c->div & 0xFF);
-  udma_cmd[seq_index++] = I2C_CMD_START;
-  udma_cmd[seq_index++] = I2C_CMD_WR;
-  udma_cmd[seq_index++] = dev_i2c->cs;
+  if (start)
+  {
+    udma_cmd[seq_index++] = I2C_CMD_START;
+    udma_cmd[seq_index++] = I2C_CMD_WR;
+    udma_cmd[seq_index++] = dev_i2c->cs;
+  }
 
   if (length > 1){
     udma_cmd[seq_index++] = I2C_CMD_RPT;
@@ -112,6 +114,15 @@ void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_p
   rt_irq_restore(irq);
 }
 
+void rt_i2c_write(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_pending, rt_event_t *event)
+{
+  rt_i2c_write_common(dev_i2c, data, length, xfer_pending, event, 1);
+}
+
+void rt_i2c_write_append(rt_i2c_t *dev_i2c, unsigned char *data, int length, int xfer_pending, rt_event_t *event)
+{
+  rt_i2c_write_common(dev_i2c, data, length, xfer_pending, event, 0);
+}
 
 void rt_i2c_read(rt_i2c_t *dev_i2c, unsigned char *rx_buff, int length, int xfer_pending, rt_event_t *event)
 {

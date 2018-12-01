@@ -105,8 +105,6 @@ static void __rt_eeprom_handle_current_copy(rt_eeprom_t *handle)
     handle->send_header = 0;
 
     rt_i2c_write(handle->i2c_handle, handle->header_data, 2, 1, handle->current_event);
-
-    rt_time_wait_us(5000);
   }
   else
   {
@@ -121,11 +119,12 @@ static void __rt_eeprom_handle_current_copy(rt_eeprom_t *handle)
 
     if (handle->is_write)
     {
-      rt_i2c_write(handle->i2c_handle, handle->current_data, size, 0, handle->current_event);
-      rt_time_wait_us(5000);
+      rt_i2c_write_append(handle->i2c_handle, handle->current_data, size, 0, handle->current_event);
     }
     else
+    {
       rt_i2c_read(handle->i2c_handle, handle->current_data, size, 0, handle->current_event);
+    }
 
     handle->current_addr += size;
     handle->current_data += size;
@@ -175,8 +174,12 @@ static void __rt_eeprom_enqueue_transfer(rt_eeprom_t *handle, uint32_t addr, uin
         if (!async)
           __rt_wait_event(handle->current_event);
 
+        if (is_write && handle->send_header)
+          rt_time_wait_us(6000);
+
         if (handle->current_size <= 0)
           break;
+
         handle->current_event = __rt_wait_event_prepare_blocking();
       }
 

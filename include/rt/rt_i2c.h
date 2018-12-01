@@ -151,6 +151,23 @@ void rt_i2c_read(rt_i2c_t *handle, unsigned char *rx_buff, int length, int xfer_
  */
 void rt_i2c_write(rt_i2c_t *handle, unsigned char *tx_data, int length, int xfer_pending, rt_event_t *event);
 
+
+/** \brief Enqueue a burst write copy to the I2C without START bit and address (from chip to I2C device).
+ *
+ * This function can be used to write at least 1 byte of data to the I2C device.
+ * The copy will make an asynchronous transfer between the I2C and one of the chip memory.
+ * Compared to rt_i2c_write, the START bit is not generated and the slave
+ * address is not sent.
+ * An event can be specified in order to be notified when the transfer is finished.
+ *
+ * \param handle        The handler of the device which was returned when the device was opened.
+ * \param tx_data       The address in the chip where the data to be sent.
+ * \param length        The size in bytes of the copy
+ * \param xfer_pending  If 1, the stop bit is not generated so that the same transfer can be continued with another call to rt_i2c_read or rt_i2c_write 
+ * \param event         The event used for managing termination.
+ */
+void rt_i2c_write_append(rt_i2c_t *handle, unsigned char *tx_data, int length, int xfer_pending, rt_event_t *event);
+
 //!@}
 
 /**
