@@ -20,8 +20,6 @@
 
 #include "rt/rt_api.h"
 
-#if defined(ARCHI_HAS_FC)
-
 static uint32_t timer_count;
 rt_event_t *first_delayed;
 
@@ -141,8 +139,13 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
     PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
   );
 
+#if defined(ARCHI_HAS_FC)
   rt_irq_set_handler(ARCHI_FC_EVT_TIMER0_HI, __rt_timer_handler);
   rt_irq_mask_set(1<<ARCHI_FC_EVT_TIMER0_HI);
+#else
+  rt_irq_set_handler(ARCHI_EVT_TIMER0_HI, __rt_timer_handler);
+  rt_irq_mask_set(1<<ARCHI_EVT_TIMER0_HI);
+#endif
 
   err |= __rt_cbsys_add(RT_CBSYS_POWEROFF, __rt_time_poweroff, NULL);
   err |= __rt_cbsys_add(RT_CBSYS_POWERON, __rt_time_poweron, NULL);
@@ -229,5 +232,3 @@ void rt_timer_destroy(rt_timer_t *timer)
   __rt_event_release(timer->user_event);
   __rt_event_free(timer->event);
 }
-
-#endif
