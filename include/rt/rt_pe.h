@@ -146,7 +146,7 @@ extern RT_L1_TINY_DATA unsigned int __rt_barrier_wait_mask;
 
 static inline int rt_team_nb_cores()
 {
-  return __FL1(eu_dispatch_team_config_read() + 1);
+  return __FL1(pulp_read32(eu_bar_addr(0) + EU_HW_BARR_TRIGGER_MASK) + 1);
 }
 
 static inline void __rt_team_barrier_config(unsigned int core_mask)
