@@ -144,6 +144,11 @@ static inline void rt_team_offload_wait() {
 extern RT_L1_TINY_DATA unsigned int __rt_barrier_wait_mask;
 #endif
 
+static inline int rt_team_nb_cores()
+{
+  return __FL1(eu_dispatch_team_config_read() + 1);
+}
+
 static inline void __rt_team_barrier_config(unsigned int core_mask)
 {
 #ifdef ARCHI_HAS_NO_BARRIER
@@ -171,12 +176,28 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
 #else
 
 static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) {
+#if !defined(ARCHI_HAS_CC)
+
   if (nb_cores) __rt_team_config(nb_cores);
   eu_dispatch_push((int)entry);
   eu_dispatch_push((int)arg);
   entry(arg);
 
   rt_team_barrier();
+
+#else
+
+  rt_team_offload(nb_cores, entry, arg);
+
+  if (nb_cores == 0)
+    nb_cores = rt_team_nb_cores();
+
+  if (nb_cores == ARCHI_CLUSTER_NB_PE + 1)
+    entry(arg);
+
+  rt_team_offload_wait();
+
+#endif
 }
 
 #endif

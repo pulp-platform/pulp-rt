@@ -18,6 +18,7 @@
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
+
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
 #if defined(ITC_VERSION)
@@ -26,8 +27,7 @@
 #include "archi/eu/eu_v3.h"
 #include "archi/cluster_ctrl/cluster_ctrl_v2.h"
 
-    .section .cluster.text
-
+    .section .cluster.text , "ax"
 #ifdef RV_ISA_RV32
   .global __rt_pe_start
 __rt_pe_start:
@@ -133,6 +133,9 @@ __rt_master_loop:
 #endif
     sll     t3, t4, t3
     addi    t3, t3, -1
+#ifndef ARCHI_HAS_NO_DISPATCH
+    sw      t3, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
+#endif
 #ifndef ARCHI_HAS_NO_BARRIER
     sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
     sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
@@ -143,9 +146,6 @@ __rt_master_loop:
 #endif
 #else
     sw      t3, %tiny(__rt_barrier_wait_mask)(x0)
-#endif
-#ifndef ARCHI_HAS_NO_DISPATCH
-    sw      t3, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
 #endif
 
 #ifndef ARCHI_HAS_NO_DISPATCH
