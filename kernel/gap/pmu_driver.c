@@ -676,6 +676,16 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   Config.ConfigReg1.ClockOutDivider = Div;
   SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
 
+#if 1
+      /* Check FLL converge by compare status register with multiply factor */
+    int mult_factor_diff;
+    do {
+        mult_factor_diff = hal_fll_status_reg_get(Fll) - Mult;
+        if (mult_factor_diff < 0)
+          mult_factor_diff = -mult_factor_diff;
+    } while ( mult_factor_diff > 0x10 );
+
+#else
 /* Wait for convergence, since we will disable lock enable after this step is mandatory */
   if (Config.ConfigReg1.OutputLockEnable) {
     if (Fll == FLL_CLUSTER && hal_is_fc()) {
@@ -684,6 +694,8 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
      while (SoCFllConverged() == 0) {};
     }
   }
+#endif
+
   FllsFrequency[Fll] = SetFrequency;
   PMUState.Frequency[Fll] = SetFrequency;
 
@@ -743,10 +755,21 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     Config.ConfigReg1.ClockOutDivider = Div;
     SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
 
+#if 1
+      /* Check FLL converge by compare status register with multiply factor */
+    int mult_factor_diff;
+    do {
+        mult_factor_diff = hal_fll_status_reg_get(WhichFll) - Mult;
+        if (mult_factor_diff < 0)
+          mult_factor_diff = -mult_factor_diff;
+    } while ( mult_factor_diff > 0x10 );
+
+#else
     if (Config.ConfigReg1.OutputLockEnable && (WhichFll == FLL_CLUSTER) && hal_is_fc()) {
       while (ClusterFllConverged() == 0) {};
     }
     Config.ConfigReg1.OutputLockEnable = 0;
+#endif
 
     SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
 
