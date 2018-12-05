@@ -67,9 +67,12 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
 
   if (rt_is_fc() || (cid && !rt_has_fc()))
   {
+    int powered_up = 0;
+
     // Power-up the cluster
     // For now the PMU is only supporting one cluster
-    if (cid == 0) __rt_pmu_cluster_power_up();
+    if (cid == 0)
+      powered_up = __rt_pmu_cluster_power_up();
 
 #ifdef FLL_VERSION
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
@@ -105,7 +108,8 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
     __rt_alloc_init_l1(cid);
 
     // Initialize FC data for this cluster
-    __rt_fc_cluster_data[cid].call_head = 0;
+    if (powered_up)
+      __rt_fc_cluster_data[cid].call_head = 0;
 
     // Activate icache
     hal_icache_cluster_enable(cid);

@@ -236,7 +236,7 @@ void __rt_pmu_cluster_power_down()
 
 void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState);
 
-void __rt_pmu_cluster_power_up() // unsigned int ClusterFreq)
+int __rt_pmu_cluster_power_up() // unsigned int ClusterFreq)
 {
   if (CLUSTER_STATE(PMUState.State) == CLUSTER_OFF)
   {
@@ -289,7 +289,11 @@ void __rt_pmu_cluster_power_up() // unsigned int ClusterFreq)
     }
 
     PMUState.State = SET_CLUSTER_STATE(PMUState.State, CLUSTER_ON);
+
+    return 1;
   }
+
+  return 0;
 }
 
 /* APB Interface */

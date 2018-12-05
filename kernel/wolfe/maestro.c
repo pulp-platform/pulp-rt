@@ -75,7 +75,7 @@ void __rt_pmu_cluster_power_down()
   // We should not need to wait for power off as it is really quick but we actually do
 }
 
-void __rt_pmu_cluster_power_up()
+int __rt_pmu_cluster_power_up()
 {
   //plp_trace(RT_TRACE_PMU, "Cluster power up\n");
 
@@ -93,4 +93,6 @@ void __rt_pmu_cluster_power_up()
   // Tell external loader (such as gdb) that the cluster is on so that it can take it
   // into account
   hal_pmu_bypass_set( (1<<ARCHI_PMU_BYPASS_ENABLE_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_POWER_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_RESET_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_CLOCK_BIT) | (1 << APB_SOC_BYPASS_USER0_BIT));
+
+  return 1;
 }
