@@ -67,4 +67,3 @@ $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/$(1): $(PULP_SDK_HOME)/install/src/$(
 endef
 
 $(foreach file, $(HAL_FILES), $(eval $(call halSrcRules,$(patsubst %.c,%.o,$(file)),$(file))))
-
