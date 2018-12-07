@@ -179,6 +179,8 @@ static inline int rt_freq_get_next(rt_freq_domain_e domain)
 
 #endif
 
+void rt_freq_wait_convergence(int fll);
+
 int __rt_freq_set_constraint_multiple(unsigned int freq);
 
 void __rt_freq_remove_constraint_multiple(unsigned int freq);

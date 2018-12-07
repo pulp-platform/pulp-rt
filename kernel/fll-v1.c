@@ -91,7 +91,35 @@ unsigned int __rt_fll_set_freq(int fll, unsigned int frequency)
   if (__rt_fll_is_on[fll]) {
     hal_fll_update_mult_div(fll, mult, div);
   }
+
   return real_freq;
+}
+
+void rt_freq_wait_convergence(int fll)
+{
+  int irq = rt_irq_disable();
+  int mult_factor_diff;
+  fll_reg_conf1_t fll_conf1;
+  fll_reg_conf2_t fll_conf2;
+  fll_conf1.raw = hal_fll_conf_reg1_get(fll);
+  fll_conf2.raw = hal_fll_conf_reg2_get(fll);
+  int mult = fll_conf1.mult_factor;
+  int tolerance = fll_conf2.lock_tolerance;
+
+  do {
+    mult_factor_diff = hal_fll_status_reg_get(fll) - mult;
+    if (mult_factor_diff < 0)
+      mult_factor_diff = -mult_factor_diff;
+
+    if ( mult_factor_diff <= tolerance)
+      break;
+
+    rt_irq_mask_set(1<<ARCHI_FC_EVT_CLK_REF);
+    rt_wait_for_interrupt();
+    rt_irq_mask_clr(1<<ARCHI_FC_EVT_CLK_REF);
+  } while (1);
+
+  rt_irq_restore(irq);
 }
 
 unsigned int __rt_fll_init(int fll)

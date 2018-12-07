@@ -80,6 +80,9 @@ typedef struct _testcase_t {
   void (*test)(testresult_t* result, void (*start)(), void (*stop)());
 } testcase_t;
 
+
+int bench_cluster_exec(int cid, int (*entry)());
+
 /**
  * @brief Disables the printf ouput of the function print_summary() and
  * run_suite(). These functions are required to run the bench suite and write
