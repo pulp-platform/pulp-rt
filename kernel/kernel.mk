@@ -48,8 +48,23 @@ ifeq '$(pulp_chip)' 'arnold'
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
 else
+ifeq '$(pulp_chip)' 'pulp'
+PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
+PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
+else
+ifeq '$(pulp_chip_family)' 'pulpissimo'
+PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
+PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
+else
+ifeq '$(pulp_chip_family)' 'vega'
+PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
+PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
+else
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
+endif
+endif
+endif
 endif
 endif
 endif
