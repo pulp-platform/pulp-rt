@@ -66,7 +66,7 @@ static void __rt_uart_wait_tx_done(rt_uart_t *uart)
   // and so if we are not lucky, we can continue while the uart is actually 
   // still busy. Instead, wait for a few clock refs
   // TODO this should be also done on chips where there is not ITC
-  for (int i=0; i<5; i++)
+  for (int i=0; i<50; i++)
   {
     rt_irq_clr(1<<ARCHI_FC_EVT_CLK_REF);
     rt_irq_mask_set(1<<ARCHI_FC_EVT_CLK_REF);
