@@ -472,6 +472,8 @@ static int __rt_io_stop(void *arg)
   // Also close the uart driver to properly flush the uart
   rt_uart_close(_rt_io_uart, NULL);
 
+  _rt_io_uart = NULL;
+
   return 0;
 }
 #endif
