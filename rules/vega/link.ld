@@ -3,10 +3,11 @@ OUTPUT_ARCH(riscv)
 ENTRY( _start )
 MEMORY
 {
-  L2           : ORIGIN = 0x1c000004, LENGTH = 0x0007fffc
+  /* 0x8000 are reserved at the end of the L2 for the boot rom */
+  L2           : ORIGIN = 0x1c000004, LENGTH = 0x00187ffc
   L2_aliased   : ORIGIN = 0x00000004, LENGTH = 0x00003ffc
-  L1                 : ORIGIN = 0x10000004, LENGTH = 0x0000fffc
-  L1_aliased         : ORIGIN = 0x00000004, LENGTH = 0x0000fffc
+  L1                 : ORIGIN = 0x10000004, LENGTH = 0x0001fffc
+  L1_aliased         : ORIGIN = 0x00000004, LENGTH = 0x0001fffc
 }
 
 /*
