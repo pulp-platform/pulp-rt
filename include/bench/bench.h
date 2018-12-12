@@ -35,35 +35,48 @@ static inline int get_time_hi() {return *(volatile int*) GET_TIME_HI_ADDR;}
 
 #else
 
-#if !defined(ARCHI_HAS_FC) || defined(ARCHI_HAS_FC_ALIAS)
+#if !defined(ARCHI_HAS_FC)
 
-static inline void start_timer() {plp_timer_conf_high(1, 0, 0, 0, 0, 0, 0, 0);}
+static inline void start_timer()
+{
+  timer_start(timer_base_cl(0, 0, 1));
+}
 
-static inline void stop_timer() {plp_timer_conf_high(0, 0, 0, 0, 0, 0, 0, 0);}
+static inline void stop_timer()
+{
+  timer_conf_set(timer_base_cl(0, 0, 1), 0);
+}
 
-static inline void reset_timer() {plp_timer_raw_conf_high(plp_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_BIT));}
+static inline void reset_timer()
+{
+  timer_reset(timer_base_cl(0, 0, 1));
+}
 
-static inline int get_time() {return plp_timer_get_count_high();}
+static inline int get_time()
+{
+  return timer_count_get(timer_base_cl(0, 0, 1));
+}
+
 #else
 
-static inline void start_timer() {
-  if (hal_is_fc()) plp_fc_timer_conf_high(1, 0, 0, 0, 0, 0, 0, 0);
-  else plp_timer_conf_high(1, 0, 0, 0, 0, 0, 0, 0);
+static inline void start_timer()
+{
+  timer_start(timer_base_fc(0, 1));
 }
 
-static inline void stop_timer() {
-  if (hal_is_fc()) plp_fc_timer_conf_high(0, 0, 0, 0, 0, 0, 0, 0);
-  else plp_timer_conf_high(0, 0, 0, 0, 0, 0, 0, 0);
+static inline void stop_timer()
+{
+  timer_conf_set(timer_base_fc(0, 1), 0);
 }
 
-static inline void reset_timer() {
-  if (hal_is_fc()) plp_fc_timer_raw_conf_high(plp_fc_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_BIT));
-  else plp_timer_raw_conf_high(plp_timer_raw_conf_high_get() | (1<<PLP_TIMER_RESET_BIT));
+static inline void reset_timer()
+{
+  timer_reset(timer_base_fc(0, 1));
 }
 
-static inline int get_time() {
-  if (hal_is_fc()) return plp_fc_timer_get_count_high();
-  else return plp_timer_get_count_high();
+static inline int get_time()
+{
+  return timer_count_get(timer_base_fc(0, 1));
 }
 
 #endif

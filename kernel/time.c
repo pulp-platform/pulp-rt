@@ -29,7 +29,7 @@ static int __rt_time_poweroff(void *arg)
 {
   // Remember the current timer count so that we can restore it
   // when the system is powered-on
-  timer_count = hal_timer_count_get(hal_timer_fc_addr(0, 1));
+  timer_count = timer_count_get(timer_base_fc(0, 1));
 
   return 0;
 }
@@ -37,7 +37,7 @@ static int __rt_time_poweroff(void *arg)
 static int __rt_time_poweron(void *arg)
 {
   // Restore the timer count we saved before shutdown
-  hal_timer_count_set(hal_timer_fc_addr(0, 1), timer_count);
+  timer_count_set(timer_base_fc(0, 1), timer_count);
 
   return 0;
 }
@@ -46,7 +46,7 @@ unsigned int rt_time_get_us()
 {
   // Get 64 bit timer counter value and convert it to microseconds
   // as the timer input is connected to the ref clock.
-  unsigned int count = hal_timer_count_get(hal_timer_fc_addr(0, 1));
+  unsigned int count = timer_count_get(timer_base_fc(0, 1));
   return ((unsigned long long)count) * 1000000 / ARCHI_REF_CLOCK;
 }
 
@@ -57,7 +57,7 @@ void rt_event_push_delayed(rt_event_t *event, int us)
   int set_irq = 0;
   rt_event_t *current = first_delayed, *prev=NULL;
   unsigned int ticks, ticks_from_now;
-  uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 1));
+  uint32_t current_time = timer_count_get(timer_base_fc(0, 1));
   
   if (us < 0)
     us = 0;
@@ -101,14 +101,13 @@ void rt_event_push_delayed(rt_event_t *event, int us)
   {
     // This is important to reload the current time, in case the previous code
     // took too much time so that the interrupt is not missed
-    uint32_t timer = hal_timer_count_get(hal_timer_fc_addr(0, 1)) + ticks;
-    hal_timer_cmp_set(hal_timer_fc_addr(0, 1), timer);
+    uint32_t timer = timer_count_get(timer_base_fc(0, 1)) + ticks;
+    timer_cmp_set(timer_base_fc(0, 1), timer);
 
-    hal_timer_conf(
-      hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
-      PLP_TIMER_IRQ_ENABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
-      PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
-      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
+    timer_conf_set(timer_base_fc(0, 1),
+      TIMER_CFG_LO_ENABLE(1) |
+      TIMER_CFG_LO_IRQEN(1)  |
+      TIMER_CFG_LO_CCFG(1)
     );
   }
 
@@ -132,11 +131,10 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
   // Configure the FC timer in 64 bits mode as it will be used as a common
   // timer for all virtual timers.
   // We also use the ref clock to make the frequency stable.
-  hal_timer_conf(
-    hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_ENABLED,
-    PLP_TIMER_IRQ_DISABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
-    PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
-    PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
+  timer_conf_set(timer_base_fc(0, 1),
+    TIMER_CFG_LO_ENABLE(1) |
+    TIMER_CFG_LO_RESET(1)  |
+    TIMER_CFG_LO_CCFG(1)
   );
 
 #if defined(ARCHI_HAS_FC)

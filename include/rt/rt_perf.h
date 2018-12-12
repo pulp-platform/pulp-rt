@@ -214,14 +214,16 @@ static inline unsigned int rt_perf_read(int id);
 
 static inline void rt_perf_cl_reset(rt_perf_t *perf)
 {
-  hal_timer_reset(hal_timer_cl_addr(0, 0));
+#ifdef ARCHI_HAS_CLUSTER
+  timer_reset(timer_base_cl(0, 0, 0));
   cpu_perf_setall(0);
+#endif
 }
 
 static inline void rt_perf_fc_reset(rt_perf_t *perf)
 {
 #ifdef ARCHI_HAS_FC
-  hal_timer_reset(hal_timer_fc_addr(0, 0));
+  timer_reset(timer_base_fc(0, 0));
   cpu_perf_setall(0);
 #endif
 }
@@ -236,14 +238,16 @@ static inline void rt_perf_reset(rt_perf_t *perf)
 
 static inline void rt_perf_cl_start(rt_perf_t *perf)
 {
-  hal_timer_start(hal_timer_cl_addr(0, 0));
+#ifdef ARCHI_HAS_CLUSTER
+  timer_start(timer_base_cl(0, 0, 0));
   cpu_perf_conf(PCMR_ACTIVE | PCMR_SATURATE);
+#endif
 }
 
 static inline void rt_perf_fc_start(rt_perf_t *perf)
 {
 #ifdef ARCHI_HAS_FC
-  hal_timer_start(hal_timer_fc_addr(0, 0));
+  timer_start(timer_base_fc(0, 0));
   cpu_perf_conf(PCMR_ACTIVE | PCMR_SATURATE);
 #endif
 }
@@ -258,14 +262,16 @@ static inline void rt_perf_start(rt_perf_t *perf)
 
 static inline void rt_perf_cl_stop(rt_perf_t *perf)
 {
-  hal_timer_conf(hal_timer_cl_addr(0, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+#ifdef ARCHI_HAS_ARCHI
+  timer_conf_set(timer_base_cl(0, 0, 0), TIMER_CFG_LO_ENABLE(0));
   cpu_perf_conf(0);
+#endif
 }
 
 static inline void rt_perf_fc_stop(rt_perf_t *perf)
 {
 #ifdef ARCHI_HAS_FC
-  hal_timer_conf(hal_timer_fc_addr(0, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  timer_conf_set(timer_base_fc(0, 0), TIMER_CFG_LO_ENABLE(0));
   cpu_perf_conf(0);
 #endif
 }
@@ -285,14 +291,18 @@ static inline unsigned int rt_perf_get(rt_perf_t *perf, int id)
 
 static inline unsigned int rt_perf_cl_read(int event)
 {
+#ifdef ARCHI_HAS_ARCHI
   if (event == RT_PERF_CYCLES)
   {
-    return hal_timer_count_get(hal_timer_cl_addr(0, 0));
+    return timer_count_get(timer_base_cl(0, 0, 0));
   }
   else
   {
     return cpu_perf_get(event);
   }
+#else
+  return 0;
+#endif
 }
 
 static inline unsigned int rt_perf_fc_read(int event)
@@ -300,7 +310,7 @@ static inline unsigned int rt_perf_fc_read(int event)
 #ifdef ARCHI_HAS_FC
   if (event == RT_PERF_CYCLES)
   {
-    return hal_timer_count_get(hal_timer_fc_addr(0, 0));
+    return timer_count_get(timer_base_fc(0, 0));
   }
   else
   {
