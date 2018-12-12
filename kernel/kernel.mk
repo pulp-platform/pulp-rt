@@ -100,6 +100,12 @@ PULP_LIB_FC_SRCS_rt += kernel/gap/maestro.c kernel/gap/pmu_driver.c
 endif
 
 
+ifeq '$(pulp_chip_family)' 'vivosoc3'
+PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/fll.c 
+PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/freq.c
+endif
+
+
 PULP_LIB_FC_SRCS_rt += kernel/cluster.c
 
 ifneq '$(perf_counters)' ''

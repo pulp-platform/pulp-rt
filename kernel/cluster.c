@@ -75,6 +75,19 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
       powered_up = __rt_pmu_cluster_power_up();
 
 #ifdef FLL_VERSION
+  #if PULP_CHIP == CHIP_VIVOSOC3
+    if (rt_platform() != ARCHI_PLATFORM_FPGA)
+    {
+      // Check if we have to restore the cluster freqeuncy
+      int freq = rt_freq_get(RT_FREQ_DOMAIN_CL);
+
+      if(freq == 0)  // freq is 0 -> set clk domain to soc fll, as this is always running 
+      {
+        rt_freq_config_set(RT_FREQ_DOMAIN_CL, FREQ_DOMAIN_CLK_TREE_FLL_SOC);  // freq will be updated internally
+      }
+    }  
+
+  #else 
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
       // Setup FLL
@@ -94,6 +107,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
       }
 
     }
+  #endif  
 #endif
 
 #ifdef ARCHI_HAS_CLUSTER_CLK_GATE
@@ -161,10 +175,24 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
   rt_trace(RT_TRACE_CONF, "Unmounting cluster (cluster: %d)\n", cid);
 
 #ifdef FLL_VERSION
+  #if PULP_CHIP == CHIP_VIVOSOC3
+    if (rt_platform() != ARCHI_PLATFORM_FPGA)
+    {
+      // check if cl fll was used
+      if(rt_freq_config_get(RT_FREQ_DOMAIN_CL) == FREQ_DOMAIN_CLK_TREE_FLL_ALT)
+      {
+        // change back to soc fll
+        rt_freq_config_set(RT_FREQ_DOMAIN_CL, FREQ_DOMAIN_CLK_TREE_FLL_SOC);  // freq will be updated internally
+        // disable cl fll
+        __rt_fll_disable(HAL_FLL_CL);
+      }
+    }
+  #else
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
       __rt_fll_deinit(__RT_FLL_CL);
     }
+  #endif  
 #endif
 
   // Power-up the cluster
