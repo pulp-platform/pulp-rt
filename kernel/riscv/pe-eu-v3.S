@@ -137,8 +137,14 @@ __rt_master_loop:
     sw      t3, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
 #endif
 #ifndef ARCHI_HAS_NO_BARRIER
+#ifdef ARCHI_HAS_CC
+    // When we have a cluster controller, don't configure the slave barrier
+    // if we don't have have any slave
+    beqz    t3, __rt_master_no_slave_barrier
+#endif
     sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
     sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
+__rt_master_no_slave_barrier:
 #ifdef ARCHI_HAS_CC
     ori     t3, t3, 1<<ARCHI_CC_CORE_ID
     sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK + EU_BARRIER_SIZE(s3)
