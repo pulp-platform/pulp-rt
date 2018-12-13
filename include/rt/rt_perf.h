@@ -262,7 +262,7 @@ static inline void rt_perf_start(rt_perf_t *perf)
 
 static inline void rt_perf_cl_stop(rt_perf_t *perf)
 {
-#ifdef ARCHI_HAS_ARCHI
+#ifdef ARCHI_HAS_CLUSTER
   timer_conf_set(timer_base_cl(0, 0, 0), TIMER_CFG_LO_ENABLE(0));
   cpu_perf_conf(0);
 #endif
@@ -291,7 +291,7 @@ static inline unsigned int rt_perf_get(rt_perf_t *perf, int id)
 
 static inline unsigned int rt_perf_cl_read(int event)
 {
-#ifdef ARCHI_HAS_ARCHI
+#ifdef ARCHI_HAS_CLUSTER
   if (event == RT_PERF_CYCLES)
   {
     return timer_count_get(timer_base_cl(0, 0, 0));
