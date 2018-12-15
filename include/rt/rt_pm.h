@@ -75,7 +75,43 @@ typedef enum {
 } rt_pm_wakeup_e;
 
 
+
+/** \brief Clear all wakeup signals
+ *
+ * This clears all the pending wakeup signals so that the chip can
+ * go to deep sleep mode. Any wakeup source (like RTC or GPIO) occuring after
+ * this call will be buffered again and will prevent the chip from going
+ * to deep sleep.
+ *
+ */
 void rt_pm_wakeup_clear_all();
+
+
+
+/** \enum rt_pm_wakeup_gpio_mode_e
+ * \brief GPIO wakeup mode.
+ *
+ * Describes the way a GPIO can wakeup the chip.
+ */
+typedef enum {
+  RT_PM_WAKEUP_GPIO_RISING_EDGE   = 0,  /*!< Rising edge. The GPIO can wakeup the chip when switching from 0 to 1. */
+  RT_PM_WAKEUP_GPIO_FALLING_EDGE  = 1,  /*!< Falling edge. The GPIO can wakeup the chip when switching from 1 to 0. */
+  RT_PM_WAKEUP_GPIO_HIGH          = 2,  /*!< Level high. The GPIO can wakeup the chip when it is 1. */
+  RT_PM_WAKEUP_GPIO_LOW           = 3,  /*!< Level low. The GPIO can wakeup the chip when it is 0. */
+} rt_pm_wakeup_gpio_mode_e;
+
+
+
+/** \brief Configure GPIO wakeup
+ *
+ * Enable or disable chip wakeup from deep sleep from a GPIO.
+ * 
+ * \param   active If 1, enable chip wakeup from GPIO, if 0, disable it.
+ * \param   gpio   Number of the GPIO which can wakeup the chip.
+ * \param   mode   Wakeup mode.
+ */
+void rt_pm_wakeup_gpio_conf(int active, int gpio, rt_pm_wakeup_gpio_mode_e mode);
+
 
 
 /** \brief Switch power state.

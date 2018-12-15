@@ -406,6 +406,14 @@ int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_ev
   return PMU_set_voltage(new_voltage, 0);
 }
 
+void rt_pm_wakeup_gpio_conf(int active, int gpio, rt_pm_wakeup_gpio_mode_e mode)
+{
+  PMURetentionState.Fields.ExternalWakeUpSource = gpio;
+  PMURetentionState.Fields.ExternalWakeUpMode   = mode;
+  PMURetentionState.Fields.ExternalWakeupEnable = active;
+  SetRetentiveState(PMURetentionState.Raw);
+}
+
 void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
 {
   int irq = rt_irq_disable();
@@ -423,13 +431,6 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
     apb_soc_jtag_reg_write(apb_soc_jtag_reg_loc(apb_soc_jtag_reg_read()) & ~2);
     __rt_bridge_target_status_sync(NULL);
   }
-
-#if 0
-  PMURetentionState.Fields.ExternalWakeUpSource = 0;
-  PMURetentionState.Fields.ExternalWakeUpMode   = 0x00;
-  PMURetentionState.Fields.ExternalWakeupEnable = 1;
-  PMURetentionState.Fields.WakeupCause          = 1;
-  #endif
 
   if (Retentive) {
     PMURetentionState.Fields.BootMode = BOOT_FROM_L2;
