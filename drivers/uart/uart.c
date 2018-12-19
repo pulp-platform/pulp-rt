@@ -239,6 +239,10 @@ void rt_uart_close(rt_uart_t *uart, rt_event_t *event)
       // some printf are still pending
       __rt_uart_wait_tx_done(uart);
 
+      // Set enable bits for uart channel back to 0 
+      // This is needed to be able to propagate new configs when re-opening
+      plp_uart_disable(uart->channel - ARCHI_UDMA_UART_ID(0));      
+
       // Then stop the uart
       plp_udma_cg_set(plp_udma_cg_get() & ~(1<<uart->channel));
   }
