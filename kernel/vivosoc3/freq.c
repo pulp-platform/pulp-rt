@@ -25,18 +25,9 @@ void __rt_freq_init(void)
 
   __rt_fll_set_init(HAL_FLL_CL);  // init fll set register
 
-  // TODO temporary workaround for RTL platform as some analog
-  // registers are missing
-  if (rt_platform() == ARCHI_PLATFORM_RTL) 
-  {
-    hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_32K); // take slow reference because fast is not running properly
-  }
-  else
-  {
-    // take care here!!
-    if(hal_fll_check_ref_fast()) hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_16M); // fast reference up and running
-    else hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_32K); // take slow reference because fast is not running properly
-  }
+  // take care here!!
+  if(hal_fll_check_ref_fast()) hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_16M); // fast reference up and running
+  else hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_32K); // take slow reference because fast is not running properly
 
   __rt_fll_set_init(HAL_FLL_SOC);  // init fll set register
 

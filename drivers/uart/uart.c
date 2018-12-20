@@ -89,7 +89,7 @@ static void __rt_uart_wait_tx_done(rt_uart_t *uart)
 
 static void __rt_uart_setup(rt_uart_t *uart)
 {
-  int div =  __rt_freq_periph_get() / uart->baudrate;
+  int div =  (__rt_freq_periph_get() + uart->baudrate/2) / uart->baudrate;
 
   // The counter in the UDMA will count from 0 to div included
   // and then will restart from 0, so we must give div - 1 as
