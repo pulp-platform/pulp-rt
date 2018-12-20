@@ -687,6 +687,7 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   fll_reg_conf2_t fll_conf2;
   fll_conf2.raw = hal_fll_conf_reg2_get(Fll);
   int tolerance = fll_conf2.lock_tolerance;
+
   do {
     int mult_factor_diff = hal_fll_status_reg_get(Fll) - Mult;
     if (mult_factor_diff < 0)
@@ -768,13 +769,20 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
 
 #if 1
-      /* Check FLL converge by compare status register with multiply factor */
-    int mult_factor_diff;
-    do {
-        mult_factor_diff = hal_fll_status_reg_get(WhichFll) - Mult;
-        if (mult_factor_diff < 0)
-          mult_factor_diff = -mult_factor_diff;
-    } while ( mult_factor_diff > 0x10 );
+
+  fll_reg_conf2_t fll_conf2;
+  fll_conf2.raw = hal_fll_conf_reg2_get(WhichFll);
+  int tolerance = fll_conf2.lock_tolerance;
+
+  do {
+    int mult_factor_diff = hal_fll_status_reg_get(WhichFll) - Mult;
+    if (mult_factor_diff < 0)
+      mult_factor_diff = -mult_factor_diff;
+
+    if ( mult_factor_diff <= tolerance)
+      break;
+
+  } while (1);
 
 #else
     if (Config.ConfigReg1.OutputLockEnable && (WhichFll == FLL_CLUSTER) && hal_is_fc()) {
