@@ -357,4 +357,5 @@ void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_rtc_init()
 {
   __rtc_handler = NULL;
+  dev_rtc.open_count = 0;
 }
