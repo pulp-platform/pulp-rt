@@ -26,6 +26,7 @@ extern void __rt_rtc_handler();
 
 RT_FC_TINY_DATA rt_rtc_t dev_rtc;
 RT_FC_TINY_DATA rt_event_t *__rtc_handler;
+RT_FC_TINY_DATA unsigned int __rt_rtc_timer_target;
 
 
 
@@ -109,23 +110,22 @@ void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_
       break;
     case RTC_CNTDOWN_SET:
     {
-      rtc_timer_t timer = { .raw =  rtc_timer_get(rtc_base()) };
-      timer.target = (*(uint32_t *)value) * 0x8000;
-      rtc_timer_set(rtc_base(), timer.raw);
+      __rt_rtc_timer_target = (*(uint32_t *)value);
       break;
     }
     case RTC_CNTDOWN_START:
     {
-      rtc_timer_t timer = { .raw =  rtc_timer_get(rtc_base()) };
+      rtc_timer_t timer = { .raw = 0 };
       timer.retrig = 1;
       timer.enable = 1;
+      timer.target = __rt_rtc_timer_target;
       rtc_timer_set(rtc_base(), timer.raw);
       break;
     }
       break;
     case RTC_CNTDOWN_STOP:
     {
-      rtc_timer_t timer = { .raw =  rtc_timer_get(rtc_base()) };
+      rtc_timer_t timer = { .raw = 0 };
       timer.enable = 0;
       rtc_timer_set(rtc_base(), timer.raw);
       break;
