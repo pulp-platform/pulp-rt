@@ -227,7 +227,8 @@ static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
   soc_eu_fcEventMask_setEvent(RTC_RTC_APB_EVENT);
   rt_rtc_reset();
   rtc->conf.mode = MODE_CALENDAR;
-  memcpy(&rtc->conf, rtc_conf, sizeof(rt_rtc_conf_t));
+  if (rtc_conf)
+    memcpy(&rtc->conf, rtc_conf, sizeof(rt_rtc_conf_t));
   // config the RTC in calendar mode.
   rt_rtc_set_clk(rtc->conf.clkDivider);
   rt_rtc_calendar(&rtc->conf.calendar);

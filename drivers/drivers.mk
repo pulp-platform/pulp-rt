@@ -79,8 +79,13 @@ endif
 
 ifeq '$(CONFIG_RTC_ENABLED)' '1'
 PULP_LIB_FC_CFLAGS += -DRT_CONFIG_RTC_ENABLED
+ifneq '$(rtc/version)' '1'
+PULP_LIB_FC_SRCS_rt += drivers/rtc/rtc_v$(rtc/version).c
+PULP_LIB_FC_ASM_SRCS_rt += drivers/rtc/rtc_v$(rtc/version)_asm.S
+else
 ifneq '$(rtc)' ''
 PULP_LIB_FC_SRCS_rt += drivers/dolphin/rtc.c
+endif
 endif
 endif
 

@@ -5,7 +5,7 @@ PULP_PROPERTIES += host/archi fc_itc udma/hyper udma udma/cpi udma/i2c/version s
 PULP_PROPERTIES += udma/i2s/version udma/uart event_unit/version perf_counters
 PULP_PROPERTIES += fll/version soc/spi_master soc/apb_uart padframe/version
 PULP_PROPERTIES += udma/spim udma/spim/version gpio/version rtc udma/archi
-PULP_PROPERTIES += soc_eu/version compiler
+PULP_PROPERTIES += soc_eu/version compiler rtc/version
 
 include $(PULP_SDK_HOME)/install/rules/pulp_properties.mk
 
