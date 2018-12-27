@@ -31,10 +31,11 @@ RT_FC_TINY_DATA unsigned int __rt_rtc_timer_target;
 
 
 
-
-static void __rt_rtc_conf_init(rt_rtc_conf_t *conf)
+void rt_rtc_conf_init(rt_rtc_conf_t *conf)
 {
 }
+
+
 
 rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *conf, rt_event_t *event)
 {
@@ -48,7 +49,7 @@ rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *conf, rt_event_t *event)
   if (conf == NULL)
   {
     conf = &def_conf;
-    __rt_rtc_conf_init(conf);
+    rt_rtc_conf_init(conf);
   }
 
   rt_irq_set_handler(ARCHI_FC_EVT_RTC, __rt_rtc_handler);

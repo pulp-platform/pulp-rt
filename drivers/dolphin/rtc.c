@@ -221,6 +221,11 @@ static void  rt_rtc_set_alarm(rt_rtc_alarm_t* alarm){
   rt_rtc_reg_config(RTC_Alarm1_TIME_Addr, alarm->time_date.time);
 }
 
+void rt_rtc_conf_init(rt_rtc_conf_t *conf)
+{
+  conf->clkDivider = 0x8000;
+}
+
 static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
 {
   soc_eu_fcEventMask_setEvent(RTC_RTC_INT_EVENT);
@@ -229,6 +234,8 @@ static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
   rtc->conf.mode = MODE_CALENDAR;
   if (rtc_conf)
     memcpy(&rtc->conf, rtc_conf, sizeof(rt_rtc_conf_t));
+  else
+    rt_rtc_conf_init(&rtc->conf);
   // config the RTC in calendar mode.
   rt_rtc_set_clk(rtc->conf.clkDivider);
   rt_rtc_calendar(&rtc->conf.calendar);

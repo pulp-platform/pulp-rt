@@ -150,6 +150,18 @@ typedef struct{
 /// @endcond
 
 
+
+/** \brief Initialize an RTC configuration with default values.
+ *
+ * This function can be called to get default values for all parameters before setting some of them.
+ * The structure containing the configuration must be kept alive until the RTC is opened.
+ *
+ * \param conf A pointer to the SPI master configuration.
+ */
+void rt_rtc_conf_init(rt_rtc_conf_t *conf);
+
+
+
 /** \brief Open the RTC (real time clock).
  *
  * This function must be called before the RTC can be used. It will do all the needed configuration to make it
