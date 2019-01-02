@@ -38,6 +38,9 @@
 #include "rt/rt_api.h"
 #include "stdio.h"
 
+#define PMU_PICL_PACK(chipsel,addr) (((chipsel) << 5) | (addr))
+#define PMU_DLC_PACK(state,picl) (((state) << 16) | ((picl) << 1) | 0x1) //write 0x2 at picl_reg
+
 static inline void __rt_wait_for_event(unsigned int mask) {
 #if defined(ITC_VERSION)
   hal_itc_wait_for_event_noirq(mask);
@@ -95,4 +98,89 @@ int __rt_pmu_cluster_power_up()
   hal_pmu_bypass_set( (1<<ARCHI_PMU_BYPASS_ENABLE_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_POWER_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_RESET_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_CLOCK_BIT) | (1 << APB_SOC_BYPASS_USER0_BIT));
 
   return 1;
+}
+
+static void __rt_pm_shutdown(int retentive)
+{
+  int irq = rt_irq_disable();
+  int interrupt;
+
+  // Notify the bridge that the chip is going to be inaccessible.
+  // We don't do anything until we know that the bridge received the
+  // notification to avoid any race condition.
+  hal_bridge_t *bridge = hal_bridge_get();
+  bridge->target.available = 0;
+  if (bridge->bridge.connected)
+  {
+    // Before cutting the connection with the bridge, flush the printf otherwise
+    // it may look weird to the user.
+    hal_debug_flush_printf(hal_debug_struct_get());
+    apb_soc_jtag_reg_write(apb_soc_jtag_reg_loc(apb_soc_jtag_reg_read()) & ~2);
+    __rt_bridge_target_status_sync(NULL);
+  }
+
+  apb_soc_sleep_control_t sleep_ctrl = {
+    .raw=apb_soc_sleep_control_get(ARCHI_APB_SOC_CTRL_ADDR)
+  };
+
+  sleep_ctrl.mem_ret_0 = -1;
+  sleep_ctrl.mem_ret_0 = -1;
+
+  if (retentive) {
+    sleep_ctrl.boot_type = RT_PM_WAKEUP_SLEEP;
+    interrupt = 1;
+  } else {
+    sleep_ctrl.boot_type = RT_PM_WAKEUP_DEEPSLEEP;
+    interrupt = 0;
+  }
+  sleep_ctrl.wakeup = 0; // Always start in nominal voltage for now
+  sleep_ctrl.cluster_wakeup = 0;
+
+  apb_soc_sleep_control_set(ARCHI_APB_SOC_CTRL_ADDR, sleep_ctrl.raw);
+
+  maestro_dlc_pctrl_set(ARCHI_PMU_ADDR, PMU_DLC_PACK(1<<interrupt, PMU_PICL_PACK(MAESTRO_WIU_OFFSET, MAESTRO_WIU_IFR_1_OFFSET)));
+
+  hal_itc_enable_value_set(0);
+  while(1)
+  {
+    hal_itc_wait_for_interrupt();
+  }
+
+  rt_irq_restore(irq);
+}
+
+
+int rt_pm_state_switch(rt_pm_state_e state, rt_pm_state_flags_e flags)
+{
+  if (state == RT_PM_STATE_DEEP_SLEEP)
+  {
+    if ((flags & RT_PM_STATE_FAST) == 0)
+      return -1;
+
+    __rt_pm_shutdown(0);
+
+    return 0;
+  }
+  else if (state == RT_PM_STATE_SLEEP)
+  {
+    if ((flags & RT_PM_STATE_FAST) == 0)
+      return -1;
+    
+    __rt_pm_shutdown(1);
+
+    return 0;
+  }
+
+  return -1;
+}
+
+
+
+rt_pm_wakeup_e rt_pm_wakeup_state()
+{
+  apb_soc_sleep_control_t sleep_ctrl = {
+    .raw=apb_soc_sleep_control_get(ARCHI_APB_SOC_CTRL_ADDR)
+  };
+
+  return sleep_ctrl.boot_type;
 }
