@@ -61,10 +61,12 @@ rt_flash_t *rt_flash_open(char *dev_name, rt_flash_conf_t *conf, rt_event_t *eve
     {
       desc = &spiflash_desc;
     }
+#ifdef ARCHI_UDMA_HAS_HYPER
     else if (conf->type == RT_FLASH_TYPE_HYPER)
     {
       desc = &hyperflash_desc;
     }
+#endif
     else
       return NULL;
   }
