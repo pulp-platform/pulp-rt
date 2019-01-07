@@ -7,7 +7,7 @@ PULP_PROPERTIES += fll/version soc/spi_master soc/apb_uart padframe/version
 PULP_PROPERTIES += udma/spim udma/spim/version gpio/version rtc udma/archi
 PULP_PROPERTIES += soc_eu/version compiler rtc/version
 
-include $(PULP_SDK_HOME)/install/rules/pulp_properties.mk
+include $(TARGET_INSTALL_DIR)/rules/pulp_properties.mk
 
 ifndef PULP_RT_CONFIG
 PULP_RT_CONFIG = configs/pulpos.mk
@@ -55,12 +55,12 @@ include drivers/drivers.mk
 include libs/libs.mk
 
 
-include $(PULP_SDK_HOME)/install/rules/pulp_rt.mk
+include $(TARGET_INSTALL_DIR)/rules/pulp_rt.mk
 
 
 define halSrcRules
 
-$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/$(1): $(PULP_SDK_HOME)/install/src/$(2)
+$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/$(1): $(TARGET_INSTALL_DIR)/src/$(2)
 	@mkdir -p `dirname $$@`
 	$(PULP_FC_CC) $(rt_cl_cflags) -MMD -MP -c $$< -o $$@
 
