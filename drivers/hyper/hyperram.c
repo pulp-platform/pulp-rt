@@ -679,6 +679,7 @@ void __rt_hyper_copy(int channel,
 {
   int irq = rt_irq_disable();
 
+
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
   // Check if we are in the fast case where everything is correctly aligned.

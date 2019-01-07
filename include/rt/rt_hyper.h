@@ -382,10 +382,18 @@ static inline int rt_hyperram_free(rt_hyperram_t *dev, void *chunk, int size)
   return rt_extern_free(dev->alloc, chunk, size);
 }
 
+void __rt_hyper_copy_aligned(int channel,
+  void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr);
+
 static inline void rt_hyperflash_copy(rt_hyperflash_t *dev, int channel,
    void *addr, void *hyper_addr, int size, rt_event_t *event)
 {
-  __rt_hyper_copy(UDMA_CHANNEL_ID(dev->channel) + channel, addr, hyper_addr, size, event, REG_MBR1);
+  rt_periph_copy_t *copy = &event->copy;
+
+  rt_periph_copy_init_ctrl(copy, RT_PERIPH_COPY_HYPER);
+  copy->u.hyper.hyper_addr = REG_MBR1 | (unsigned int)hyper_addr;
+
+  rt_periph_copy(copy, UDMA_CHANNEL_ID(dev->channel) + channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_16, event);
 }
 
 #if defined(ARCHI_HAS_CLUSTER)

@@ -146,7 +146,10 @@ void *memcpy(void *dst0, const void *src0, size_t len0)
 
 void __rt_putc_debug_bridge(char c)
 {
-  hal_debug_putchar(hal_debug_struct_get(), c);
+  while(hal_debug_putchar_nopoll(hal_debug_struct_get(), c))
+  {
+    rt_time_wait_us(100);
+  }
 }
 
 static void __rt_putc_stdout(char c)
@@ -447,6 +450,9 @@ static int __rt_io_start(void *arg)
 
   rt_uart_conf_t conf;
   rt_uart_conf_init(&conf);
+
+  if (rt_event_alloc(NULL, 1))
+    return -1;
 
   conf.baudrate = rt_iodev_uart_baudrate();
 

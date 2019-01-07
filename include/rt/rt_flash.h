@@ -175,6 +175,12 @@ static inline void rt_flash_cluster_wait(rt_flash_req_t *req);
 
 /// @cond IMPLEM
 
+void __rt_flash_program(rt_flash_t *_dev, void *data, void *addr, size_t size, rt_event_t *event);
+
+void __rt_flash_erase_chip(rt_flash_t *_dev, rt_event_t *event);
+
+void __rt_flash_erase_sector(rt_flash_t *_dev, void *data, rt_event_t *event);
+
 typedef struct rt_fs_s {
   rt_event_t *step_event;
   rt_event_t *pending_event;

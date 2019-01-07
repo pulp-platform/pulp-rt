@@ -38,6 +38,10 @@
 #include "hal/debug_bridge/debug_bridge.h"
 
 static RT_FC_TINY_DATA rt_eeprom_t *__rt_bridge_eeprom_handle;
+static RT_FC_TINY_DATA rt_flash_t *__rt_bridge_flash_handle;
+static RT_FC_TINY_DATA int __rt_bridge_flash_type;
+static RT_FC_TINY_DATA unsigned int __rt_bridge_flash_itf;
+static RT_FC_TINY_DATA unsigned int __rt_bridge_flash_cs;
 
 
 static int __rt_bridge_strlen(const char *str)
@@ -156,6 +160,84 @@ static int __rt_bridge_eeprom_access(unsigned int itf, unsigned int cs, int is_w
   return 0;
 }
 
+static int __rt_bridge_check_flash_open(int type, unsigned int itf, unsigned int cs)
+{
+  if (__rt_bridge_flash_handle == NULL || __rt_bridge_flash_type != type || __rt_bridge_flash_itf != itf || __rt_bridge_flash_cs != cs)
+  {
+    if (__rt_bridge_flash_handle != NULL)
+    {
+      rt_flash_close(__rt_bridge_flash_handle, NULL);
+    }
+
+    rt_flash_conf_t conf;
+
+    rt_flash_conf_init(&conf);
+
+    conf.id = itf;
+    conf.type = type;
+    __rt_bridge_flash_type = type;
+    __rt_bridge_flash_itf = itf;
+    __rt_bridge_flash_cs = cs;
+
+    if (type == RT_FLASH_TYPE_HYPER)
+    {
+      rt_padframe_profile_t *profile_hyper = rt_pad_profile_get("hyper");
+      if (profile_hyper == NULL) {
+          return 1;
+      }
+      rt_padframe_set(profile_hyper);
+    }
+
+    __rt_bridge_flash_handle = rt_flash_open(NULL, &conf, NULL);
+
+    if (__rt_bridge_flash_handle == NULL)
+      return -1;
+  }
+
+  return 0;
+}
+
+static int __rt_bridge_flash_access(int type, unsigned int itf, unsigned int cs, int is_write, unsigned int addr, unsigned int buffer, int size)
+{
+  printf("Flash access (type: %d, itf: %d, cs: %d, is_write: %d, addr: 0x%x, buffer: 0x%x, size: 0x%x)\n", type, itf, cs, is_write, addr, buffer, size);
+
+  if (__rt_bridge_check_flash_open(type, itf, cs))
+    return -1;
+
+  if (is_write)
+    __rt_flash_program(__rt_bridge_flash_handle, (uint8_t *)buffer, (void *)addr, size, NULL);
+  else
+  {
+    rt_flash_read(__rt_bridge_flash_handle, (uint8_t *)buffer, (void *)addr, size, NULL);
+  }
+
+  return 0;
+}
+
+static int __rt_bridge_flash_erase_chip(int type, unsigned int itf, unsigned int cs)
+{
+  printf("Flash erase chip (type: %d, itf: %d, cs: %d)\n", type, itf, cs);
+
+  if (__rt_bridge_check_flash_open(type, itf, cs))
+    return -1;
+
+  __rt_flash_erase_chip(__rt_bridge_flash_handle, NULL);
+
+  return 0;
+}
+
+static int __rt_bridge_flash_erase_sector(int type, unsigned int itf, unsigned int cs, void *data)
+{
+  printf("Flash erase sector (type: %d, itf: %d, cs: %d, addr: %p)\n", type, itf, cs, data);
+
+  if (__rt_bridge_check_flash_open(type, itf, cs))
+    return -1;
+
+  __rt_flash_erase_sector(__rt_bridge_flash_handle, data, NULL);
+
+  return 0;
+}
+
 static void __rt_bridge_handle_req(void *arg)
 {
   rt_event_t *event = (rt_event_t *)arg;
@@ -176,6 +258,18 @@ static void __rt_bridge_handle_req(void *arg)
   else if (req->header.type == HAL_BRIDGE_TARGET_REQ_EEPROM_ACCESS)
   {
     req->header.eeprom_access.retval = __rt_bridge_eeprom_access(req->header.eeprom_access.itf, req->header.eeprom_access.cs, req->header.eeprom_access.is_write, req->header.eeprom_access.addr, req->header.eeprom_access.buffer, req->header.eeprom_access.size);
+  }
+  else if (req->header.type == HAL_BRIDGE_TARGET_REQ_FLASH_ACCESS)
+  {
+    req->header.flash_access.retval = __rt_bridge_flash_access(req->header.flash_access.type, req->header.flash_access.itf, req->header.flash_access.cs, req->header.flash_access.is_write, req->header.flash_access.addr, req->header.flash_access.buffer, req->header.flash_access.size);
+  }
+  else if (req->header.type == HAL_BRIDGE_TARGET_REQ_FLASH_ERASE_CHIP)
+  {
+    req->header.flash_erase_chip.retval = __rt_bridge_flash_erase_chip(req->header.flash_erase_chip.type, req->header.flash_erase_chip.itf, req->header.flash_erase_chip.cs);
+  }
+  else if (req->header.type == HAL_BRIDGE_TARGET_REQ_FLASH_ERASE_SECTOR)
+  {
+    req->header.flash_erase_sector.retval = __rt_bridge_flash_erase_sector(req->header.flash_erase_sector.type, req->header.flash_erase_sector.itf, req->header.flash_erase_sector.cs, (void *)req->header.flash_erase_sector.addr);
   }
 
   hal_bridge_reply(&req->header);
@@ -594,4 +688,5 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_bridge_init()
 #endif
 
   __rt_bridge_eeprom_handle = NULL;
+  __rt_bridge_flash_handle = NULL;
 }

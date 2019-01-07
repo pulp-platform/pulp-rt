@@ -378,6 +378,10 @@ typedef struct rt_flash_dev_s {
   struct rt_flash_s *(*open)(rt_dev_t *dev, rt_flash_conf_t *conf, rt_event_t *event);
   void (*close)(struct rt_flash_s *flash, rt_event_t *event);
   void (*read)(struct rt_flash_s *dev, void *addr, void *data, size_t size, rt_event_t *event);
+  void (*program)(struct rt_flash_s *dev, void *data, void *addr, size_t size, rt_event_t *event);
+  void (*erase_chip)(struct rt_flash_s *dev, rt_event_t *event);
+  void (*erase_sector)(struct rt_flash_s *dev, void *data, rt_event_t *event);
+
 } rt_flash_dev_t;
 
 typedef struct rt_flash_s {
