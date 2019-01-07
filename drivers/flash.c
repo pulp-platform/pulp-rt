@@ -57,10 +57,15 @@ rt_flash_t *rt_flash_open(char *dev_name, rt_flash_conf_t *conf, rt_event_t *eve
   }
   else
   {
-    if (conf->type == RT_FLASH_TYPE_SPI)
+    if (0)
+    {
+    }
+#ifdef ARCHI_UDMA_HAS_SPIM
+    else if (conf->type == RT_FLASH_TYPE_SPI)
     {
       desc = &spiflash_desc;
     }
+#endif
 #ifdef ARCHI_UDMA_HAS_HYPER
     else if (conf->type == RT_FLASH_TYPE_HYPER)
     {
