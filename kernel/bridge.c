@@ -179,6 +179,7 @@ static int __rt_bridge_check_flash_open(int type, unsigned int itf, unsigned int
     __rt_bridge_flash_itf = itf;
     __rt_bridge_flash_cs = cs;
 
+#ifdef PADS_VERSION
     if (type == RT_FLASH_TYPE_HYPER)
     {
       rt_padframe_profile_t *profile_hyper = rt_pad_profile_get("hyper");
@@ -187,6 +188,7 @@ static int __rt_bridge_check_flash_open(int type, unsigned int itf, unsigned int
       }
       rt_padframe_set(profile_hyper);
     }
+#endif
 
     __rt_bridge_flash_handle = rt_flash_open(NULL, &conf, NULL);
 
