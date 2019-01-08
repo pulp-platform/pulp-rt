@@ -37,7 +37,7 @@
 #define __RT_FREQ_DOMAIN_PERIPH 1
 #define RT_FREQ_NB_DOMAIN 3
 
-#elif PULP_CHIP == CHIP_VIVOSOC3
+#elif PULP_CHIP_FAMILY == CHIP_VIVOSOC3
 
 #define __RT_FREQ_DOMAIN_FC       1   // soc domain, soc fll
 #define __RT_FREQ_DOMAIN_CL       0   // cluster domain, soc fll or cl fll
@@ -75,7 +75,7 @@
 /**@{*/
 
 
-#if PULP_CHIP == CHIP_VIVOSOC3
+#if PULP_CHIP_FAMILY == CHIP_VIVOSOC3
 
 /** \enum rt_freq_domain_e
  * \brief Frequency domains.
@@ -202,7 +202,7 @@ static inline int rt_freq_set(rt_freq_domain_e domain, unsigned int freq);
 
 /// @cond IMPLEM
 
-#if PULP_CHIP == CHIP_VIVOSOC3
+#if PULP_CHIP_FAMILY == CHIP_VIVOSOC3
 
   typedef struct __rt_freq_domain_settings_s {   
     unsigned int __rt_freq_domain_freq;

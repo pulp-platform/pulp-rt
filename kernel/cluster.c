@@ -75,7 +75,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
       powered_up = __rt_pmu_cluster_power_up();
 
 #ifdef FLL_VERSION
-  #if PULP_CHIP == CHIP_VIVOSOC3
+  #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
       // Check if we have to restore the cluster freqeuncy
@@ -175,7 +175,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
   rt_trace(RT_TRACE_CONF, "Unmounting cluster (cluster: %d)\n", cid);
 
 #ifdef FLL_VERSION
-  #if PULP_CHIP == CHIP_VIVOSOC3
+  #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
       // check if cl fll was used
