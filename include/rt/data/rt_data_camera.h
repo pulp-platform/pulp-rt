@@ -150,6 +150,18 @@ typedef struct{
 }rt_img_filter_t;
 
 
+/** \enum rt_cam_type_e
+ * \brief Camera identifier.
+ *
+ * This can be used to describe the type of camera connected to the chip.
+ */
+typedef enum {
+  RT_CAM_TYPE_HIMAX,     /*!< Himax camera. */
+  RT_CAM_TYPE_OV7670    /*!< Ov7670 camera. */
+} rt_cam_type_e;
+
+
+
 /** \struct rt_cam_conf_t
  * \brief CPI device configuration structure.
  *
@@ -164,6 +176,9 @@ typedef struct{
   unsigned int     frameDrop_en;          /*!< Enables frame dropping */
   unsigned int     frameDrop_value;       /*!< Define how many frames need to be dropped */
   unsigned int     cpiCfg;                /*!< Width of CPI interface*/
+  int id;                                 /*!< If it is different from -1, this specifies on which CPI interface the device is connected. */
+  int control_id;                                 /*!< If it is different from -1, this specifies on which interface the control interface of the device is connected. */
+  rt_cam_type_e type;   /*!< Camera type. */
 }rt_cam_conf_t;
 
 /**
@@ -176,14 +191,13 @@ typedef struct{
 typedef struct rt_cam_s rt_camera_t;
 
 typedef struct rt_cam_dev_s {
-  rt_camera_t *(*open)(rt_dev_t *dev, rt_cam_conf_t *cam, rt_event_t*event);
+  rt_camera_t *(*open)(int channel, rt_cam_conf_t *cam, rt_event_t*event);
   void (*close)(rt_camera_t *dev_cam, rt_event_t *event);
   void (*control)(rt_camera_t *dev_cam, rt_cam_cmd_e cmd, void *arg);
   void (*capture)(rt_camera_t *dev_cam, void *buffer, size_t bufferlen, rt_event_t *event);
 } rt_cam_dev_t;
 
 typedef struct rt_cam_s {
-  rt_dev_t *dev;
   rt_cam_dev_t desc;
   int channel;
   rt_i2c_t          *i2c;

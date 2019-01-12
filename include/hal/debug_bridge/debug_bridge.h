@@ -39,7 +39,7 @@ static inline hal_bridge_t *hal_bridge_get()
 }
 
 
-#define HAL_DEBUG_STRUCT_INIT { {0}, {0}, 0, 1, 0 ,0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0}
+#define HAL_DEBUG_STRUCT_INIT { PROTOCOL_VERSION_4, {0, 0}, {0}, 0, 1, 0 ,0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 
 static inline int hal_bridge_is_connected(hal_bridge_t *bridge) {
@@ -49,6 +49,11 @@ static inline int hal_bridge_is_connected(hal_bridge_t *bridge) {
 static inline void hal_bridge_connect(hal_bridge_req_t *req)
 {
   req->type = HAL_BRIDGE_REQ_CONNECT;
+}
+
+static inline void hal_bridge_reply(hal_bridge_req_t *req)
+{
+  req->type = HAL_BRIDGE_REQ_REPLY;
 }
 
 static inline void hal_bridge_disconnect(hal_bridge_req_t *req)

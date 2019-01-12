@@ -154,6 +154,8 @@ static inline void __rt_thread_enqueue_ready_check(rt_thread_t *thread)
 
 void __rt_thread_wakeup(rt_thread_t *thread);
 
+void __rt_thread_sched_init();
+
 /// @endcond
 
 #endif

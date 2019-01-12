@@ -54,7 +54,7 @@
 #define APB_SOC_PADFUN_NO(pad)     ((pad) >> 4)
 #define APB_SOC_PADFUN_PAD(padfun) ((padfun)*16)
 #define APB_SOC_PADFUN_SIZE        2
-#define ARCHI_APB_SOC_PADFUN_NB          4
+#define ARCHI_APB_SOC_PADFUN_NB          3
 #define APB_SOC_PADFUN_BIT(pad)    (((pad) & 0xF) << 1)
 
 #define APB_SOC_PADCFG_OFFSET(g)   (APB_SOC_PADCFG0_OFFSET+(g)*4) //sets config for pin  g*4+0(bits [7:0]) to pin  g*4+3(bits [31:24])
@@ -82,6 +82,14 @@
 #define APB_SOC_CORESTATUS_OFFSET 0xA0 //32bit GP register to be used during testing to return EOC(bit[31]) and status(bit[30:0])
 #define APB_SOC_CORESTATUS_RO_OFFSET 0xC0 //32bit GP register to be used during testing to return EOC(bit[31]) and status(bit[30:0])
 
+#define APB_SOC_SLEEP_CONTROL     0x104
+
+#define APB_SOC_SAFE_SLEEPPADCFG0 0x150
+#define APB_SOC_SAFE_SLEEPPADCFG1 0x154
+#define APB_SOC_SAFE_SLEEPPADCFG2 0x158
+#define APB_SOC_SAFE_PADSLEEP     0x160
+
+
 #define APB_SOC_JTAG_REG_EXT_BIT   8
 #define APB_SOC_JTAG_REG_EXT_WIDTH 4
 
@@ -101,22 +109,5 @@
 #define APB_SOC_BYPASS_CLUSTER_STATE_BIT 3
 #define APB_SOC_BYPASS_USER0_BIT       14
 #define APB_SOC_BYPASS_USER1_BIT       15
-
-#if 0
-		unsigned int Bypass:1;			/* b0      1: Bypass maestro */
-		unsigned int BypassConfig:1;		/* b1      0: Use default config, 1: Use user config, fields are bellow */
-		unsigned int Pad0:1;			/* b2      */
-		unsigned int ClusterState:1;		/* b3      0: Cluster Off, 1: Cluster On */
-		unsigned int TRCMaxCurrent:3;		/* b4..6   When in BypassConfig and On state, max current allowed on the TRC */
-		unsigned int TRCDelay:2;		/* b7..8   When in BypassConfig and On state number of 32K cycles after pwr ok to release isolation */
-		unsigned int BypassClock:1;		/* b9	   1: Bypass clock and reset control by Maestro */
-		unsigned int ClusterClockGate:1;	/* b10	   1: Clock gate the cluster, should always be used before shutdown or retention */
-		unsigned int ClockDown:1;		/* b11     1: Set Cluster FLL to off state */
-		unsigned int ClockRetentive:1;		/* b12     1: Set Cluster FLL to retentive state */
-		unsigned int ClusterReset:1;		/* b13	   1: If in Bypass Clock controls the cluster reset */
-		unsigned int Pad1:2;			/* b14..15 Padding */
-		unsigned int TRCPowerOk:1;		/* b16     Power ok coming from TRC */
-		unsigned int PMUPowerDown:1;		/* b17     Power down as reported from maestro */
-#endif
 
 #endif

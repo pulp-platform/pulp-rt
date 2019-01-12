@@ -141,7 +141,9 @@ typedef struct{
 
 /// @cond IMPLEM
 typedef struct{
-  rt_event_t        *event;
+  rt_event_t        *alarm_event;
+  rt_event_t        *countdown_event;
+  rt_event_t        *calib_event;
   rt_rtc_conf_t     conf;
   unsigned char     open_count;
 }rt_rtc_t;

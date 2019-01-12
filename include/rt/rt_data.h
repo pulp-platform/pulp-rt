@@ -259,6 +259,7 @@ typedef struct rt_event_s {
   struct rt_event_sched_s *sched;
   struct rt_thread_s *thread;
   int pending;
+  int keep;
   void (*saved_callback)(void *);
   void *saved_arg;
   int saved_pending;
@@ -539,13 +540,10 @@ typedef struct rt_hyperram_req_s {
   void *addr;
   void *hyper_addr;
   int size;
-  int stride;
-  int length;
   rt_event_t event;
   int done;
   unsigned char cid;
   unsigned char is_write;
-  unsigned char is_2d;
 } rt_hyperram_req_t ;
 
 typedef struct rt_hyperram_alloc_req_s {
