@@ -18,6 +18,7 @@
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
+
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
 #if defined(ITC_VERSION)
@@ -26,8 +27,7 @@
 #include "archi/eu/eu_v3.h"
 #include "archi/cluster_ctrl/cluster_ctrl_v2.h"
 
-    .section .cluster.text
-
+    .section .cluster.text , "ax"
 #ifdef RV_ISA_RV32
   .global __rt_pe_start
 __rt_pe_start:
@@ -109,13 +109,6 @@ __rt_master_loop:
     lw      t3, RT_CLUSTER_CALL_T_NB_PE(s0)
     beq     t3, x0, __rt_master_sleep
 
-#ifdef ARCHI_HAS_CLUSTER_CLK_GATE
-    // Deactivate automatic cluster clock-gating
-    // Due to a HW bug, it can not work when the cluster is doing something
-    li      a0, ARCHI_CLUSTER_PERIPHERALS_ADDR
-    sw      x0, ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE(a0)
-#endif
-
     // Reads entry point information
     lw      a0, RT_CLUSTER_CALL_T_ARG(s0)
     lw      t0, RT_CLUSTER_CALL_T_ENTRY(s0)
@@ -140,9 +133,18 @@ __rt_master_loop:
 #endif
     sll     t3, t4, t3
     addi    t3, t3, -1
+#ifndef ARCHI_HAS_NO_DISPATCH
+    sw      t3, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
+#endif
 #ifndef ARCHI_HAS_NO_BARRIER
+#ifdef ARCHI_HAS_CC
+    // When we have a cluster controller, don't configure the slave barrier
+    // if we don't have have any slave
+    beqz    t3, __rt_master_no_slave_barrier
+#endif
     sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
     sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
+__rt_master_no_slave_barrier:
 #ifdef ARCHI_HAS_CC
     ori     t3, t3, 1<<ARCHI_CC_CORE_ID
     sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK + EU_BARRIER_SIZE(s3)
@@ -150,9 +152,6 @@ __rt_master_loop:
 #endif
 #else
     sw      t3, %tiny(__rt_barrier_wait_mask)(x0)
-#endif
-#ifndef ARCHI_HAS_NO_DISPATCH
-    sw      t3, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
 #endif
 
 #ifndef ARCHI_HAS_NO_DISPATCH
@@ -177,14 +176,6 @@ __rt_master_no_reset:
 
 
 __rt_master_sleep:
-#ifdef ARCHI_HAS_CLUSTER_CLK_GATE
-    // Reactivate automatic cluster clock-gating
-    // Due to a HW bug, it can not work when the cluster is doing something
-    li      a0, ARCHI_CLUSTER_PERIPHERALS_ADDR
-    li      a1, 1
-    //sw      a1, ARCHI_CLUSTER_CTRL_CLUSTER_CLK_GATE(a0)
-#endif
-
     sw      s4, EU_CORE_MASK_OR(s3)
     p.elw   x0, EU_CORE_EVENT_WAIT_CLEAR(s3)
     sw      s4, EU_CORE_MASK_AND(s3)

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __HAL_APB_SOC_APB_SOC_V2_H__
-#define __HAL_APB_SOC_APB_SOC_V2_H__
+#ifndef __HAL_CHIPS_GAP_APB_SOC_H__
+#define __HAL_CHIPS_GAP_APB_SOC_H__
 
 #include "archi/pulp.h"
 
@@ -55,19 +55,19 @@ static inline void hal_apb_soc_padcfg_set(unsigned int id, unsigned int value) {
 
 
 static inline void hal_apb_soc_pad_set_function(unsigned int pad, unsigned int func) {
-	unsigned int padfunId = APB_SOC_PADFUN_NO(pad);
-	unsigned int padBit = APB_SOC_PADFUN_BIT(pad);
-	unsigned int oldval = hal_apb_soc_padfun_get(padfunId) & ~(((1<<APB_SOC_PADFUN_SIZE)-1) << padBit);
-	unsigned int newVal = oldval | (func << padBit);
-	hal_apb_soc_padfun_set(padfunId, newVal);
+  unsigned int padfunId = APB_SOC_PADFUN_NO(pad);
+  unsigned int padBit = APB_SOC_PADFUN_BIT(pad);
+  unsigned int oldval = hal_apb_soc_padfun_get(padfunId) & ~(((1<<APB_SOC_PADFUN_SIZE)-1) << padBit);
+  unsigned int newVal = oldval | (func << padBit);
+  hal_apb_soc_padfun_set(padfunId, newVal);
 }
 
 static inline void hal_apb_soc_pad_set_config(unsigned int pad, unsigned int cfg) {
-	unsigned int padcfgId = APB_SOC_PADCFG_NO(pad);
-	unsigned int padBit = APB_SOC_PADCFG_BIT(pad);
-	unsigned int oldval = hal_apb_soc_padcfg_get(padcfgId) & ~(((1<<APB_SOC_PADCFG_SIZE)-1) << padBit);
-	unsigned int newVal = oldval | (cfg << padBit);
-	hal_apb_soc_padcfg_set(padcfgId, newVal);
+  unsigned int padcfgId = APB_SOC_PADCFG_NO(pad);
+  unsigned int padBit = APB_SOC_PADCFG_BIT(pad);
+  unsigned int oldval = hal_apb_soc_padcfg_get(padcfgId) & ~(((1<<APB_SOC_PADCFG_SIZE)-1) << padBit);
+  unsigned int newVal = oldval | (cfg << padBit);
+  hal_apb_soc_padcfg_set(padcfgId, newVal);
 }
 
 
@@ -87,6 +87,16 @@ static inline unsigned int apb_soc_jtag_reg_ext(unsigned int value) {
 
 static inline unsigned int apb_soc_jtag_reg_loc(unsigned int value) {
   return ARCHI_REG_FIELD_GET(value, APB_SOC_JTAG_REG_LOC_BIT, APB_SOC_JTAG_REG_LOC_WIDTH);
+}
+
+static inline void apb_soc_padsleep_set(unsigned int value)
+{
+  pulp_write32(ARCHI_APB_SOC_CTRL_ADDR + APB_SOC_SAFE_PADSLEEP, value);  
+}
+
+static inline unsigned int apb_soc_sleep_control_get()
+{
+  return pulp_read32(ARCHI_APB_SOC_CTRL_ADDR + APB_SOC_SLEEP_CONTROL);  
 }
 
 #endif

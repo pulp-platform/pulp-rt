@@ -236,7 +236,7 @@ void __rt_pmu_cluster_power_down()
 
 void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState);
 
-void __rt_pmu_cluster_power_up() // unsigned int ClusterFreq)
+int __rt_pmu_cluster_power_up() // unsigned int ClusterFreq)
 {
   if (CLUSTER_STATE(PMUState.State) == CLUSTER_OFF)
   {
@@ -289,7 +289,11 @@ void __rt_pmu_cluster_power_up() // unsigned int ClusterFreq)
     }
 
     PMUState.State = SET_CLUSTER_STATE(PMUState.State, CLUSTER_ON);
+
+    return 1;
   }
+
+  return 0;
 }
 
 /* APB Interface */
@@ -396,6 +400,20 @@ unsigned int PMU_set_voltage(unsigned int Voltage, unsigned int CheckFrequencies
  return 0;
 }
 
+
+int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_event_t *event)
+{
+  return PMU_set_voltage(new_voltage, 0);
+}
+
+void rt_pm_wakeup_gpio_conf(int active, int gpio, rt_pm_wakeup_gpio_mode_e mode)
+{
+  PMURetentionState.Fields.ExternalWakeUpSource = gpio;
+  PMURetentionState.Fields.ExternalWakeUpMode   = mode;
+  PMURetentionState.Fields.ExternalWakeupEnable = active;
+  SetRetentiveState(PMURetentionState.Raw);
+}
+
 void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
 {
   int irq = rt_irq_disable();
@@ -413,13 +431,6 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
     apb_soc_jtag_reg_write(apb_soc_jtag_reg_loc(apb_soc_jtag_reg_read()) & ~2);
     __rt_bridge_target_status_sync(NULL);
   }
-
-#if 0
-  PMURetentionState.Fields.ExternalWakeUpSource = 0;
-  PMURetentionState.Fields.ExternalWakeUpMode   = 0x00;
-  PMURetentionState.Fields.ExternalWakeupEnable = 1;
-  PMURetentionState.Fields.WakeupCause          = 1;
-  #endif
 
   if (Retentive) {
     PMURetentionState.Fields.BootMode = BOOT_FROM_L2;
@@ -670,6 +681,24 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   Config.ConfigReg1.ClockOutDivider = Div;
   SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
 
+#if 1
+      /* Check FLL converge by compare status register with multiply factor */
+
+  fll_reg_conf2_t fll_conf2;
+  fll_conf2.raw = hal_fll_conf_reg2_get(Fll);
+  int tolerance = fll_conf2.lock_tolerance;
+
+  do {
+    int mult_factor_diff = hal_fll_status_reg_get(Fll) - Mult;
+    if (mult_factor_diff < 0)
+      mult_factor_diff = -mult_factor_diff;
+
+    if ( mult_factor_diff <= tolerance)
+      break;
+
+  } while (1);
+
+#else
 /* Wait for convergence, since we will disable lock enable after this step is mandatory */
   if (Config.ConfigReg1.OutputLockEnable) {
     if (Fll == FLL_CLUSTER && hal_is_fc()) {
@@ -678,6 +707,8 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
      while (SoCFllConverged() == 0) {};
     }
   }
+#endif
+
   FllsFrequency[Fll] = SetFrequency;
   PMUState.Frequency[Fll] = SetFrequency;
 
@@ -719,7 +750,7 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     // Don't set the gain and integrator in case it has already been set by the boot code
     // as it totally blocks the fll on the RTL platform.
     // The boot code is anyway setting the same configuration.
-    if (!Config.ConfigReg1.Mode)
+    if (!Config.ConfigReg1.Mode || WhichFll != 0)
     {
       SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_GAIN);
 
@@ -737,10 +768,28 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     Config.ConfigReg1.ClockOutDivider = Div;
     SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
 
+#if 1
+
+  fll_reg_conf2_t fll_conf2;
+  fll_conf2.raw = hal_fll_conf_reg2_get(WhichFll);
+  int tolerance = fll_conf2.lock_tolerance;
+
+  do {
+    int mult_factor_diff = hal_fll_status_reg_get(WhichFll) - Mult;
+    if (mult_factor_diff < 0)
+      mult_factor_diff = -mult_factor_diff;
+
+    if ( mult_factor_diff <= tolerance)
+      break;
+
+  } while (1);
+
+#else
     if (Config.ConfigReg1.OutputLockEnable && (WhichFll == FLL_CLUSTER) && hal_is_fc()) {
       while (ClusterFllConverged() == 0) {};
     }
     Config.ConfigReg1.OutputLockEnable = 0;
+#endif
 
     SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
 

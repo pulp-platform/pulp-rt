@@ -39,7 +39,8 @@ static rt_event_t *__rt_io_event_current;
 
 hal_debug_struct_t HAL_DEBUG_STRUCT_NAME = HAL_DEBUG_STRUCT_INIT;
 
-int __errno;
+static int errno;
+int *__errno() { return &errno; } 
 
 void *malloc(size_t size)
 {
@@ -56,6 +57,15 @@ void free(void *ptr)
   rt_free(RT_ALLOC_CL_DATA, (void *)((uint32_t *)ptr--), size);
 }
 
+void *l1malloc(size_t size)
+{
+  return malloc(size);
+}
+
+void l1free(void *ptr)
+{
+  free(ptr);
+}
 
 int strcmp(const char *s1, const char *s2)
 {
@@ -349,12 +359,17 @@ __rt_io_unlock();
 
 static void __attribute__((noreturn)) __wait_forever()
 {
+  // TODO find a better solution. On some architectures or platforms
+  // the execution starts immediately and is stuck here as it is 
+  // impossible to force the core to leave clock-gating
+#if 0
 #if defined(ITC_VERSION)
   hal_itc_enable_clr(0xffffffff);
   while(1) hal_itc_wait_for_interrupt();
 #elif defined(EU_VERSION) && EU_VERSION >=3
   eu_evt_maskClr(0xffffffff);
   eu_evt_wait();
+#endif
 #endif
   while(1);
 }
@@ -456,6 +471,8 @@ static int __rt_io_stop(void *arg)
 
   // Also close the uart driver to properly flush the uart
   rt_uart_close(_rt_io_uart, NULL);
+
+  _rt_io_uart = NULL;
 
   return 0;
 }

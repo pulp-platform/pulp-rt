@@ -20,8 +20,6 @@
 
 #include "rt/rt_api.h"
 
-#if defined(ARCHI_HAS_FC)
-
 // TODO this code should be in time.c but due to a bug in the compiler which
 // generates wrong code in other functions if the attribute interrupt is 
 // present in the same file, this handler must be in a different file
@@ -34,7 +32,7 @@ void __attribute__((interrupt)) __rt_timer_handler()
 {
   rt_event_t *event = first_delayed;
 
-  uint32_t current_time = hal_timer_count_get(hal_timer_fc_addr(0, 1));
+  uint32_t current_time = timer_count_get(timer_base_fc(0, 1));
 
   // First dequeue and push to their scheduler all events with the same number of
   // ticks as they were waiting for the same time.
@@ -56,33 +54,32 @@ void __attribute__((interrupt)) __rt_timer_handler()
     // in order to set a value which is not before the actual count.
     // This may just delay a bit the events which is fine as the specified
     // duration is a minimum.
-    hal_timer_cmp_set(hal_timer_fc_addr(0, 1),
-      hal_timer_count_get(hal_timer_fc_addr(0, 1)) + 
+    timer_cmp_set(timer_base_fc(0, 1),
+      timer_count_get(timer_base_fc(0, 1)) + 
       first_delayed->time - current_time
     );
 
-    hal_timer_conf(
-      hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, PLP_TIMER_RESET_DISABLED,
-      PLP_TIMER_IRQ_ENABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
-      PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
-      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
+    timer_conf_set(timer_base_fc(0, 1),
+      TIMER_CFG_LO_ENABLE(1) |
+      TIMER_CFG_LO_IRQEN(1)  |
+      TIMER_CFG_LO_CCFG(1)
     );
   }
   else
   {
     // Set back default state where timer is only counting with
     // no interrupt
-    hal_timer_conf(
-      hal_timer_fc_addr(0, 1), PLP_TIMER_ACTIVE, 0,
-      PLP_TIMER_IRQ_DISABLED, PLP_TIMER_IEM_DISABLED, PLP_TIMER_CMPCLR_DISABLED,
-      PLP_TIMER_ONE_SHOT_DISABLED, PLP_TIMER_REFCLK_ENABLED,
-      PLP_TIMER_PRESCALER_DISABLED, 0, PLP_TIMER_MODE_64_DISABLED
+    timer_conf_set(timer_base_fc(0, 1),
+      TIMER_CFG_LO_ENABLE(1) |
+      TIMER_CFG_LO_CCFG(1)
     );
 
     // Also clear timer interrupt as we might have a spurious one after
     // we entered the handler
+#ifdef ARCHI_HAS_FC
     rt_irq_clr(1 << ARCHI_FC_EVT_TIMER0_HI);
+#else
+    rt_irq_clr(1 << ARCHI_EVT_TIMER0_HI);
+#endif
   }
 }
-
-#endif

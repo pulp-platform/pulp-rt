@@ -24,12 +24,7 @@ extern void __rt_gpio_handler();
 
 
 void rt_gpio_init(uint8_t group, int gpio)
-{  
-  int irq = rt_irq_disable();
-#ifdef PADS_VERSION
-  __rt_padframe_init();
-#endif
-  rt_irq_restore(irq);
+{
 }
 
 void rt_gpio_deinit(uint8_t group, int gpio)
@@ -85,6 +80,40 @@ void rt_gpio_clear(uint8_t group, uint8_t gpio)
   int irq = rt_irq_disable();
   __rt_gpio_status &= ~(1<<gpio);
   rt_irq_restore(irq);
+}
+
+
+
+int rt_gpio_configure(uint8_t group, uint32_t mask, rt_gpio_conf_e flags)
+{
+#if PULP_CHIP_FAMILY == CHIP_GAP
+
+  int strength = (flags >> __RT_GPIO_STRENGTH_BIT) & 3;
+  int pull = (flags >> __RT_GPIO_PULL_BIT) & 3;
+
+  while (mask)
+  {
+    int gpio = __FL1(mask);
+
+    int reg_id = ARCHI_GPIO_PADCFG_REG(gpio);
+    int group = ARCHI_GPIO_PADCFG_GROUP(gpio);
+    gpio_reg_padcfg_t reg = { .raw=gpio_padcfg_get(reg_id) };
+
+    if (strength)
+    {
+      reg.pin[group].strength = strength >> 1;
+    }
+
+    if (pull)
+      reg.pin[group].pull = pull >> 1;
+
+    gpio_padcfg_set(reg_id, reg.raw);
+
+    mask &= ~(1<<gpio);
+  }
+#endif
+
+  return 0;
 }
 
 

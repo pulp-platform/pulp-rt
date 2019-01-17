@@ -60,10 +60,25 @@ static void __rt_uart_wait_tx_done(rt_uart_t *uart)
     rt_wait_for_interrupt();
   }
 
-#if 0
-  // There is a bug in the uart, between 2 bytes, the uart says it is not busy
-  // and so if we are not lucky, we can continue while the uart is actually 
-  // still busy. Instead, wait for a few clock refs
+#if 1
+
+// There is a bug in the uart, between 2 bytes, the uart says it is not busy
+// and so if we are not lucky, we can continue while the uart is actually 
+// still busy. Instead, wait for a few clock refs
+
+#ifdef ITC_VERSION
+  for (int i=0; i<50; i++)
+  {
+    rt_irq_clr(1<<ARCHI_FC_EVT_CLK_REF);
+    rt_irq_mask_set(1<<ARCHI_FC_EVT_CLK_REF);
+    rt_wait_for_interrupt();
+    rt_irq_mask_clr(1<<ARCHI_FC_EVT_CLK_REF);
+  }
+#else
+  volatile int i;
+  for (i=0; i<2000; i++);
+#endif
+
 #else
   // And flush the uart to make sure no bit is transfered anymore
   while(plp_uart_tx_busy(uart->channel - ARCHI_UDMA_UART_ID(0)));
@@ -74,7 +89,7 @@ static void __rt_uart_wait_tx_done(rt_uart_t *uart)
 
 static void __rt_uart_setup(rt_uart_t *uart)
 {
-  int div =  __rt_freq_periph_get() / uart->baudrate;
+  int div =  (__rt_freq_periph_get() + uart->baudrate/2) / uart->baudrate;
 
   // The counter in the UDMA will count from 0 to div included
   // and then will restart from 0, so we must give div - 1 as
@@ -136,10 +151,6 @@ static int __rt_uart_setfreq_after(void *arg)
 rt_uart_t* __rt_uart_open(int channel, rt_uart_conf_t *conf, rt_event_t *event, char *name)
 {
   int irq = rt_irq_disable();
-
-#ifdef PADS_VERSION
-  __rt_padframe_init();
-#endif
   
   int baudrate = __RT_UART_BAUDRATE;
   if (conf) baudrate = conf->baudrate;
@@ -227,6 +238,10 @@ void rt_uart_close(rt_uart_t *uart, rt_event_t *event)
       // First wait for pending transfers to finish before stoppping uart in case
       // some printf are still pending
       __rt_uart_wait_tx_done(uart);
+
+      // Set enable bits for uart channel back to 0 
+      // This is needed to be able to propagate new configs when re-opening
+      plp_uart_disable(uart->channel - ARCHI_UDMA_UART_ID(0));      
 
       // Then stop the uart
       plp_udma_cg_set(plp_udma_cg_get() & ~(1<<uart->channel));

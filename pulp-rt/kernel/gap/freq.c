@@ -23,6 +23,10 @@
 
 int __rt_freq_domains[RT_FREQ_NB_DOMAIN];
 
+void rt_freq_wait_convergence(int fll)
+{
+}
+
 int rt_freq_set_and_get(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
 {
   int irq = rt_irq_disable();

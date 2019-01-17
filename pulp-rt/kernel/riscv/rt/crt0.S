@@ -150,7 +150,13 @@ _fini:
 .section .vectors, "ax"
 .option norvc;
 
+
+#ifdef ARCHI_CORE_HAS_1_10
+  j __rt_illegal_instr
+#else
   j __rt_no_irq_handler
+#endif
+
   j __rt_no_irq_handler
   j __rt_no_irq_handler
   j __rt_no_irq_handler

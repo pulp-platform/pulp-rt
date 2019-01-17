@@ -64,9 +64,7 @@
  * external bridge when updating a framebuffer.
  */
 typedef enum {
-  RT_FB_FORMAT_GRAY = HAL_BRIDGE_REQ_FB_FORMAT_GRAY,   /*!< Each pixel is gray on 8 bits. */
-  RT_FB_FORMAT_RGB = HAL_BRIDGE_REQ_FB_FORMAT_RGB,     /*!< Each pixel is 3 x8bits channels (RGB). */
-  RT_FB_FORMAT_RAW = HAL_BRIDGE_REQ_FB_FORMAT_RAW     /*!< Each pixel is 3 x8bits channels (RGB). */
+  RT_FB_FORMAT_GRAY = HAL_BRIDGE_REQ_FB_FORMAT_GRAY   /*!< Each pixel is gray on 8 bits. */
 } rt_fb_format_e;
 
 
@@ -80,11 +78,9 @@ typedef enum {
  * Can only be called from fabric controller.
  * This operation is asynchronous and its termination can be managed through an event.
  *
- * \param wait_bridge If 1, this will block the caller until the bridge is connected.
  * \param event     The event used for managing termination. This event can only be NULL or a blocking event (the callback mode is not possible).
- * \return          1 if the connection was successfull, 0 otherwise.
  */
-int rt_bridge_connect(int wait_bridge, rt_event_t *event);
+void rt_bridge_connect(rt_event_t *event);
 
 
 

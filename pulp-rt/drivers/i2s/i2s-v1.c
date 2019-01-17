@@ -112,7 +112,7 @@ static rt_i2s_t *__rt_i2s_open(rt_dev_t *dev, rt_i2s_conf_t *conf, rt_event_t*ev
   // Now we have checked possible errors, register the device and activate udma i2s in case
   // it is the first opened
   if (__rt_i2s_first[i2s->i2s_id] == NULL) {
-    plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_I2S_ID(i2s->periph_id)));
+    plp_udma_cg_set(plp_udma_cg_get() | (1<<i2s->periph_id));
   }
   i2s->next = __rt_i2s_first[i2s->i2s_id];
   __rt_i2s_first[i2s->i2s_id] = i2s;

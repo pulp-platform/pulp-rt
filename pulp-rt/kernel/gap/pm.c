@@ -22,6 +22,12 @@
 #include "rt/rt_api.h"
 #include "pmu_driver.h"
 
+
+void rt_pm_wakeup_clear_all()
+{
+  apb_soc_sleep_control_get();
+}
+
 int rt_pm_state_switch(rt_pm_state_e state, rt_pm_state_flags_e flags)
 {
   if (state == RT_PM_STATE_DEEP_SLEEP)
