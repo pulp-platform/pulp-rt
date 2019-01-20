@@ -105,20 +105,6 @@ static void __rt_pm_shutdown(int retentive)
   int irq = rt_irq_disable();
   int interrupt;
 
-  // Notify the bridge that the chip is going to be inaccessible.
-  // We don't do anything until we know that the bridge received the
-  // notification to avoid any race condition.
-  hal_bridge_t *bridge = hal_bridge_get();
-  bridge->target.available = 0;
-  if (bridge->bridge.connected)
-  {
-    // Before cutting the connection with the bridge, flush the printf otherwise
-    // it may look weird to the user.
-    hal_debug_flush_printf(hal_debug_struct_get());
-    apb_soc_jtag_reg_write(apb_soc_jtag_reg_loc(apb_soc_jtag_reg_read()) & ~2);
-    __rt_bridge_target_status_sync(NULL);
-  }
-
   apb_soc_sleep_control_t sleep_ctrl = {
     .raw=apb_soc_sleep_control_get(ARCHI_APB_SOC_CTRL_ADDR)
   };
