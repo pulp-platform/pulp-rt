@@ -656,9 +656,11 @@ void __rt_bridge_handle_notif()
 
 static void __rt_bridge_wait()
 {
+#ifdef ARCHI_SOC_EVENT_REF_CLK_RISE
   soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
   __rt_periph_wait_event(ARCHI_SOC_EVENT_REF_CLK_RISE, 1);
   soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
+#endif
 }
 
 void __rt_bridge_check_connection()
