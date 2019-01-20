@@ -146,9 +146,17 @@ void *memcpy(void *dst0, const void *src0, size_t len0)
 
 void __rt_putc_debug_bridge(char c)
 {
+  // Iter until we can push the character.
   while(hal_debug_putchar_nopoll(hal_debug_struct_get(), c))
   {
     rt_time_wait_us(100);
+  }
+
+  // If the buffer has been flushed to the bridge, we now need to send him
+  // a notification
+  if (hal_debug_is_empty(hal_debug_struct_get()))
+  {
+    __rt_bridge_printf_flush();
   }
 }
 
@@ -381,8 +389,9 @@ static void __rt_exit_debug_bridge(int status)
 {
   // Flush the pending messages to the debug tools
   // Notify debug tools about the termination
-  hal_debug_flush_printf(hal_debug_struct_get());
+  __rt_bridge_printf_flush();
   hal_debug_exit(hal_debug_struct_get(), status);
+  __rt_bridge_send_notif();
 }
 
 

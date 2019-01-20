@@ -1,21 +1,6 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2019 ETH Zurich, University of Bologna
+ * Copyright (C) 2019 GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -668,6 +653,146 @@ void __rt_bridge_handle_notif()
   // Then check if we must update the bridge queue
   __rt_bridge_check_bridge_req();
 }
+
+static void __rt_bridge_wait()
+{
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
+  __rt_periph_wait_event(ARCHI_SOC_EVENT_REF_CLK_RISE, 1);
+  soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
+}
+
+void __rt_bridge_check_connection()
+{
+  hal_debug_struct_t *debug_struct = hal_debug_struct_get();
+
+  if (!debug_struct->bridge.connected)
+  {
+    if ((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)
+    {
+      debug_struct->bridge.connected = 1;
+
+  #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+      apb_soc_jtag_reg_write(1<<1);
+  #endif
+
+      while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)
+      {
+        __rt_bridge_wait();
+      }
+    }
+  }
+}
+
+void __rt_bridge_set_available()
+{
+  hal_debug_struct_t *debug_struct = hal_debug_struct_get();
+
+  #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+  if (!debug_struct->bridge.connected)
+  {
+    // In case the bridge is not yet connected, there is a handshake to do
+    // with him to connect.
+    apb_soc_jtag_reg_write(4<<1);
+  }
+  else
+  {
+    // Otherwise just write that we are available
+    apb_soc_jtag_reg_write(1<<1);
+  }
+  #endif
+}
+
+void __rt_bridge_printf_flush()
+{
+  hal_debug_struct_t *debug_struct = hal_debug_struct_get();
+
+  __rt_bridge_check_connection();
+
+  if (debug_struct->bridge.connected)
+  {
+    if (hal_debug_is_busy(hal_debug_struct_get()) || !hal_debug_is_empty(hal_debug_struct_get()))
+    {
+      // Notify the bridge that he should look for requests
+      __rt_bridge_send_notif();
+
+      // We now also have to wait until it is handled so that we can clear
+      // the notification
+      while(hal_debug_is_busy(hal_debug_struct_get()))
+      {
+        __rt_bridge_wait();
+      }
+      __rt_bridge_clear_notif();
+    }
+  }
+}
+
+void __rt_bridge_req_shutdown()
+{
+  hal_debug_struct_t *debug_struct = hal_debug_struct_get();
+
+  __rt_bridge_check_connection();
+
+  if (debug_struct->bridge.connected)
+  {
+    // We have to flush pending requests before sending shutdown request
+    // otherwise the bridge may never see them.
+    __rt_bridge_printf_flush();
+
+  #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+    // It can happen that the bridge is still in a state where he haven't
+    // seen that we became available. Wait until this is the case.
+    while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)
+    {
+      __rt_bridge_wait();
+    }
+
+    // Send the request for shutdown
+    apb_soc_jtag_reg_write(2<<1);
+
+    // And wait until it is acknowledged
+    while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) != 7)
+    {
+      __rt_bridge_wait();
+    }
+
+    // Update the status so that the bridge knows that we got the aknowledgement
+    apb_soc_jtag_reg_write(0<<1);
+
+    // And wait until it knows it
+    while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)
+    {
+      __rt_bridge_wait();
+    }
+  #endif
+  }
+}
+
+void __rt_bridge_send_notif()
+{
+  hal_debug_struct_t *debug_struct = hal_debug_struct_get();
+
+  __rt_bridge_check_connection();
+
+  if (debug_struct->bridge.connected)
+  {
+  #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+    apb_soc_jtag_reg_write(3<<1);
+  #endif
+  }
+}
+
+void __rt_bridge_clear_notif()
+{
+  hal_debug_struct_t *debug_struct = hal_debug_struct_get();
+
+  __rt_bridge_check_connection();
+
+  if (debug_struct->bridge.connected)
+  {
+    __rt_bridge_set_available();
+  }
+}
+
 
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_bridge_init()
 {

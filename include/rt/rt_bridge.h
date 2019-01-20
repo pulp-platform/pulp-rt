@@ -273,6 +273,16 @@ void rt_bridge_fb_update(uint64_t fb, unsigned int addr, int posx, int posy, int
 
 void __rt_bridge_target_status_sync(rt_event_t *event);
 
+void __rt_bridge_set_available();
+
+void __rt_bridge_send_notif();
+
+void __rt_bridge_clear_notif();
+
+void __rt_bridge_req_shutdown();
+
+void __rt_bridge_printf_flush();
+
 /// @endcond
 
 

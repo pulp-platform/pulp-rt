@@ -68,19 +68,26 @@ void __rt_deinit()
 
 void __rt_init()
 {
-#if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
-  // Notify the debug bridge that the chip is ready to be used
-  hal_bridge_t *bridge = hal_bridge_get();
-  bridge->target.available = 1;
-  apb_soc_jtag_reg_write(apb_soc_jtag_reg_loc(apb_soc_jtag_reg_read()) | 2);
+#if PULP_CHIP_FAMILY == CHIP_GAP
+  // Always allow JTAG accesses for now as security is not implemented
+  hal_pmu_bypass_set (ARCHI_REG_FIELD_SET (hal_pmu_bypass_get (), 1, 11, 1) );
 #endif
-  
+
+  __rt_bridge_set_available();
 
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
+
+  __rt_irq_init();
 
 #if defined(ARCHI_HAS_FC)
   // Deactivate all soc events as they are active by default
   soc_eu_eventMask_reset(SOC_FC_FIRST_MASK);
+#endif
+
+  // Activate soc events handler
+#if defined(ARCHI_HAS_FC)
+  rt_irq_set_handler(ARCHI_FC_EVT_SOC_EVT, __rt_fc_socevents_handler);
+  rt_irq_mask_set(1<<ARCHI_FC_EVT_SOC_EVT);
 #endif
 
 
@@ -107,7 +114,6 @@ void __rt_init()
 #endif
   }
 
-  __rt_irq_init();
   // Initialize first the memory allocators and the utils so that they are
   // available for constructors, especially to let them declare
   // callbacks
@@ -127,12 +133,6 @@ void __rt_init()
   // Call global and static constructors
   // Each module may do private initializations there
   do_ctors();
-
-  // Activate soc events handler
-#if defined(ARCHI_HAS_FC)
-  rt_irq_set_handler(ARCHI_FC_EVT_SOC_EVT, __rt_fc_socevents_handler);
-  rt_irq_mask_set(1<<ARCHI_FC_EVT_SOC_EVT);
-#endif
 
   rt_irq_enable();
 

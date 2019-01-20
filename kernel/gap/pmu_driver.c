@@ -421,16 +421,7 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
   // Notify the bridge that the chip is going to be inaccessible.
   // We don't do anything until we know that the bridge received the
   // notification to avoid any race condition.
-  hal_bridge_t *bridge = hal_bridge_get();
-  bridge->target.available = 0;
-  if (bridge->bridge.connected)
-  {
-    // Before cutting the connection with the bridge, flush the printf otherwise
-    // it may look weird to the user.
-    hal_debug_flush_printf(hal_debug_struct_get());
-    apb_soc_jtag_reg_write(apb_soc_jtag_reg_loc(apb_soc_jtag_reg_read()) & ~2);
-    __rt_bridge_target_status_sync(NULL);
-  }
+  __rt_bridge_req_shutdown();
 
   if (Retentive) {
     PMURetentionState.Fields.BootMode = BOOT_FROM_L2;
@@ -661,6 +652,10 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
     } else if (PMU_Cluster_MaxFreqAtV(CurrentVoltage) < Frequency) return 0;
   }
 
+  // Synchronize with bridge so that it does not try to access the chip
+  // while we are changing the frequency
+  if (Fll == FLL_SOC)
+    __rt_bridge_req_shutdown();
 
   SetFrequency = SetFllMultDivFactors(Frequency, &Mult, &Div);
 
@@ -719,6 +714,9 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
           } 
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
 
+  if (Fll == FLL_SOC)
+    __rt_bridge_set_available();
+  
   return SetFrequency;
 }
 
@@ -782,6 +780,10 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     if ( mult_factor_diff <= tolerance)
       break;
 
+    soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
+    __rt_periph_wait_event(ARCHI_SOC_EVENT_REF_CLK_RISE, 1);
+    soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
+    
   } while (1);
 
 #else
@@ -802,8 +804,12 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
 
 void  __attribute__ ((noinline)) InitFlls()
 {
+  __rt_bridge_req_shutdown();
+
   InitOneFll(FLL_SOC, PMURetentionState.Fields.FllSoCRetention);
   if (PMU_ClusterIsRunning()) InitOneFll(FLL_CLUSTER, PMURetentionState.Fields.FllClusterRetention);
+
+  __rt_bridge_set_available();
 }
 
 
