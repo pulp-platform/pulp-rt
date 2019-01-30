@@ -48,6 +48,7 @@ void __rt_freq_init()
 
   __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = __rt_fll_init(__RT_FLL_PERIPH);
 
+#if __RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
   __rt_freq_domains[RT_FREQ_DOMAIN_CL] = __rt_fll_init(__RT_FLL_CL);
-
+#endif
 }
