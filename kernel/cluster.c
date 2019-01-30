@@ -134,7 +134,12 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
 
     // Fetch all cores, they will directly jump to the PE loop waiting from orders through the dispatcher
     for (int i=0; i<rt_nb_active_pe(); i++) {
+#ifdef ARCHI_CORE_HAS_1_10
       plp_ctrl_core_bootaddr_set_remote(cid, i, (int)_start);
+#else
+      // On old cores, the HW is adding 0x80 to the boot address
+      plp_ctrl_core_bootaddr_set_remote(cid, i, ((int)_start) & 0xffffff00);
+#endif
     }
 #ifndef ARCHI_HAS_NO_DISPATCH
     eoc_fetch_enable_remote(cid, (1<<rt_nb_active_pe()) - 1);
@@ -161,7 +166,12 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
 #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
 
     for (int i=1; i<rt_nb_active_pe(); i++) {
-      plp_ctrl_core_bootaddr_set(i, (int)_start);
+#ifdef ARCHI_CORE_HAS_1_10
+      plp_ctrl_core_bootaddr_set_remote(cid, i, (int)_start);
+#else
+      // On old cores, the HW is adding 0x80 to the boot address
+      plp_ctrl_core_bootaddr_set_remote(cid, i, ((int)_start) & 0xffffff00);
+#endif
     }
     eoc_fetch_enable_remote(cid, -1);    
 
