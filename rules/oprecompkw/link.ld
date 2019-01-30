@@ -1,12 +1,16 @@
 
 OUTPUT_ARCH(riscv)
 ENTRY( _start )
+
+/* We reserve 0x100 bytes in L1 for the boot code stack as we can return to it
+ * after the test has finished execution */
+
 MEMORY
 {
   L2           : ORIGIN = 0x1c000000, LENGTH = 0x00080000
   L2_aliased   : ORIGIN = 0x00000000, LENGTH = 0x00004000
-  L1                 : ORIGIN = 0x10000004, LENGTH = 0x0000fffc
-  L1_aliased         : ORIGIN = 0x00000004, LENGTH = 0x0000fffc
+  L1                 : ORIGIN = 0x10000004, LENGTH = 0x0000fefc
+  L1_aliased         : ORIGIN = 0x00000004, LENGTH = 0x0000fefc
 }
 
 /*
