@@ -105,6 +105,11 @@ static void __rt_pm_shutdown(int retentive)
   int irq = rt_irq_disable();
   int interrupt;
 
+  // Notify the bridge that the chip is going to be inaccessible.
+  // We don't do anything until we know that the bridge received the
+  // notification to avoid any race condition.
+  __rt_bridge_req_shutdown();
+
   apb_soc_sleep_control_t sleep_ctrl = {
     .raw=apb_soc_sleep_control_get(ARCHI_APB_SOC_CTRL_ADDR)
   };

@@ -119,6 +119,21 @@ void rt_event_free(rt_event_sched_t *sched, int nb_events);
 rt_event_t *rt_event_get(rt_event_sched_t *sched, void (*callback)(void *), void *arg);
 
 
+/** \brief Reserve a permanent event and set its callback and argument.
+ *
+ * This gets an event from the free list and initializes it with the specified callback.
+ * The event is then ready to be pushed to the scheduler.
+ * Compared to normal events, this one is never released and can be
+ * reused without being re-allocated, for example for regular actions.
+ *
+ * \param sched    The scheduler for which to get the event for.
+ * \param callback The function which will be called when the event is executed.
+ * \param arg      The argument of the function callback.
+ * \return         The assigned event if there was at least one available, or NULL if not.
+ */
+rt_event_t *rt_event_get_permanent(rt_event_sched_t *sched, void (*callback)(void *), void *arg);
+
+
 
 /** \brief Reserve an IRQ event and set its callback and argument.
  *

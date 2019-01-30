@@ -674,7 +674,10 @@ void __rt_bridge_check_connection()
       debug_struct->bridge.connected = 1;
 
   #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+#if PULP_CHIP == CHIP_WOLFE
+#else
       apb_soc_jtag_reg_write(1<<1);
+#endif
   #endif
 
       while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)
@@ -692,14 +695,20 @@ void __rt_bridge_set_available()
   #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
   if (!debug_struct->bridge.connected)
   {
+#if PULP_CHIP == CHIP_WOLFE
+#else
     // In case the bridge is not yet connected, there is a handshake to do
     // with him to connect.
     apb_soc_jtag_reg_write(4<<1);
+#endif
   }
   else
   {
     // Otherwise just write that we are available
+#if PULP_CHIP == CHIP_WOLFE
+#else
     apb_soc_jtag_reg_write(1<<1);
+#endif
   }
   #endif
 }
@@ -749,7 +758,10 @@ void __rt_bridge_req_shutdown()
     }
 
     // Send the request for shutdown
+#if PULP_CHIP == CHIP_WOLFE
+#else
     apb_soc_jtag_reg_write(2<<1);
+#endif
 
     // And wait until it is acknowledged
     while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) != 7)
@@ -758,7 +770,10 @@ void __rt_bridge_req_shutdown()
     }
 
     // Update the status so that the bridge knows that we got the aknowledgement
+#if PULP_CHIP == CHIP_WOLFE
+#else
     apb_soc_jtag_reg_write(0<<1);
+#endif
 
     // And wait until it knows it
     while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)
@@ -778,7 +793,10 @@ void __rt_bridge_send_notif()
   if (debug_struct->bridge.connected)
   {
   #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+#if PULP_CHIP == CHIP_WOLFE
+#else
     apb_soc_jtag_reg_write(3<<1);
+#endif
   #endif
   }
 }

@@ -114,6 +114,20 @@ rt_event_t *rt_event_get(rt_event_sched_t *sched, void (*callback)(void *), void
   return event;
 }
 
+rt_event_t *rt_event_get_permanent(rt_event_sched_t *sched, void (*callback)(void *), void *arg)
+{
+  int irq = rt_irq_disable();
+  sched = __rt_event_get_current_sched();
+  rt_event_t *event = __rt_get_event(sched, callback, arg);
+  if (event)
+  {
+    event->sched = sched;
+    __rt_event_set_keep(event);
+  }
+  rt_irq_restore(irq);
+  return event;
+}
+
 rt_event_t *rt_event_get_blocking(rt_event_sched_t *sched)
 {
   int irq = rt_irq_disable();
