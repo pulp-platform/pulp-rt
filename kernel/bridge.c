@@ -656,6 +656,7 @@ void __rt_bridge_handle_notif()
 
 static void __rt_bridge_wait()
 {
+#if defined(ARCHI_FC_CID)
   if (rt_cluster_id() == ARCHI_FC_CID)
   {
 #ifdef ARCHI_SOC_EVENT_REF_CLK_RISE
@@ -664,6 +665,7 @@ static void __rt_bridge_wait()
     soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
 #endif
   }
+#endif
 }
 
 void __rt_bridge_check_connection()
