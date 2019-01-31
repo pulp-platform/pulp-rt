@@ -23,6 +23,12 @@
   .section .text
 
 _entry:
+#ifndef PLP_NO_PERF_COUNTERS
+  // Performance counters are active after reset, deactivate them to let the
+  // user control when they should start counting
+  csrw    0x7A1, x0
+#endif
+
   # Cluster PEs will also starts here to avoid aligning another entry point
   # Just re-route them to the right entry
 #if defined(ARCHI_HAS_CLUSTER)
