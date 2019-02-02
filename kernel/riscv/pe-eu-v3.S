@@ -126,6 +126,17 @@ __rt_master_loop:
 #endif
     mv      ra, s5
 
+    // Update stack checking information
+    la      t4, __rt_platform
+    li      t5, 3
+    bne     t4, t5, __rt_no_stack_check
+    sub     t4, sp, t1
+    csrwi   0x7B0, 0
+    csrw    0x7B1, t4
+    csrw    0x7B2, sp
+    csrwi   0x7B0, 1
+
+__rt_no_stack_check:
     // Whatever the number of cores, we need to setup the barrier as the master code is compiled to use it
     li      t4, 1
 #ifdef ARCHI_HAS_CC
@@ -258,8 +269,21 @@ __rt_set_slave_stack:
     // and thus we need to take the next stack
     addi     s3, s3, 1
 #endif
-    p.mul   a0, s3, a0
-    add     sp, a0, t0
+    p.mul   t4, s3, a0
+    add     sp, t4, t0
+
+    // Update stack checking information
+    la      t4, __rt_platform
+    li      t5, 3
+    beq     t4, t5, __rt_slave_stack_check
+    ret
+
+__rt_slave_stack_check:
+    sub     t4, sp, a0
+    csrwi   0x7B0, 0
+    csrw    0x7B1, t4
+    csrw    0x7B2, sp
+    csrwi   0x7B0, 1
     ret
 
 #else

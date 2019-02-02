@@ -66,6 +66,9 @@ void __rt_deinit()
 
 #else
 
+extern unsigned char stack;
+extern unsigned char stack_start;
+
 void __rt_init()
 {
 #if PULP_CHIP_FAMILY == CHIP_GAP
@@ -74,6 +77,11 @@ void __rt_init()
 #endif
 
   __rt_bridge_set_available();
+
+  if (rt_platform() == ARCHI_PLATFORM_GVSOC)
+  {
+    cpu_stack_check_enable((int)&stack_start, (int)&stack);
+  }
 
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
 

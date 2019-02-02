@@ -270,6 +270,7 @@ SECTIONS
   .stack : {
     . = ALIGN(4);
     . = ALIGN(16);
+    stack_start = .;
     . = . + 0x800;
     stack = .;
   } > L1
