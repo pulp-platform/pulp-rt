@@ -254,23 +254,24 @@ void __rt_putc_uart(char c)
 } 
 #endif
 
-static void tfp_putc(void *data, char c) {
-  if (hal_debug_struct_get()->use_internal_printf)
-  {
+static void tfp_putc(void *data, char c)
+{
 #if defined(__RT_USE_UART)
-    if (_rt_io_uart)
-    {
-      __rt_putc_uart(c);
-    }
-    else
+  if (_rt_io_uart)
+  {
+    __rt_putc_uart(c);
+  }
+  else
 #endif
+  {
+    if (hal_debug_struct_get()->use_internal_printf)
     {
       __rt_putc_stdout(c);
     }
-  }
-  else 
-  {
-    __rt_putc_debug_bridge(c);
+    else
+    {
+      __rt_putc_debug_bridge(c);
+    }
   }
 }
 

@@ -220,3 +220,8 @@ __rt_no_irq_handler:
   j __rt_no_irq_handler
 
 #endif
+
+  .global __rt_semihosting_call
+__rt_semihosting_call:
+  ebreak
+  jr          ra
