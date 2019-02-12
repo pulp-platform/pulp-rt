@@ -810,6 +810,14 @@ static inline void __rt_fc_cluster_lock_wait(rt_fc_lock_req_t *req)
 
 #endif
 
+static inline void __rt_wait_for_event(unsigned int mask) {
+#if defined(ITC_VERSION)
+  hal_itc_wait_for_event_noirq(mask);
+#else
+  eu_evt_maskWaitAndClr(mask);
+#endif
+}
+
 /// @endcond
 
 #endif
