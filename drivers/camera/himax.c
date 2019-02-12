@@ -151,7 +151,7 @@ RT_FC_DATA unsigned char camera_isAwaked;
 
 static inline int is_i2c_active()
 {
-#if PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_ARNOLD
+#if PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_ARNOLD || PULP_CHIP == CHIP_PULPISSIMO
   return 0;
 #else
   return rt_platform() != ARCHI_PLATFORM_RTL;

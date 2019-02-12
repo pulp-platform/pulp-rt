@@ -212,6 +212,7 @@ static inline __attribute__((always_inline)) int __rt_spim_periph_push(rt_periph
 
 void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim_cs_e cs_mode, rt_event_t *event)
 {
+  int spim_id = __rt_spim_id(handle->channel);
   int periph_id = handle->channel;
   int periph_base = hal_udma_periph_base(periph_id);
   int cmd_base = periph_base + ARCHI_SPIM_CMD_OFFSET;
@@ -219,7 +220,7 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
   int buffer_size = len/8;
   rt_periph_copy_t *copy = &event->copy;
   rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
-  rt_periph_spim_t *periph = &__rt_spim_periph[periph_id];
+  rt_periph_spim_t *periph = &__rt_spim_periph[spim_id];
 
   rt_trace(RT_TRACE_SPIM, "[SPIM] Send bitstream (handle: %p, buffer: %p, len: 0x%x, qspi: %d, keep_cs: %d, event: %p)\n", handle, data, len, qspi, cs_mode, event);
 
@@ -266,6 +267,7 @@ void __rt_spim_send(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim
 
 void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi, rt_spim_cs_e cs_mode, rt_event_t *event)
 {
+  int spim_id = __rt_spim_id(handle->channel);
   int periph_id = handle->channel;
   int periph_base = hal_udma_periph_base(periph_id);
   int cmd_base = periph_base + ARCHI_SPIM_CMD_OFFSET;
@@ -273,7 +275,7 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
   int buffer_size = len/8;
   rt_periph_copy_t *copy = &event->copy;
   rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
-  rt_periph_spim_t *periph = &__rt_spim_periph[periph_id];
+  rt_periph_spim_t *periph = &__rt_spim_periph[spim_id];
 
   rt_trace(RT_TRACE_SPIM, "[SPIM] Receive bitstream (handle: %p, buffer: %p, len: 0x%x, qspi: %d, keep_cs: %d, event: %p)\n", handle, data, len, qspi, cs_mode, event);
 
@@ -320,6 +322,7 @@ void __rt_spim_receive(rt_spim_t *handle, void *data, size_t len, int qspi, rt_s
 
 void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, size_t len, rt_spim_cs_e mode, rt_event_t *event)
 {
+  int spim_id = __rt_spim_id(handle->channel);
   int periph_id = handle->channel;
   int periph_base = hal_udma_periph_base(periph_id);
   int cmd_base = periph_base + ARCHI_SPIM_CMD_OFFSET;
@@ -328,7 +331,7 @@ void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, siz
   int buffer_size = len/8;
   rt_periph_copy_t *copy = &event->copy;
   rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
-  rt_periph_spim_t *periph = &__rt_spim_periph[periph_id];
+  rt_periph_spim_t *periph = &__rt_spim_periph[spim_id];
 
   rt_trace(RT_TRACE_SPIM, "[SPIM] Transfering bitstream (handle: %p, tx_buffer: %p, rx_buffer: %p, len: 0x%x, keep_cs: %d, event: %p)\n", handle, tx_data, rx_data, len, mode, event);
 
