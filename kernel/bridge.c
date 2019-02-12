@@ -659,10 +659,14 @@ static void __rt_bridge_wait()
 #if defined(ARCHI_FC_CID)
   if (rt_cluster_id() == ARCHI_FC_CID)
   {
+#ifdef ITC_VERSION
+    hal_itc_wait_for_event_noirq(1<<ARCHI_FC_EVT_CLK_REF);
+#else
 #ifdef ARCHI_SOC_EVENT_REF_CLK_RISE
     soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
     __rt_periph_wait_event(ARCHI_SOC_EVENT_REF_CLK_RISE, 1);
     soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_REF_CLK_RISE);
+#endif
 #endif
   }
 #endif
