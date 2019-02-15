@@ -424,7 +424,7 @@ static inline int rt_nb_pe()
 
 static inline int rt_platform()
 {
-  return (int)&__rt_platform;
+  return __rt_platform;
 }
 
 #define RT_IODEV_DEFAULT 0
