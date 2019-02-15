@@ -18,6 +18,9 @@
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
+#ifdef __RT_USE_PROFILE
+#include "archi/gvsoc/gvsoc.h"
+#endif
 
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
@@ -109,6 +112,14 @@ __rt_master_loop:
     lw      t3, RT_CLUSTER_CALL_T_NB_PE(s0)
     beq     t3, x0, __rt_master_sleep
 
+#ifdef __RT_USE_PROFILE
+    li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
+    lw      a1, %tiny(__rt_pe_trace)(x0)
+    li      a2, 0
+    li      a4, 0
+    ebreak
+#endif
+
     // Reads entry point information
     lw      a0, RT_CLUSTER_CALL_T_ARG(s0)
     lw      t0, RT_CLUSTER_CALL_T_ENTRY(s0)
@@ -187,6 +198,13 @@ __rt_master_no_reset:
 
 
 __rt_master_sleep:
+#ifdef __RT_USE_PROFILE
+    li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
+    lw      a1, %tiny(__rt_pe_trace)(x0)
+    li      a2, 1
+    ebreak
+#endif
+
     sw      s4, EU_CORE_MASK_OR(s3)
     p.elw   x0, EU_CORE_EVENT_WAIT_CLEAR(s3)
     sw      s4, EU_CORE_MASK_AND(s3)
@@ -237,9 +255,28 @@ __rt_fork_return:
 
 __rt_wait_for_dispatch:
 
+#ifdef __RT_USE_PROFILE
+    li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
+    slli    t2, s3, 2
+    lw      a1, %tiny(__rt_pe_trace)(t2)
+    li      a2, 1
+    ebreak
+#endif
+
     // Wait for PC + arg information from dispatcher
     p.elw   t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
     p.elw   a0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
+
+#ifdef __RT_USE_PROFILE
+    mv      t1, a0
+    li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
+    slli    t2, s3, 2
+    lw      a1, %tiny(__rt_pe_trace)(t2)
+    li      a2, 0
+    li      a4, 1
+    ebreak
+    mv      a0, t1
+#endif
 
     // Check if this is an entry with a barrier at the end (fork entry)
     andi    t1, t0, 1

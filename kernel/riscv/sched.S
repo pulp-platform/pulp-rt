@@ -116,7 +116,11 @@ __rt_remote_enqueue_event:
     sw  a1, -16(sp)
     sw  a2, -20(sp)
 
-    la   x8, __rt_nb_cluster
+#ifndef ARCHI_NB_CLUSTER
+    li   x8, 1
+#else
+    la   x8, ARCHI_NB_CLUSTER
+#endif
     la   x9, __rt_fc_cluster_data
     lw   x9, 0(x9)
 

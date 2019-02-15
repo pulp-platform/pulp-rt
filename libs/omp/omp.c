@@ -71,7 +71,7 @@ static void __rt_omp_init(int exec_main)
 
   _this->coreMask = coreMask;
 
-  unsigned int stackSize = rt_cl_slave_stack_size_get();
+  unsigned int stackSize = 0x400;
   //unsigned int stacks = (unsigned int)rt_alloc(RT_ALLOC_CL_DATA, stackSize*(nbCores-1));
 
   //plp_setSlaveStacks(coreMask, stacks, stackSize);
@@ -141,9 +141,7 @@ RT_BOOT_CODE __attribute__((constructor))  void omp_constructor()
 {
   int err = 0;
 
-  //if (rt_is_fc() && __rt_config_cluster_start()) {
-    __rt_cluster_entry =  __rt_omp_init_no_main;
-  //}
+  __rt_cluster_entry =  __rt_omp_init_no_main;
 }
 
 int rt_omp_start() {

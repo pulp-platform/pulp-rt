@@ -61,26 +61,6 @@
 
 /**@{*/
 
-/** \brief Returns the default stack size on the cluster for the master core.
- *
- * The master core is the one receiving a call for the cluster. This stack size is only used if no stack size is specified when generating
- * a call to cluster side.
- *
- * \return           The stack size in bytes.
- */
-static inline int rt_cl_master_stack_size_get();
-
-
-
-/** \brief Returns the default stack size on cluster side for the slave cores.
- *
- * The slave cores are those cores used by the master core to start a multi core task. This stack size is only used if no stack size is
- * specified when starting a call to cluster.
- *
- * \return           The stack size in bytes.
- */
-static inline int rt_cl_slave_stack_size_get();
-
 
 //!@}
 
@@ -199,14 +179,15 @@ static inline int rt_section_cluster_text_size();
 
 #include "hal/pulp.h"
 
+extern __attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_platform;
+extern __attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev;
+extern __attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev_uart_baudrate;
+extern __attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev_uart_channel;
+
 extern unsigned char __cluster_text_start;
 extern unsigned char __cluster_text_size;
 static inline void *rt_section_cluster_text_start() { return (void *)&__cluster_text_start; }
 static inline int rt_section_cluster_text_size() { return (int)&__cluster_text_size; }
-
-extern unsigned char __rt_cl_master_stack_size;
-extern unsigned char __rt_cl_slave_stack_size;
-extern unsigned char __rt_stack_size;
 
 #if defined(ARCHI_HAS_CLUSTER)
 
@@ -254,21 +235,6 @@ static inline void rt_tas_unlock_32(unsigned int addr, unsigned int value) {
 }
 
 #endif
-
-static inline int rt_cl_master_stack_size_get()
-{
-  return (int)(long)&__rt_cl_master_stack_size;
-}
-
-static inline int rt_stack_size_get()
-{
-  return (int)(long)&__rt_stack_size;
-}
-
-static inline int rt_cl_slave_stack_size_get()
-{
-  return (int)(long)&__rt_cl_slave_stack_size;
-}
 
 
 #if defined(ARCHI_HAS_L2)
@@ -380,12 +346,6 @@ extern unsigned char __fc_tcdm_heap_size;
 extern unsigned char __l1_heap_start;;
 extern unsigned char __l1_heap_size;
 extern unsigned char __irq_vector_base;
-extern unsigned char __rt_nb_cluster;
-extern unsigned char __rt_nb_pe;
-extern unsigned char __rt_platform;
-extern unsigned char __rt_iodev;
-extern unsigned char __rt_iodev_uart_baudrate;
-extern unsigned char __rt_iodev_uart_channel;
 
 
 static inline int rt_has_fc()
@@ -412,12 +372,16 @@ static inline int rt_core_id()
 
 static inline int rt_nb_cluster()
 {
-  return (int)&__rt_nb_cluster;
+#ifndef ARCHI_NB_CLUSTER
+  return 1;
+#else
+  return ARCHI_NB_CLUSTER;
+#endif
 }
 
 static inline int rt_nb_active_pe()
 {
-  return (int)&__rt_nb_pe;
+  return ARCHI_CLUSTER_NB_PE;
 }
 
 #if defined(PLP_NO_BUILTIN) || defined(__cplusplus)

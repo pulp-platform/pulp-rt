@@ -109,7 +109,13 @@ static inline void rt_team_critical_exit();
 
 /// @cond IMPLEM
 
+#ifdef __RT_USE_PROFILE
+#include "hal/gvsoc/gvsoc.h"
+#endif
+
 #if defined(ARCHI_HAS_CLUSTER)
+
+static inline void __rt_team_barrier();
 
 #if defined(EU_VERSION) && EU_VERSION >= 3
 
@@ -175,15 +181,26 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
 
 #else
 
+extern RT_L1_TINY_DATA int __rt_pe_trace[];
+
 static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) {
 #if !defined(ARCHI_HAS_CC)
+
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 1);
+#endif
 
   if (nb_cores) __rt_team_config(nb_cores);
   eu_dispatch_push((int)entry);
   eu_dispatch_push((int)arg);
   entry(arg);
 
-  rt_team_barrier();
+  __rt_team_barrier();
+
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 0);
+#endif
 
 #else
 
@@ -212,8 +229,19 @@ static inline void rt_team_barrier() {
 
 #else
 
-static inline void rt_team_barrier() {
+static inline void __rt_team_barrier() {
   eu_bar_trig_wait_clr(eu_bar_addr(0));
+}
+
+static inline void rt_team_barrier() {
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 2);
+#endif
+  __rt_team_barrier();
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 1);
+#endif
 }
 
 #endif
@@ -240,11 +268,21 @@ static inline void rt_team_critical_exit()
 
 static inline void rt_team_critical_enter()
 {
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 3);
+#endif
+
   eu_mutex_lock(eu_mutex_addr(0));
 }
 
 static inline void rt_team_critical_exit()
 {
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 1);
+#endif
+
   eu_mutex_unlock(eu_mutex_addr(0));
 }
 

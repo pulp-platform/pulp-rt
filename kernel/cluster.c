@@ -20,12 +20,14 @@
 
 #include "rt/rt_api.h"
 #include "stdio.h"
+#include "hal/gvsoc/gvsoc.h"
 
 #if defined(ARCHI_HAS_CLUSTER)
 
 rt_fc_cluster_data_t *__rt_fc_cluster_data;
 RT_L1_TINY_DATA __rt_cluster_call_t __rt_cluster_call[2];
 RT_L1_TINY_DATA rt_event_sched_t *__rt_cluster_sched_current;
+RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
 
 void __rt_enqueue_event();
 void __rt_remote_enqueue_event();
@@ -59,6 +61,14 @@ static void __rt_init_cluster_data(int cid)
 
   __rt_fc_cluster_data[cid].call_stacks = NULL;
   __rt_fc_cluster_data[cid].trig_addr = eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT);
+
+
+  for (int i=0; i<ARCHI_CLUSTER_NB_PE; i++)
+  {
+    char str[64];
+    sprintf(str, "/user/runtime/cluster_%d/pe%d", cid, i);
+    *(int *)rt_cluster_tiny_addr(cid, (void *)&__rt_pe_trace[i]) = gv_vcd_open_trace(str);
+  };
 }
 
 static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, int flags, rt_event_t *event)
@@ -239,11 +249,6 @@ RT_L1_DATA unsigned int __rt_team_critical_lock = 0;
 
 #ifdef ARCHI_HAS_NO_DISPATCH
 
-unsigned int __rt_stack_master_base;
-unsigned int __rt_stacks_slave_base;
-unsigned int __rt_stack_master_size;
-unsigned int __rt_stack_slave_size;
-
 typedef struct {
   volatile void *entry;
   void *arg0;
@@ -356,8 +361,8 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
   }
 
   // If no stack is specified, choose a default one.
-  if (master_stack_size == 0) master_stack_size = rt_cl_master_stack_size_get();
-  if (slave_stack_size == 0) slave_stack_size = rt_cl_slave_stack_size_get();
+  if (master_stack_size == 0) master_stack_size = 0x400;
+  if (slave_stack_size == 0) slave_stack_size = 0x400;
   if (stacks == NULL)
   {
     cluster->call_stacks_size = master_stack_size + slave_stack_size*(nb_pe - 1);

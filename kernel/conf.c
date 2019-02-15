@@ -20,5 +20,7 @@
 
 #include "rt/rt_api.h"
 
-unsigned int __rt_debug_config = 0;
-unsigned int __rt_debug_config_trace = 0;
+__attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_platform = 3;
+__attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev = 0;
+__attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev_uart_baudrate = 115200;
+__attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev_uart_channel = 0;

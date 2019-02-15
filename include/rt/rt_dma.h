@@ -153,6 +153,11 @@ static inline void rt_dma_wait(rt_dma_copy_t *copy);
 
 static inline void rt_dma_memcpy(unsigned int ext, unsigned int loc, unsigned short size, rt_dma_dir_e dir, int merge, rt_dma_copy_t *copy)
 {
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 4);
+#endif
+
   int id = -1;
   if (!merge) id = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_1D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
@@ -161,11 +166,20 @@ static inline void rt_dma_memcpy(unsigned int ext, unsigned int loc, unsigned sh
   __asm__ __volatile__ ("" : : : "memory");
   plp_dma_cmd_push(cmd, loc, ext);
   if (!merge) copy->id = id;
+
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 1);
+#endif
 }
 
 
 static inline void rt_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned short size, unsigned short stride, unsigned short length, rt_dma_dir_e dir, int merge, rt_dma_copy_t *copy)
 {
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 4);
+#endif
+
   int id = -1;
   if (!merge) id = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
@@ -174,16 +188,34 @@ static inline void rt_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned
   __asm__ __volatile__ ("" : : : "memory");
   plp_dma_cmd_push_2d(cmd, loc, ext, plp_dma_getStrides(stride, length));
   if (!merge) copy->id = id;
+
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 1);
+#endif
 }
 
 static inline void rt_dma_flush()
 {
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 5);
+#endif
   plp_dma_barrier();
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 1);
+#endif
 }
 
 static inline void rt_dma_wait(rt_dma_copy_t *copy)
 {
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 5);
+#endif
   plp_dma_wait(copy->id);
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 1);
+#endif
 }
 
 #else

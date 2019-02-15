@@ -204,7 +204,8 @@ static void cluster_start(void *arg)
 
   eu_evt_maskSet((1<<PULP_DISPATCH_EVENT) | (1<<PULP_HW_BAR_EVENT) | (1<<PULP_MUTEX_EVENT));
 
-  if (__rt_config_cluster_start())
+  // TODO deprecated should be removed
+  if (0)
   {
     if (__rt_cluster_entry != NULL)
     {
@@ -235,16 +236,16 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
   {
     // Classic remote cluster start procedure
     rt_cluster_mount(1, cid, 0, NULL);
-    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*rt_nb_active_pe());
+    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, 0x800*rt_nb_active_pe());
     if (stacks == NULL) return -1;
 
-    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, rt_stack_size_get(), rt_stack_size_get(), rt_nb_active_pe(), event)) return -1;
+    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, 0x800, 0x800, rt_nb_active_pe(), event)) return -1;
   }
   else
   {
     // Local cluster start procedure in case we are running here
     rt_cluster_mount(1, cid, 0, NULL);
-    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, rt_stack_size_get()*(rt_nb_active_pe()-1));
+    void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, 0x800*(rt_nb_active_pe()-1));
 
     if (stacks == NULL) return -1;
 
@@ -252,12 +253,12 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
 #ifndef ARCHI_HAS_NO_DISPATCH
     eu_dispatch_team_config((1<<rt_nb_active_pe())-1);
     eu_dispatch_push((unsigned int)__rt_set_slave_stack | 1);
-    eu_dispatch_push((unsigned int)rt_stack_size_get());
+    eu_dispatch_push((unsigned int)0x800);
     eu_dispatch_push((unsigned int)stacks);
 #endif
 #else
 #if defined(__riscv__)
-    __rt_cluster_pe_init(stacks, rt_stack_size_get());
+    __rt_cluster_pe_init(stacks, 0x800);
     eoc_fetch_enable_remote(0, (1<<rt_nb_active_pe()) - 1);
 #else
 #endif
@@ -271,7 +272,8 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
 
 static int __rt_check_clusters_start()
 {
-  if (__rt_config_cluster_start()) {
+  // TODO deprecated should be removed
+  if (0) {
     // All fetch mode, starts all cluster
     if (rt_event_alloc(NULL, rt_nb_cluster())) return -1;
 
@@ -283,7 +285,7 @@ static int __rt_check_clusters_start()
       if (__rt_check_cluster_start(cid, events[cid])) return -1;
     }
     if (rt_is_fc()) {
-      if (__rt_config_fc_start())
+      if (0)
       {
         int fc_retval = main();
         for (int cid=0; cid<rt_nb_cluster(); cid++)

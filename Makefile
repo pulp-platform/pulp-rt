@@ -28,6 +28,10 @@ ifdef CONFIG_TRACE_ENABLED
 PULP_CFLAGS += -D__RT_USE_TRACE=1
 endif
 
+ifdef CONFIG_PROFILE_ENABLED
+PULP_CFLAGS += -D__RT_USE_PROFILE=1
+endif
+
 ifdef CONFIG_CFLAGS
 PULP_CFLAGS += $(CONFIG_CFLAGS)
 endif
@@ -60,10 +64,18 @@ include $(TARGET_INSTALL_DIR)/rules/pulp_rt.mk
 
 define halSrcRules
 
-$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/$(1): $(TARGET_INSTALL_DIR)/src/$(2)
+$(CONFIG_BUILD_DIR)/fc/$(1): $(TARGET_INSTALL_DIR)/src/$(2)
 	@mkdir -p `dirname $$@`
 	$(PULP_FC_CC) $(rt_cl_cflags) -MMD -MP -c $$< -o $$@
 
 endef
 
 $(foreach file, $(HAL_FILES), $(eval $(call halSrcRules,$(patsubst %.c,%.o,$(file)),$(file))))
+
+clean_all:
+	make fullclean
+	make PULP_RT_CONFIG=configs/pulpos_profile.mk fullclean
+
+build_all:
+	make build install
+	make PULP_RT_CONFIG=configs/pulpos_profile.mk build install
