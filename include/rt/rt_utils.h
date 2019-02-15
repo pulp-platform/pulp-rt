@@ -432,17 +432,17 @@ static inline int rt_platform()
 
 static inline int rt_iodev()
 {
-  return (int)&__rt_iodev;
+  return __rt_iodev;
 }
 
 static inline int rt_iodev_uart_baudrate()
 {
-  return (int)&__rt_iodev_uart_baudrate;
+  return __rt_iodev_uart_baudrate;
 }
 
 static inline int rt_iodev_uart_channel()
 {
-  return (int)&__rt_iodev_uart_channel;
+  return __rt_iodev_uart_channel;
 }
 
 
