@@ -381,7 +381,11 @@ static inline int rt_nb_cluster()
 
 static inline int rt_nb_active_pe()
 {
+#ifdef ARCHI_HAS_CC
+  return ARCHI_CLUSTER_NB_PE + 1;
+#else
   return ARCHI_CLUSTER_NB_PE;
+#endif
 }
 
 #if defined(PLP_NO_BUILTIN) || defined(__cplusplus)

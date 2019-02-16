@@ -20,5 +20,5 @@
 
 #include "rt/rt_api.h"
 
-unsigned int __rt_debug_config = 0;
+unsigned int __rt_debug_config = 0x3;
 unsigned int __rt_debug_config_trace = 0;
