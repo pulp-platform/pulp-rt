@@ -179,10 +179,10 @@ static inline int rt_section_cluster_text_size();
 
 #include "hal/pulp.h"
 
-extern __attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_platform;
-extern __attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev;
-extern __attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev_uart_baudrate;
-extern __attribute__((weak)) RT_FC_TINY_DATA unsigned int __rt_iodev_uart_channel;
+extern RT_FC_TINY_DATA unsigned int __rt_platform;
+extern RT_FC_TINY_DATA unsigned int __rt_iodev;
+extern RT_FC_TINY_DATA unsigned int __rt_iodev_uart_baudrate;
+extern RT_FC_TINY_DATA unsigned int __rt_iodev_uart_channel;
 
 extern unsigned char __cluster_text_start;
 extern unsigned char __cluster_text_size;

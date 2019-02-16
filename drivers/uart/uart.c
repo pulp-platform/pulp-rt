@@ -60,6 +60,9 @@ static void __rt_uart_wait_tx_done(rt_uart_t *uart)
     rt_wait_for_interrupt();
   }
 
+  // And flush the uart to make sure no bit is transfered anymore
+  while(plp_uart_tx_busy(uart->channel - ARCHI_UDMA_UART_ID(0)));
+
 #if 1
 
 // There is a bug in the uart, between 2 bytes, the uart says it is not busy
@@ -79,9 +82,6 @@ static void __rt_uart_wait_tx_done(rt_uart_t *uart)
   for (i=0; i<2000; i++);
 #endif
 
-#else
-  // And flush the uart to make sure no bit is transfered anymore
-  while(plp_uart_tx_busy(uart->channel - ARCHI_UDMA_UART_ID(0)));
 #endif
 }
 
