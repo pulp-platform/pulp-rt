@@ -27,7 +27,10 @@
 rt_fc_cluster_data_t *__rt_fc_cluster_data;
 RT_L1_TINY_DATA __rt_cluster_call_t __rt_cluster_call[2];
 RT_L1_TINY_DATA rt_event_sched_t *__rt_cluster_sched_current;
+
+#ifdef __RT_USE_PROFILE
 RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
+#endif
 
 void __rt_enqueue_event();
 void __rt_remote_enqueue_event();
@@ -63,12 +66,14 @@ static void __rt_init_cluster_data(int cid)
   __rt_fc_cluster_data[cid].trig_addr = eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT);
 
 
+#ifdef __RT_USE_PROFILE
   for (int i=0; i<ARCHI_CLUSTER_NB_PE; i++)
   {
     char str[64];
     sprintf(str, "/user/runtime/cluster_%d/pe%d", cid, i);
     *(int *)rt_cluster_tiny_addr(cid, (void *)&__rt_pe_trace[i]) = gv_vcd_open_trace(str);
   };
+#endif
 }
 
 static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, int flags, rt_event_t *event)
