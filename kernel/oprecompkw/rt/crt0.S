@@ -147,3 +147,8 @@ opc_wed:
   jal x0, _start
   jal x0, __rt_illegal_instr
 #endif
+
+  .global __rt_semihosting_call
+__rt_semihosting_call:
+  ebreak
+  jr          ra

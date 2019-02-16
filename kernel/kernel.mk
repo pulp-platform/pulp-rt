@@ -10,8 +10,14 @@ endif
 PULP_LIB_FC_SRCS_rt     += kernel/init.c \
    kernel/dev.c kernel/irq.c kernel/debug.c \
   kernel/utils.c kernel/error.c kernel/bridge.c kernel/conf.c
-PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/rt/crt0.S kernel/$(fc_archi)/thread.S
+PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/thread.S
 
+
+ifeq '$(pulp_chip)' 'oprecompkw'
+PULP_LIB_FC_ASM_SRCS_rt += kernel/oprecompkw/rt/crt0.S
+else
+PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/rt/crt0.S
+endif
 
 ifeq '$(CONFIG_SCHED_ENABLED)' '1'
 PULP_LIB_FC_SRCS_rt     += kernel/thread.c kernel/events.c
