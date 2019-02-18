@@ -23,6 +23,7 @@
 #include "archi/eu/eu_v3.h"
 
   .global __rt_fc_socevents_handler
+  .extern pwm_event_handler
 __rt_fc_socevents_handler:
 // The stack is first adjusted to have stack-based load/store compressed
   add sp, sp, -128
@@ -95,6 +96,16 @@ __rt_soc_evt_no_udma:
   beq     x9, x10, rtc_event_handler
 
 
+// pwm event handler
+//x9 : nb of event that will be used by handler
+__rt_soc_evt_pwm:
+  li x11, ARCHI_SOC_EVENT_ADV_TIMER_NB_EVT-1
+  addi x9, x11, ARCHI_SOC_EVENT_ADV_TIMER_FIRST_EVT
+  sub x9, x9, x10
+  bgt x9, x11, __rt_soc_evt_store
+  j pwm_event_handler
+
+__rt_soc_evt_store:
   // If the event is not handled, store it in the soc event status mask
   la      x9, __rt_socevents_status
   li      x11, 32
