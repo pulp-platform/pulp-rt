@@ -24,14 +24,13 @@
 #include "archi/eu/eu_v3.h"
 
   .global pwm_event_handler
+  .extern pwmEventsStatus
 pwm_event_handler:
-  addi  x8, x8, -ARCHI_SOC_EVENT_ADV_TIMER_FIRST_EVT
-  andi  x8, x8, 255
-  la   x9, pwmEventsStatus
+  la   x10, pwmEventsStatus
   addi  x11, x0, 1
-  lw   x10, 0(x9)
-  p.insertr x10, x11, x8
-  sw   x10, 0(x9)
+  lw   x8, 0(x10)
+  p.insertr x8, x11, x9
+  sw   x8, 0(x10)
 
   // continue with sw event raising
   li   x9, ARCHI_EU_DEMUX_ADDR + EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT + (PLP_RT_NOTIF_EVENT << 2)
