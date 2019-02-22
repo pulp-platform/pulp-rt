@@ -88,6 +88,8 @@ static void __rt_bridge_post_common(rt_bridge_req_t *req, rt_event_t *event)
   bridge->last_req = (uint32_t)req;
   req->header.next = 0;
 
+  __rt_bridge_send_notif();
+
   __rt_bridge_check_bridge_req();
 }
 
