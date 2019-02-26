@@ -257,7 +257,7 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
 
 void __rt_wait_event(rt_event_t *event)
 {
-  while (event->pending && event->saved_pending) {
+  while (event->pending || event->saved_pending) {
     event->thread = __rt_thread_current;
     __rt_event_execute(__rt_event_get_current_sched(), 1);
   }
