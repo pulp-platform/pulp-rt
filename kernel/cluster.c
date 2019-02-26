@@ -366,10 +366,10 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
   }
 
   // If no stack is specified, choose a default one.
-  if (master_stack_size == 0) master_stack_size = 0x400;
-  if (slave_stack_size == 0) slave_stack_size = 0x400;
   if (stacks == NULL)
   {
+    if (master_stack_size == 0) master_stack_size = 0x400;
+    if (slave_stack_size == 0) slave_stack_size = 0x400;
     cluster->call_stacks_size = master_stack_size + slave_stack_size*(nb_pe - 1);
     stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, cluster->call_stacks_size);
     if (stacks == NULL) {

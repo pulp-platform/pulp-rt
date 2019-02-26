@@ -21,7 +21,7 @@
 #include "archi/pulp.h"
 
   .section .text
-
+  .global _entry
 _entry:
 #ifndef PLP_NO_PERF_COUNTERS
   // Performance counters are active after reset, deactivate them to let the

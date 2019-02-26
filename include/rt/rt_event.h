@@ -369,6 +369,10 @@ static inline rt_event_t *__rt_wait_event_prepare(rt_event_t *event)
 static inline void __rt_event_save(rt_event_t *event)
 {
   event->saved_pending = event->pending;
+  // The user can still check the event while it is being
+  // reused. It will also check saved_pending to avoid
+  // checking the wrong status.
+  rt_compiler_barrier();
   event->saved_callback = event->callback;
   event->saved_arg = event->arg;
 }
@@ -378,6 +382,8 @@ static inline void __rt_event_restore(rt_event_t *event)
   event->pending = event->saved_pending;
   event->callback = event->saved_callback;
   event->arg = event->saved_arg;
+  rt_compiler_barrier();
+  event->saved_pending = 0;
 }
 
 static inline rt_event_t *__rt_init_event(rt_event_t *event, rt_event_sched_t *sched, void (*callback)(void *), void *arg)

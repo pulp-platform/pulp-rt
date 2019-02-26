@@ -36,6 +36,7 @@ void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched)
 #if PULP_CHIP_FAMILY == CHIP_GAP || !defined(ARCHI_HAS_FC)
   event->copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
 #endif
+  event->saved_pending = 0;
   event->sched = sched;
   event->callback = NULL;
 }
@@ -256,7 +257,7 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
 
 void __rt_wait_event(rt_event_t *event)
 {
-  while (event->pending) {
+  while (event->pending && event->saved_pending) {
     event->thread = __rt_thread_current;
     __rt_event_execute(__rt_event_get_current_sched(), 1);
   }

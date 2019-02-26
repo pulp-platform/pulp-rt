@@ -137,15 +137,19 @@ __rt_master_loop:
 #endif
     mv      ra, s5
 
+#ifdef __RT_USE_ASSERT
     // Update stack checking information
     la      t4, __rt_platform
+    lw      t4, 0(t4)
     li      t5, 3
     bne     t4, t5, __rt_no_stack_check
+    beqz    t1, __rt_no_stack_check
     sub     t4, sp, t1
     csrwi   0x7B0, 0
     csrw    0x7B1, t4
     csrw    0x7B2, sp
     csrwi   0x7B0, 1
+#endif
 
 __rt_no_stack_check:
     // Whatever the number of cores, we need to setup the barrier as the master code is compiled to use it
@@ -309,19 +313,26 @@ __rt_set_slave_stack:
     p.mul   t4, s3, a0
     add     sp, t4, t0
 
+#ifdef __RT_USE_ASSERT
     // Update stack checking information
     la      t4, __rt_platform
+    lw      t4, 0(t4)
     li      t5, 3
     beq     t4, t5, __rt_slave_stack_check
+#endif
     ret
 
+#ifdef __RT_USE_ASSERT
 __rt_slave_stack_check:
+    beqz    a0, __rt_no_stack_check_end
     sub     t4, sp, a0
     csrwi   0x7B0, 0
     csrw    0x7B1, t4
     csrw    0x7B2, sp
     csrwi   0x7B0, 1
+__rt_no_stack_check_end:
     ret
+#endif
 
 #else
 

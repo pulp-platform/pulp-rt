@@ -9,8 +9,8 @@ endif
 
 PULP_LIB_FC_SRCS_rt     += kernel/init.c \
    kernel/dev.c kernel/irq.c kernel/debug.c \
-  kernel/utils.c kernel/error.c kernel/bridge.c kernel/conf.c
-PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/thread.S
+  kernel/utils.c kernel/error.c kernel/bridge.c kernel/conf.c kernel/task.c
+PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/thread.S kernel/$(fc_archi)/task.S
 
 
 ifeq '$(pulp_chip)' 'oprecompkw'
