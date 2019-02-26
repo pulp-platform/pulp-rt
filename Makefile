@@ -5,7 +5,7 @@ PULP_PROPERTIES += host/archi fc_itc udma/hyper udma udma/cpi udma/i2c/version s
 PULP_PROPERTIES += udma/i2s/version udma/uart event_unit/version perf_counters
 PULP_PROPERTIES += fll/version soc/spi_master soc/apb_uart padframe/version
 PULP_PROPERTIES += udma/spim udma/spim/version gpio/version rtc udma/archi
-PULP_PROPERTIES += soc_eu/version compiler rtc/version
+PULP_PROPERTIES += soc_eu/version compiler rtc/version l2/size
 
 include $(TARGET_INSTALL_DIR)/rules/pulp_properties.mk
 
@@ -72,10 +72,23 @@ endef
 
 $(foreach file, $(HAL_FILES), $(eval $(call halSrcRules,$(patsubst %.c,%.o,$(file)),$(file))))
 
+
+ifeq '$(pulp_chip_family)' 'vega'
+CHIP_TARGETS += gen_linker_script
+endif
+
+
+build_rt: build $(CHIP_TARGETS)
+
 clean_all:
 	make fullclean
 	make PULP_RT_CONFIG=configs/pulpos_profile.mk fullclean
 
 build_all:
-	make build install
+	make build_rt install
 	make PULP_RT_CONFIG=configs/pulpos_profile.mk build install
+
+gen_linker_script:
+	./rules/process_linker_script --input=rules/$(pulp_chip_family)/link.ld.in --output=$(TARGET_INSTALL_DIR)/rules/vega/link.ld
+
+vega: $(CONFIG_BUILD_DIR)/link.ld
