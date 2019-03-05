@@ -116,6 +116,11 @@ PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/fll.c
 PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/freq.c
 endif
 
+ifeq '$(pulp_chip_family)' 'vivosoc3_1'
+PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/fll.c 
+PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/freq.c
+endif
+
 
 PULP_LIB_FC_SRCS_rt += kernel/cluster.c
 
