@@ -133,7 +133,11 @@ static rt_i2s_t *__rt_i2s_open(rt_dev_t *dev, rt_i2s_conf_t *conf, rt_event_t*ev
     I2S_CHMODE_CH_PDM_USEFILTER_MASK(clk) | I2S_CHMODE_CH_PDM_EN_MASK(clk) | 
     I2S_CHMODE_CH_USEDDR_MASK(clk) | I2S_CHMODE_CH_MODE_MASK(clk));
 
-  mode |= I2S_CHMODE_CH_LSBFIRST_DIS(clk) | I2S_CHMODE_CH_MODE_CLK(clk,clk) ;
+  mode |= I2S_CHMODE_CH_LSBFIRST_DIS(clk);
+
+  // Configure each channel on a different clock generator to avoid activating a channel
+  // when the other is first activated
+  mode |= I2S_CHMODE_CH_MODE_CLK(0,0) | I2S_CHMODE_CH_MODE_CLK(1,1);
 
   if (i2s->dual) {
     mode |= I2S_CHMODE_CH_USEDDR_ENA(clk);
@@ -269,14 +273,6 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_i2s_init()
   err |= __rt_cbsys_add(RT_CBSYS_PERIPH_SETFREQ_BEFORE, __rt_i2s_setfreq_before, NULL);
 
   err |= __rt_cbsys_add(RT_CBSYS_PERIPH_SETFREQ_AFTER, __rt_i2s_setfreq_after, NULL);
-
-  // Configure each channel on a different clock generator to avoid activating a channel
-  // when the other is first activated
-  for (unsigned int i=0; i<ARCHI_UDMA_NB_I2S; i++)
-  {
-    __rt_i2s_first[i] = NULL;
-    hal_i2s_chmode_set(i, I2S_CHMODE_CH_MODE_CLK(0,0) | I2S_CHMODE_CH_MODE_CLK(1,1));
-  }
 
   if (err) rt_fatal("Unable to initialize i2s driver\n");
 }
