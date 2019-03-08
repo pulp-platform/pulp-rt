@@ -106,6 +106,25 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
   soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(channel)+1);
   plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
 
+  hyper_clk_div_set(UDMA_HYPER_ADDR(0), 4);
+
+  hyper_device_set(UDMA_HYPER_ADDR(0),
+    HYPER_DEVICE_DT1(1) |
+    HYPER_DEVICE_DT0(0) |
+    HYPER_DEVICE_TYPE(1)
+  );
+
+  hyper_mba0_set(UDMA_HYPER_ADDR(0), REG_MBR0);
+  hyper_mba1_set(UDMA_HYPER_ADDR(0), REG_MBR1);
+
+  hyper_timing_cfg_set(UDMA_HYPER_ADDR(0),
+    HYPER_TIMING_CFG_CS_MAX(665) |
+    HYPER_TIMING_CFG_RWDS_DELAY(1) |
+    HYPER_TIMING_CFG_RW_RECOVERY(6) |
+    HYPER_TIMING_CFG_ADDITIONAL_LATENCY_AUTOCHECK_EN(1) |
+    HYPER_TIMING_CFG_LATENCY(6)
+  );
+
   return hyper;
 
 error:

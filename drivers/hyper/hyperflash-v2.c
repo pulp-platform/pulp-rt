@@ -82,7 +82,9 @@ static rt_flash_t *__rt_hyperflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt
   plp_udma_cg_set(plp_udma_cg_get() | (1<<hyper->channel));
 
   // HyperFlash
+#if !defined(ARCHI_UDMA_HYPER_VERSION) || ARCHI_UDMA_HYPER_VERSION == 1
   hal_hyper_udma_dt1_set(0);
+#endif
 
   if (event) __rt_event_enqueue(event);
 

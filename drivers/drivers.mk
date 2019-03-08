@@ -29,7 +29,7 @@ endif
 
 ifeq '$(CONFIG_HYPER_ENABLED)' '1'
 ifneq '$(udma/hyper)' ''
-PULP_LIB_FC_SRCS_rt += drivers/hyper/hyperram.c drivers/hyper/hyperflash.c
+PULP_LIB_FC_SRCS_rt += drivers/hyper/hyperram-v$(udma/hyper/version).c drivers/hyper/hyperflash-v$(udma/hyper/version).c
 endif
 endif
 

@@ -27,6 +27,10 @@
 #endif
 
 
+#ifndef HYPER_EXT_ADDR_CHANNEL_CUSTOM_OFFSET
+#define HYPER_EXT_ADDR_CHANNEL_CUSTOM_OFFSET HYPER_EXT_ADDR_OFFSET
+#endif
+
 
   .global udma_event_handler
 udma_event_handler:

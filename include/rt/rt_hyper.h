@@ -335,7 +335,6 @@ static inline void rt_hyperram_free_cluster_wait(rt_hyperram_free_req_t *req);
 
 #if defined(ARCHI_UDMA_HAS_HYPER)
 
-
 void __rt_hyper_copy(int channel,
   void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr);
 
