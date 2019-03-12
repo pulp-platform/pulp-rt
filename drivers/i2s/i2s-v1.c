@@ -52,6 +52,7 @@ void rt_i2s_conf_init(rt_i2s_conf_t *conf)
   conf->dual = 0;
   conf->width = 16;
   conf->id = -1;
+  conf->flags = 0;
 }
 
 static void __rt_i2s_free(rt_i2s_t *i2s)

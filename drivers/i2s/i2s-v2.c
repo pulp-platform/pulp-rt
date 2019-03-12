@@ -52,6 +52,7 @@ void rt_i2s_conf_init(rt_i2s_conf_t *conf)
   conf->dual = 0;
   conf->width = 16;
   conf->id = -1;
+  conf->flags = 0;
 }
 
 static void __rt_i2s_free(rt_i2s_t *i2s)
@@ -119,23 +120,32 @@ static rt_i2s_t *__rt_i2s_open(rt_dev_t *dev, rt_i2s_conf_t *conf, rt_event_t*ev
 
   // Now configure the I2s part
 
-  printf("Activating event %d\n", ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id));
-
   soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id));
 
   int shift = 10 - i2s->decimation_log2;
   if (shift > 7) shift = 7;
 
-  printf("WRITING AT %lx\n", udma_i2s_addr(0));
+  int mode = ARCHI_BEXTRACTU(conf->flags, __RT_FLAGS_MUX_WIDTH, __RT_FLAGS_MUX_BIT);
 
-  udma_i2s_pdm_setup_set(
-    udma_i2s_addr(0),
-    UDMA_I2S_PDM_SETUP_WORDS(shift)                              |
-    UDMA_I2S_PDM_SETUP_DECIMATION((1<<i2s->decimation_log2)-1)   |
-    UDMA_I2S_PDM_SETUP_MODE(0)                                   |
-    UDMA_I2S_PDM_SETUP_EN(1)
-  );
+  int pdm_mode = mode == 0 && i2s->dual ? 1 : mode;
 
+  if (conf->pdm)
+  {
+    udma_i2s_i2s_pdm_setup_set(
+      udma_i2s_addr(0),
+      UDMA_I2S_I2S_PDM_SETUP_PDM_SHIFT(shift)                              |
+      UDMA_I2S_I2S_PDM_SETUP_PDM_DECIMATION((1<<i2s->decimation_log2)-1)   |
+      UDMA_I2S_I2S_PDM_SETUP_PDM_MODE(pdm_mode)                            |
+      UDMA_I2S_I2S_PDM_SETUP_PDM_EN(1)
+    );
+  }
+  else
+  {
+    udma_i2s_i2s_pdm_setup_set(    
+      udma_i2s_addr(0),
+      UDMA_I2S_I2S_PDM_SETUP_PDM_EN(0)
+    );
+  }
 
 #if 0
   unsigned int mode = hal_i2s_chmode_get(i2s->i2s_id);
@@ -173,6 +183,14 @@ static void __rt_i2s_close(rt_i2s_t *dev, rt_event_t*event)
 
 static inline void __rt_i2s_suspend(rt_i2s_t *dev)
 {
+  udma_i2s_i2s_clkcfg_setup_set(
+    udma_i2s_addr(0),
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_CLK_DIV(0) |
+    UDMA_I2S_I2S_CLKCFG_SETUP_COMMON_CLK_DIV(0)  |
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_CLK_EN(0)              |
+    UDMA_I2S_I2S_CLKCFG_SETUP_PDM_CLK_EN(0)                |
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_NUM(1)
+  );
   //hal_i2s_cfg_clkgen_set(dev->i2s_id, dev->clk, 0);
 }
 
@@ -185,24 +203,22 @@ static inline void __rt_i2s_resume(rt_i2s_t *dev)
 
   int hw_div = (div - 1) >> 1;
 
-  printf("WRITING AT %lx\n", udma_i2s_addr(0));
-
-  udma_i2s_clkcfg_setup_set(
+  udma_i2s_i2s_clkcfg_setup_set(
     udma_i2s_addr(0),
-    UDMA_I2S_CLKCFG_SETUP_SLAVE_CLK_DIV(hw_div & 0xff) |
-    UDMA_I2S_CLKCFG_SETUP_COMMON_CLK_DIV(hw_div >> 8)  |
-    UDMA_I2S_CLKCFG_SETUP_SLAVE_CLK_EN(1)              |
-    UDMA_I2S_CLKCFG_SETUP_PDM_CLK_EN(1)                |
-    UDMA_I2S_CLKCFG_SETUP_SLAVE_NUM(1)
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_CLK_DIV(hw_div & 0xff) |
+    UDMA_I2S_I2S_CLKCFG_SETUP_COMMON_CLK_DIV(hw_div >> 8)  |
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_CLK_EN(1)              |
+    UDMA_I2S_I2S_CLKCFG_SETUP_PDM_CLK_EN(1)                |
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_NUM(1)
   );
 
-  udma_i2s_slave_setup_set(
+  udma_i2s_i2s_slv_setup_set(
     udma_i2s_addr(0),
-    UDMA_I2S_SLAVE_SETUP_WORDS(1)                      |
-    UDMA_I2S_SLAVE_SETUP_BITS(16)                      |
-    UDMA_I2S_SLAVE_SETUP_LSB(1)                        |
-    UDMA_I2S_SLAVE_SETUP_TWO_CHANNELS(dev->dual)       |
-    UDMA_I2S_SLAVE_SETUP_EN(1)
+    UDMA_I2S_I2S_SLV_SETUP_SLAVE_WORDS(1)             |
+    UDMA_I2S_I2S_SLV_SETUP_SLAVE_BITS(16)             |
+    UDMA_I2S_I2S_SLV_SETUP_SLAVE_LSB(0)               |
+    UDMA_I2S_I2S_SLV_SETUP_SLAVE_2CH(dev->dual)       |
+    UDMA_I2S_I2S_SLV_SETUP_SLAVE_EN(1)
   );
   
 }
