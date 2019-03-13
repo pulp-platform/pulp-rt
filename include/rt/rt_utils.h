@@ -195,42 +195,42 @@ static inline unsigned int __rt_tas_addr(unsigned int addr) {
   return addr | (1<<ARCHI_L1_TAS_BIT);
 }
 
-static inline int rt_tas_lock_8(unsigned int addr) {
+static inline signed char rt_tas_lock_8(unsigned int addr) {
   __asm__ __volatile__ ("" : : : "memory");
-  int result = *(volatile unsigned char *)__rt_tas_addr(addr);
-  __asm__ __volatile__ ("" : : : "memory");
-  return result;
-}
-
-static inline void rt_tas_unlock_8(unsigned int addr, unsigned char value) {
-  __asm__ __volatile__ ("" : : : "memory");
-  *(volatile unsigned char *)addr = value;
-  __asm__ __volatile__ ("" : : : "memory");
-}
-
-static inline int rt_tas_lock_16(unsigned int addr) {
-  __asm__ __volatile__ ("" : : : "memory");
-  int result = *(volatile unsigned short *)__rt_tas_addr(addr);
+  signed char result = *(volatile signed char *)__rt_tas_addr(addr);
   __asm__ __volatile__ ("" : : : "memory");
   return result;
 }
 
-static inline void rt_tas_unlock_16(unsigned int addr, unsigned short value) {
+static inline void rt_tas_unlock_8(unsigned int addr, signed char value) {
   __asm__ __volatile__ ("" : : : "memory");
-  *(volatile unsigned short *)addr = value;
+  *(volatile signed char *)addr = value;
+  __asm__ __volatile__ ("" : : : "memory");
+}
+
+static inline signed short rt_tas_lock_16(unsigned int addr) {
+  __asm__ __volatile__ ("" : : : "memory");
+  signed short result = *(volatile signed short *)__rt_tas_addr(addr);
+  __asm__ __volatile__ ("" : : : "memory");
+  return result;
+}
+
+static inline void rt_tas_unlock_16(unsigned int addr, signed short value) {
+  __asm__ __volatile__ ("" : : : "memory");
+  *(volatile signed short *)addr = value;
   __asm__ __volatile__ ("" : : : "memory");
 }
 
 static inline int rt_tas_lock_32(unsigned int addr) {
   __asm__ __volatile__ ("" : : : "memory");
-  int result = *(volatile unsigned int *)__rt_tas_addr(addr);
+  signed int result = *(volatile signed int *)__rt_tas_addr(addr);
   __asm__ __volatile__ ("" : : : "memory");
   return result;
 }
 
-static inline void rt_tas_unlock_32(unsigned int addr, unsigned int value) {
+static inline void rt_tas_unlock_32(unsigned int addr, signed int value) {
   __asm__ __volatile__ ("" : : : "memory");
-  *(volatile unsigned int *)addr = value;
+  *(volatile signed int *)addr = value;
   __asm__ __volatile__ ("" : : : "memory");
 }
 
