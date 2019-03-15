@@ -45,4 +45,8 @@ int strcmp(const char *s1, const char *s2);
 
 int strncmp(const char *s1, const char *s2, size_t n);
 
+extern char  *strchr(const char *s, int c);
+
+extern void  *memmove(void *d, const void *s, size_t n);
+
 #endif

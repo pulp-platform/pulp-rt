@@ -18,12 +18,14 @@
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
-#include "tinyprintf.h"
 #include <stdarg.h>
 #include "hal/pulp.h"
 #include "rt/rt_api.h"
 #include "hal/debug_bridge/debug_bridge.h"
 #include <stdint.h>
+
+extern int _prf(int (*func)(), void *dest,
+        const char *format, va_list vargs);
 
 #if defined(ARCHI_UDMA_HAS_UART) && UDMA_VERSION >= 2 || defined(ARCHI_HAS_UART)
 #define __RT_USE_UART 1
@@ -142,6 +144,44 @@ void *memcpy(void *dst0, const void *src0, size_t len0)
     }
 
   return save;
+}
+
+void *memmove(void *d, const void *s, size_t n)
+{
+  char *dest = d;
+  const char *src  = s;
+
+  if ((size_t) (dest - src) < n) {
+    /*
+     * The <src> buffer overlaps with the start of the <dest> buffer.
+     * Copy backwards to prevent the premature corruption of <src>.
+     */
+
+    while (n > 0) {
+      n--;
+      dest[n] = src[n];
+    }
+  } else {
+    /* It is safe to perform a forward-copy */
+    while (n > 0) {
+      *dest = *src;
+      dest++;
+      src++;
+      n--;
+    }
+  }
+
+  return d;
+}
+
+char *strchr(const char *s, int c)
+{
+  char tmp = (char) c;
+
+  while ((*s != tmp) && (*s != '\0'))
+    s++;
+
+  return (*s == tmp) ? (char *) s : NULL;
 }
 
 void __rt_putc_debug_bridge(char c)
@@ -319,6 +359,7 @@ static void __rt_io_unlock()
   }
 }
 
+#if 0
 int printf(const char *fmt, ...) {
 
   __rt_io_lock();
@@ -332,6 +373,8 @@ __rt_io_unlock();
 
   return 0;
 }
+
+#endif
 
 int puts(const char *s) {
 
@@ -353,7 +396,8 @@ __rt_io_unlock();
   return 0;
 }
 
-int putchar(int c) {
+int fputc(int c, FILE *stream)
+{
   __rt_io_lock();
 
   tfp_putc(NULL, c);
@@ -368,6 +412,18 @@ __rt_io_unlock();
   return c;
 }
 
+int _prf_locked(int (*func)(), void *dest, char *format, va_list vargs)
+{
+  int err;
+
+  __rt_io_lock();
+
+  err =  _prf(func, dest, format, vargs);
+
+  __rt_io_unlock();
+
+  return err;
+}
 
 static void __attribute__((noreturn)) __wait_forever()
 {
