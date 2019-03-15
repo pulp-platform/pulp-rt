@@ -41,8 +41,13 @@ static rt_event_t *__rt_io_event_current;
 
 hal_debug_struct_t HAL_DEBUG_STRUCT_NAME = HAL_DEBUG_STRUCT_INIT;
 
+static int __rt_io_pending_flush;
+
 static int errno;
 int *__errno() { return &errno; } 
+
+static void __rt_io_unlock();
+static void __rt_io_lock();
 
 void *malloc(size_t size)
 {
@@ -229,6 +234,13 @@ static void __rt_io_uart_wait_req(void *_req)
 
 static void __rt_io_uart_wait_pending()
 {
+  while(__rt_io_pending_flush)
+  {
+    __rt_io_unlock();
+    rt_event_yield(NULL);
+    __rt_io_lock();
+  }
+
   if (__rt_io_event_current)
   {
     if (rt_is_fc() || !rt_has_fc())
@@ -254,14 +266,38 @@ static void __rt_io_uart_wait_pending()
   }
 }
 
+static void __rt_io_end_of_flush(void *arg)
+{
+  hal_debug_struct_t *debug_struct = (hal_debug_struct_t *)arg;
+  __rt_io_pending_flush = 0;
+  debug_struct->putc_current = 0;
+}
+
 static void __attribute__((noinline)) __rt_io_uart_flush(hal_debug_struct_t *debug_struct)
 {
+  while(__rt_io_pending_flush)
+  {
+    __rt_io_unlock();
+    rt_event_yield(NULL);
+    __rt_io_lock();
+  }
+
   if (debug_struct->putc_current)
   {
     if (rt_is_fc() || !rt_has_fc())
     {
+      __rt_io_pending_flush = 1;
       rt_uart_write(_rt_io_uart, debug_struct->putc_buffer,
-        debug_struct->putc_current, NULL);
+        debug_struct->putc_current, rt_event_get(NULL, __rt_io_end_of_flush, debug_struct));
+
+      __rt_io_unlock();
+
+      while(__rt_io_pending_flush)
+      {
+        rt_event_yield(NULL);
+      }
+
+      __rt_io_lock();
     }
     else {
   #if defined(ARCHI_HAS_CLUSTER) && defined(ARCHI_HAS_FC)
@@ -269,10 +305,10 @@ static void __attribute__((noinline)) __rt_io_uart_flush(hal_debug_struct_t *deb
       rt_uart_cluster_write(_rt_io_uart, debug_struct->putc_buffer,
         debug_struct->putc_current, &req);
       rt_uart_cluster_wait(&req);
+      debug_struct->putc_current = 0;
   #endif
     }
 
-    debug_struct->putc_current = 0;
   }
 }
 
@@ -396,20 +432,29 @@ __rt_io_unlock();
   return 0;
 }
 
+int fputc_locked(int c, FILE *stream)
+{
+  tfp_putc(NULL, c);
+
+  return c;
+}
+
 int fputc(int c, FILE *stream)
 {
+  int err;
+
   __rt_io_lock();
 
-  tfp_putc(NULL, c);
+  err = fputc_locked(c, stream);
 
   if (!hal_debug_struct_get()->use_internal_printf)
   {
-    hal_debug_send_printf(hal_debug_struct_get());
+    __rt_bridge_printf_flush();
   }
 
 __rt_io_unlock();
 
-  return c;
+  return err;
 }
 
 int _prf_locked(int (*func)(), void *dest, char *format, va_list vargs)
@@ -563,6 +608,8 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_io_init()
   {
     __rt_cbsys_add(RT_CBSYS_START, __rt_io_start, NULL);
     __rt_cbsys_add(RT_CBSYS_STOP, __rt_io_stop, NULL);
+    __rt_io_pending_flush = 0;
+    rt_event_alloc(NULL, 1);
   }
 #endif
 

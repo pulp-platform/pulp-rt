@@ -14,13 +14,15 @@
 extern int _prf_locked(int (*func)(), void *dest,
 				const char *format, va_list vargs);
 
+extern int fputc_locked(int c, FILE *stream);
+
 int fprintf(FILE *F, const char *format, ...)
 {
 	va_list vargs;
 	int     r;
 
 	va_start(vargs, format);
-	r = _prf_locked(fputc, DESC(F), format, vargs);
+	r = _prf_locked(fputc_locked, DESC(F), format, vargs);
 	va_end(vargs);
 
 	return r;
@@ -31,7 +33,7 @@ int vfprintf(FILE *F, const char *format,
 {
 	int r;
 
-	r = _prf_locked(fputc, DESC(F), format, vargs);
+	r = _prf_locked(fputc_locked, DESC(F), format, vargs);
 
 	return r;
 }
@@ -42,7 +44,7 @@ int printf(const char *format, ...)
 	int     r;
 
 	va_start(vargs, format);
-	r = _prf_locked(fputc, DESC(stdout), format, vargs);
+	r = _prf_locked(fputc_locked, DESC(stdout), format, vargs);
 	va_end(vargs);
 
 	return r;
@@ -52,7 +54,7 @@ int vprintf(const char *format, va_list vargs)
 {
 	int r;
 
-	r = _prf_locked(fputc, DESC(stdout), format, vargs);
+	r = _prf_locked(fputc_locked, DESC(stdout), format, vargs);
 
 	return r;
 }
