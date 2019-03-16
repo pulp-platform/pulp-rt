@@ -457,6 +457,11 @@ __rt_io_unlock();
   return err;
 }
 
+int putchar(int c)
+{
+  return fputc(c, stdout);
+}
+
 int _prf_locked(int (*func)(), void *dest, char *format, va_list vargs)
 {
   int err;
