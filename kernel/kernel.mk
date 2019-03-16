@@ -12,7 +12,7 @@ PULP_LIB_FC_SRCS_rt     += kernel/init.c \
   kernel/utils.c kernel/error.c kernel/bridge.c kernel/conf.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/thread.S
 
-ifneq '$(soc/cluster)' ''
+ifneq '$(chip/cluster)' ''
 PULP_LIB_FC_SRCS_rt     += kernel/task.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/task.S
 endif
@@ -133,7 +133,7 @@ ifneq '$(perf_counters)' ''
 PULP_LIB_FC_SRCS_rt += kernel/perf.c
 endif
 
-ifneq '$(soc/cluster)' ''
+ifneq '$(chip/cluster)' ''
 ifneq '$(event_unit/version)' '1'
 PULP_LIB_CL_SRCS_rt += kernel/sync_mc.c
 endif
