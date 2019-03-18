@@ -239,7 +239,7 @@ SECTIONS
     . = ALIGN(4);
   } > L1
 
-  .stack (ORIGIN(L1) + SIZEOF(.data_tiny_l1) + SIZEOF(.l1_cluster_g)) : {
+  .stack (ORIGIN(L1) + SIZEOF(.data_tiny_l1) + SIZEOF(.l1cluster_g)) : {
     . = ALIGN(4);
     . = ALIGN(16);
     stack_start = .;
@@ -247,7 +247,7 @@ SECTIONS
     stack = .;
   } > L1
 
-  .bss_l1 (ORIGIN(L1) + SIZEOF(.data_tiny_l1) + SIZEOF(.l1_cluster_g)) + SIZEOF(.stack) : {
+  .bss_l1 (ORIGIN(L1) + SIZEOF(.data_tiny_l1) + SIZEOF(.l1cluster_g)) + SIZEOF(.stack) : {
     . = ALIGN(4);
     *(.bss_l1)
     *(.bss_l1.*)
