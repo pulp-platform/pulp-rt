@@ -27,44 +27,12 @@
 
 void __rt_pmu_cluster_power_down()
 {
-#if 0
-  //plp_trace(RT_TRACE_PMU, "Cluster power down\n");
-
-  // Check bit 14 of bypass register to see if an external tool (like gdb) is preventing us
-  // from shutting down the cluster
-  if ((hal_pmu_bypass_get() >> APB_SOC_BYPASS_USER1_BIT) & 1) return;
-
-  // Wait until cluster is not busy anymore as isolating it while
-  // AXI transactions are sent would break everything
-  // This part does not need to be done asynchronously as the caller is supposed to make 
-  // sure the cluster is not active anymore..
-  while (apb_soc_busy_get()) {
-    __rt_wait_for_event(1<<ARCHI_FC_EVT_CLUSTER_NOT_BUSY);
-  }
-
-  // Block transactions from dc fifos to soc
-  apb_soc_cluster_isolate_set(1);
-
-  // Cluster clock-gating
-  hal_pmu_bypass_set( (1<<ARCHI_PMU_BYPASS_ENABLE_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_POWER_BIT) );
-  __rt_wait_for_event(1<<ARCHI_FC_EVT_CLUSTER_CG_OK);
-
-  // Cluster shutdown
-  hal_pmu_bypass_set( (1<<ARCHI_PMU_BYPASS_ENABLE_BIT) );
-  __rt_wait_for_event(1<<ARCHI_FC_EVT_CLUSTER_POK);
-  // We should not need to wait for power off as it is really quick but we actually do
-#endif
+  maestro_icu_set_state(ARCHI_PMU_CLU_ID, PMU_CLUSTER_EXT_NV);
 }
 
 int __rt_pmu_cluster_power_up()
 {
-  //plp_trace(RT_TRACE_PMU, "Cluster power up\n");
-
-  hal_pmu_state_set(ARCHI_PMU_STATE_SOC_NV_CLU_NV);
-
-  // Tell external loader (such as gdb) that the cluster is on so that it can take it
-  // into account
-  //hal_pmu_bypass_set( (1<<ARCHI_PMU_BYPASS_ENABLE_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_POWER_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_RESET_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_CLOCK_BIT) | (1 << APB_SOC_BYPASS_USER0_BIT));
+  maestro_trigger_sequence(ARCHI_PMU_STATE_SOC_NV_CLU_NV);
 
   return 1;
 }
