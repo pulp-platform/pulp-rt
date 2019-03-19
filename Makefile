@@ -60,9 +60,10 @@ WS_INSTALL_FILES += include/rt/data/rt_data_bridge.h
 
 
 
+ifndef MK_ROOT
 HAL_FILES := $(shell plpfiles copy --item=hal_src_files)
 PULP_LIB_FC_SRCS_rt += $(HAL_FILES)
-
+endif
 
 
 include kernel/kernel.mk
