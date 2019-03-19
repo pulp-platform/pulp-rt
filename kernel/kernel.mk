@@ -12,7 +12,7 @@ PULP_LIB_FC_SRCS_rt     += kernel/init.c \
   kernel/utils.c kernel/error.c kernel/bridge.c kernel/conf.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/thread.S
 
-ifneq '$(chip/cluster)' ''
+ifneq '$(cluster/version)' ''
 PULP_LIB_FC_SRCS_rt     += kernel/task.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/task.S
 endif
@@ -46,12 +46,12 @@ ifneq '$(fc_archi)' 'or1k'
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/sched.S kernel/$(fc_archi)/vectors.S
 endif
 
-ifneq '$(udma)' ''
+ifneq '$(udma/version)' ''
 PULP_LIB_FC_SRCS_rt     += kernel/periph-v$(udma/archi).c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma-v$(udma/archi).S kernel/$(fc_archi)/udma_spim-v$(udma/spim/version).S
 endif
 
-ifneq '$(soc/fll)' ''
+ifneq '$(soc/fll/version)' ''
 ifeq '$(pulp_chip_family)' 'gap'
 PULP_LIB_FC_SRCS_rt     += kernel/gap/freq.c kernel/gap/pm.c
 else
@@ -133,24 +133,24 @@ ifneq '$(perf_counters)' ''
 PULP_LIB_FC_SRCS_rt += kernel/perf.c
 endif
 
-ifneq '$(chip/cluster)' ''
+ifneq '$(cluster/version)' ''
 ifneq '$(event_unit/version)' '1'
 PULP_LIB_CL_SRCS_rt += kernel/sync_mc.c
 endif
 endif
 
 
-INSTALL_TARGETS += $(PULP_SDK_INSTALL)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o
+INSTALL_TARGETS += $(INSTALL_DIR)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o
 
 
 ifeq '$(pulp_chip)' 'oprecompkw'
 
-$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/oprecompkw/rt/crt0.o
+$(INSTALL_DIR)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/oprecompkw/rt/crt0.o
 	install -D $< $@
 
 else
 
-$(PULP_SDK_INSTALL)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/$(fc_archi)/rt/crt0.o
+$(INSTALL_DIR)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o: $(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/kernel/$(fc_archi)/rt/crt0.o
 	install -D $< $@
 
 endif

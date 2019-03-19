@@ -19,7 +19,7 @@ ifneq '$(soc/spi_master)' ''
 PULP_LIB_FC_SRCS_rt += drivers/spim/spim-v0.c
 endif
 
-ifneq '$(udma/spim)' ''
+ifneq '$(udma/spim/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/spim/spim-v$(udma/spim/version).c drivers/spim/spiflash-v$(udma/spim/version).c
 endif
 endif
@@ -28,7 +28,7 @@ endif
 # HYPER
 
 ifeq '$(CONFIG_HYPER_ENABLED)' '1'
-ifneq '$(udma/hyper)' ''
+ifneq '$(udma/hyper/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/hyper/hyperram-v$(udma/hyper/version).c drivers/hyper/hyperflash-v$(udma/hyper/version).c
 endif
 endif
@@ -37,7 +37,7 @@ endif
 # UART
 
 ifeq '$(CONFIG_UART_ENABLED)' '1'
-ifneq '$(udma/uart)' ''
+ifneq '$(udma/uart/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/uart/uart.c
 endif
 
@@ -59,7 +59,7 @@ endif
 # CAM
 
 ifeq '$(CONFIG_CAM_ENABLED)' '1'
-ifneq '$(udma/cpi)' ''
+ifneq '$(udma/cpi/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/camera/himax.c drivers/camera/ov7670.c drivers/camera/camera.c
 endif
 endif
@@ -79,14 +79,12 @@ endif
 
 ifeq '$(CONFIG_RTC_ENABLED)' '1'
 PULP_LIB_FC_CFLAGS += -DRT_CONFIG_RTC_ENABLED
-ifneq '$(rtc)' ''
+ifneq '$(rtc/version)' ''
 ifneq '$(rtc/version)' '1'
 PULP_LIB_FC_SRCS_rt += drivers/rtc/rtc_v$(rtc/version).c
 PULP_LIB_FC_ASM_SRCS_rt += drivers/rtc/rtc_v$(rtc/version)_asm.S
 else
-ifneq '$(rtc)' ''
 PULP_LIB_FC_SRCS_rt += drivers/dolphin/rtc.c
-endif
 endif
 endif
 endif
