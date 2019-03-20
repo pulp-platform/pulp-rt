@@ -122,7 +122,8 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
     HYPER_TIMING_CFG_RWDS_DELAY(1) |
     HYPER_TIMING_CFG_RW_RECOVERY(6) |
     HYPER_TIMING_CFG_ADDITIONAL_LATENCY_AUTOCHECK_EN(1) |
-    HYPER_TIMING_CFG_LATENCY(6)
+    HYPER_TIMING_CFG_LATENCY0(6) |
+    HYPER_TIMING_CFG_LATENCY1(6)
   );
 
   return hyper;
