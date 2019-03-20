@@ -23,7 +23,7 @@ void __rt_freq_init(void)
   // flls
   __rt_flls_constructor();  // init fll set constructor
 
-  __rt_fll_set_init(HAL_FLL_CL);  // init fll set register
+//  __rt_fll_set_init(HAL_FLL_CL);  // init fll set register  -> MOVED to __rt_cluster_mount() as these register are in v_cl domain and need v_cl to be enabled
 
   // take care here!!
   if(hal_fll_check_ref_fast()) hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_16M); // fast reference up and running
@@ -40,7 +40,7 @@ void __rt_freq_init(void)
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_fll_on =          1;  // soc fll is on from beginning
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_alt_fll_on =      0; 
-  hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
+  hal_freq_cl_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
 
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_freq =            __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
@@ -52,13 +52,13 @@ void __rt_freq_init(void)
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_config =      FREQ_DOMAIN_CLK_TREE_FLL_SOC;
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_fll_on =      1;  // soc fll is on from beginning
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_alt_fll_on =  0; 
-  hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
+  hal_freq_per_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
 
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_freq =            __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_fll_on =          1;  // soc fll is on from beginning
   __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_alt_fll_on =      -1; // there is no alternative fll available
-  hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
+  hal_freq_pm_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
 }
 
 int rt_freq_config_set(rt_freq_domain_e domain, hal_freq_domain_clk_tree_config_e config)

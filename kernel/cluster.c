@@ -93,6 +93,9 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
   #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
+      // Setup FLL
+      __rt_fll_set_init(HAL_FLL_CL);  // init fll set register
+
       // Check if we have to restore the cluster freqeuncy
       int freq = rt_freq_get(RT_FREQ_DOMAIN_CL);
 
