@@ -37,24 +37,7 @@
 
 #include "rt/rt_api.h"
 
-static void __rt_spiflash_free(rt_spiflash_t *flash)
-{
-  if (flash != NULL) {
-    rt_free(RT_ALLOC_FC_DATA, (void *)flash, sizeof(rt_spiflash_t));
-  }
-}
-
-RT_L2_DATA static unsigned int cmd_flashId[] = {
-  SPI_CMD_CFG      (8, 0, 0),
-  SPI_CMD_SOT      (0),
-  SPI_CMD_SEND_CMD (0x06, 8, 0),    //write enable 
-  SPI_CMD_EOT      (0),
-  SPI_CMD_SOT      (0),           
-  SPI_CMD_SEND_CMD (0x0071, 8, 0),  //qpi enable:  CR2V[6] = 1
-  SPI_CMD_SEND_ADDR(32, 0),                
-  0x800003cf,
-  SPI_CMD_EOT      (0)
-};
+#define CMD_BUFF_SIZE 16
 
 typedef struct {
   unsigned int sot;
@@ -67,47 +50,80 @@ typedef struct {
   unsigned int eot;
 } flashRead_t;
 
-typedef struct {
-  union {
-    struct {
-      unsigned int sot0;
-      unsigned int sendCmd0;
-      unsigned int eot0;
-      unsigned int sot1;
-      unsigned int sendCmd1;
-      unsigned int sendAddr;
-      unsigned int addr;
-      unsigned int eot1;
-    } erase;
-    struct {
-      unsigned int sot;
-      unsigned int sendCmd;
-      unsigned int rxData;
-      unsigned int eot;
-    } rdsr2v;
-    struct {
-      unsigned int sot0;
-      unsigned int sendCmd0;
-      unsigned int eot0;
-      unsigned int sot1;
-      unsigned int sendCmd1;
-      unsigned int sendAddr;
-      unsigned int addr;
-      unsigned int txData;
-    } page_program_head;
-    struct {
-      unsigned int eot;
-    } page_program_tail;
-  };
 
-} flash_cmd_t;
+static RT_L2_DATA uint32_t cmd_buffer[CMD_BUFF_SIZE];
+static RT_L2_DATA flashRead_t flash_read;
+static volatile RT_L2_DATA int __rt_spiflash_rcv_buffer;
 
-RT_L2_DATA flashRead_t flash_read;
-RT_L2_DATA flash_cmd_t flash_cmd;
-volatile RT_L2_DATA int cmd_buff;
+
+
+static void __rt_spiflash_free(rt_spiflash_t *flash)
+{
+  if (flash != NULL) {
+    rt_free(RT_ALLOC_FC_DATA, (void *)flash, sizeof(rt_spiflash_t));
+  }
+}
+
+
+
+static void __rt_spiflash_send_and_rcv(rt_spiflash_t *flash, void *snd_buff, int snd_size, void *rcv_buff, int rcv_size)
+{
+  rt_event_t *event = __rt_wait_event_prepare_blocking();
+  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_init(copy, 0);
+  copy->event = event;
+  rt_periph_dual_copy_safe(copy, flash->channel, (unsigned int)snd_buff, snd_size, (int)rcv_buff, rcv_size, 2<<1);
+  __rt_wait_event(event);
+}
+
+
+
+static void __rt_spiflash_send(rt_spiflash_t *flash, void *buff, int size)
+{
+  rt_periph_copy(NULL, flash->channel+1, (unsigned int)buff, size, 2<<1, NULL);
+}
+
+
+
+static void __rt_spiflash_set_reg(rt_spiflash_t *flash, unsigned int addr, unsigned int val)
+{
+  int index = 0;
+
+  cmd_buffer[index++] = SPI_CMD_SOT       (0),
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0x06, 8, 0),    //write enable 
+  cmd_buffer[index++] = SPI_CMD_EOT       (0),
+  cmd_buffer[index++] = SPI_CMD_SOT       (0);
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0x71, 8, 0),    //write any register 
+  cmd_buffer[index++] = SPI_CMD_TX_DATA  (4*8, 0, SPI_CMD_BYTE_ALIGN_DIS);
+  cmd_buffer[index++] = (addr << 8) | val;
+  cmd_buffer[index++] = SPI_CMD_EOT       (0);
+
+  __rt_spiflash_send(flash, &cmd_buffer, index*4);
+}
+
+
+
+static uint32_t __rt_spiflash_read_flash_id(rt_spiflash_t *flash)
+{
+  int index = 0;
+
+  cmd_buffer[index++] = SPI_CMD_CFG       (0, 0, 0);
+  cmd_buffer[index++] = SPI_CMD_SOT       (0);
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0x9F, 8, 0);
+  cmd_buffer[index++] = SPI_CMD_RX_DATA   (32, 0, SPI_CMD_BYTE_ALIGN_ENA);
+  cmd_buffer[index++] = SPI_CMD_EOT       (0);
+
+  __rt_spiflash_send_and_rcv(flash, cmd_buffer, index*4, (void *)&__rt_spiflash_rcv_buffer, 4);
+
+  return __rt_spiflash_rcv_buffer;
+}
+
+
 
 static rt_flash_t *__rt_spiflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt_event_t *event)
 {
+  int irq = rt_irq_disable();
+
   rt_spiflash_t *flash = NULL;
 
   flash = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_spiflash_t));
@@ -133,6 +149,9 @@ static rt_flash_t *__rt_spiflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt_e
   soc_eu_fcEventMask_setEvent(channel_id);
   soc_eu_fcEventMask_setEvent(channel_id+1);
 
+  uint32_t id = __rt_spiflash_read_flash_id(flash);
+  printf("Got ID %lx\n", id);
+
   flash_read.sot      = SPI_CMD_SOT       (0);
   flash_read.sendCmd  = SPI_CMD_SEND_CMD  (0x03, 8, 0);
   flash_read.sendAddr = SPI_CMD_SEND_ADDR (24, 0);
@@ -140,16 +159,23 @@ static rt_flash_t *__rt_spiflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt_e
   flash_read.rxData   = SPI_CMD_RX_DATA   (1, 1, SPI_CMD_BYTE_ALIGN_ENA);
   flash_read.eot      = SPI_CMD_EOT       (0);
 
-  //rt_periph_copy(NULL, channel_id+1, (unsigned int)&cmd_flashId, sizeof(cmd_flashId), 2<<1, event);
+  __rt_spiflash_set_reg(flash, 0x00800002, 0x00); // quad mode disabled
+  __rt_spiflash_set_reg(flash, 0x00800003, 0x08); // 8 dummy cycles
+  //__rt_spiflash_set_reg(flash, 0x00800004, 0x10); //set page size to 512 bytes  CR3V[4] =1
 
   if (event) __rt_event_enqueue(event);
+
+  rt_irq_restore(irq);
 
   return (rt_flash_t *)flash;
 
 error:
   __rt_spiflash_free(flash);
+  rt_irq_restore(irq);
   return NULL;
 }
+
+
 
 static void __rt_spiflash_close(rt_flash_t *flash, rt_event_t *event)
 {
@@ -157,7 +183,11 @@ static void __rt_spiflash_close(rt_flash_t *flash, rt_event_t *event)
   __rt_spiflash_free(spi_flash);
 }
 
+
+
 void __rt_spiflash_enqueue_callback();
+
+
 
 static void __rt_spiflash_read(rt_flash_t *_dev, void *data, void *addr, size_t size, rt_event_t *event)
 {
@@ -191,6 +221,7 @@ static void __rt_spiflash_read(rt_flash_t *_dev, void *data, void *addr, size_t 
 
   if (likely(!channel->firstToEnqueue && !plp_udma_busy(tx_base)))
   {
+    printf("Direct enqueue\n");
     flash_read.addr = flash_addr_cmd;
     flash_read.rxData = flash_size_cmd;
 
@@ -211,46 +242,92 @@ __rt_wait_event_check(event, call_event);
   rt_irq_restore(irq);
 }
 
+
+static uint32_t __rt_spiflash_send_cmd_and_rcv(rt_spiflash_t *flash, uint32_t cmd)
+{
+  int index = 0;
+
+  cmd_buffer[index++] = SPI_CMD_SOT       (0);
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0x05, 8, 0);
+  cmd_buffer[index++] = SPI_CMD_DUMMY     (32);
+  cmd_buffer[index++] = SPI_CMD_RX_DATA   (8, 0, SPI_CMD_BYTE_ALIGN_DIS);
+  cmd_buffer[index++] = SPI_CMD_EOT       (0);
+
+  __rt_spiflash_rcv_buffer = 0;
+
+  __rt_spiflash_send_and_rcv(flash, cmd_buffer, index*4, (void *)&__rt_spiflash_rcv_buffer, 4);
+
+  return __rt_spiflash_rcv_buffer;
+}
+
+
+
+static void __rt_spiflash_send_cmd(rt_spiflash_t *flash, uint32_t cmd)
+{
+  int index = 0;
+
+  cmd_buffer[index++] = SPI_CMD_SOT       (0);
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (cmd, 8, 0);
+  cmd_buffer[index++] = SPI_CMD_EOT       (0);
+
+  __rt_spiflash_send(flash, cmd_buffer, index*4);
+}
+
+
+
+static uint32_t __rt_spiflash_read_sr1v(rt_spiflash_t *flash)
+{
+  uint32_t val =  __rt_spiflash_send_cmd_and_rcv(flash, 0x05);
+
+  printf("Got sr1v %lx\n", val);
+
+  return __rt_spiflash_rcv_buffer;
+}
+
+
+
+static uint32_t __rt_spiflash_read_sr2v(rt_spiflash_t *flash)
+{
+  uint32_t val =  __rt_spiflash_send_cmd_and_rcv(flash, 0x07);
+
+  printf("Got sr12v %lx\n", val);
+
+  return __rt_spiflash_rcv_buffer;
+}
+
+
+
 static void __rt_spiflash_program(rt_flash_t *_dev, void *data, void *addr, size_t size, rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
   rt_spiflash_t *flash = (rt_spiflash_t *)_dev;
 
-  flash_cmd.page_program_head.sot0     = SPI_CMD_SOT       (0),
-  flash_cmd.page_program_head.sendCmd0 = SPI_CMD_SEND_CMD  (0x06, 8, 0),    //write enable 
-  flash_cmd.page_program_head.eot0     = SPI_CMD_EOT       (0),
-  flash_cmd.page_program_head.sot1     = SPI_CMD_SOT       (0);
-  flash_cmd.page_program_head.sendCmd1 = SPI_CMD_SEND_CMD  (0x02, 8, 0);
-  flash_cmd.page_program_head.sendAddr = SPI_CMD_SEND_ADDR (24, 0);
-  flash_cmd.page_program_head.addr     = ((int)addr)<<8;
-  flash_cmd.page_program_head.txData   = SPI_CMD_TX_DATA   (size*8, 0, SPI_CMD_BYTE_ALIGN_ENA);
-  rt_periph_copy(NULL, flash->channel+1, (unsigned int)&flash_cmd, sizeof(flash_cmd.page_program_head), 2<<1, NULL);
+  __rt_spiflash_send_cmd(flash, 0x06);
 
-  rt_periph_copy(NULL, flash->channel+1, (unsigned int)data, size, 2<<1, NULL);
+  int index = 0;
+  cmd_buffer[index++] = SPI_CMD_EOT       (0),
+  cmd_buffer[index++] = SPI_CMD_SOT       (0);
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0x02, 8, 0);
+  cmd_buffer[index++] = SPI_CMD_SEND_ADDR (24, 0);
+  cmd_buffer[index++] = ((int)addr)<<8;
+  cmd_buffer[index++] = SPI_CMD_TX_DATA   (size*8, 0, SPI_CMD_BYTE_ALIGN_ENA);
 
-  flash_cmd.page_program_tail.eot     = SPI_CMD_EOT       (0);
-  rt_periph_copy(NULL, flash->channel+1, (unsigned int)&flash_cmd, sizeof(flash_cmd.page_program_tail), 2<<1, NULL);
+  __rt_spiflash_send(flash, cmd_buffer, index*4);
+
+  __rt_spiflash_send(flash, data, size);
+
+  index = 0;
+  cmd_buffer[index++] = SPI_CMD_EOT       (0),
+
+  __rt_spiflash_send(flash, cmd_buffer, index*4);
+
+  while ((__rt_spiflash_read_sr2v(flash) & 1) == 1)
+  {
+    rt_time_wait_us(100);
+  }
 
   rt_irq_restore(irq);
-}
-
-static uint32_t __rt_spiflash_read_sr2v(rt_spiflash_t *flash)
-{
-  flash_cmd.rdsr2v.sot      = SPI_CMD_SOT       (0);
-  flash_cmd.rdsr2v.sendCmd  = SPI_CMD_SEND_CMD  (0x07, 8, 0);
-  flash_cmd.rdsr2v.rxData   = SPI_CMD_RX_DATA   (8, 0, SPI_CMD_BYTE_ALIGN_DIS);
-  flash_cmd.rdsr2v.eot      = SPI_CMD_EOT       (0);
-
-  cmd_buff = 0;
-
-  rt_event_t *event = __rt_wait_event_prepare_blocking();
-  rt_periph_copy_t *copy = &event->copy;
-  rt_periph_copy_init(copy, 0);
-  rt_periph_dual_copy_safe(copy, flash->channel, (unsigned int)&flash_cmd, sizeof(flash_cmd.rdsr2v), (int)&cmd_buff, 1, 0<<1);
-  __rt_wait_event(event);
-
-  return cmd_buff;
 }
 
 static void __rt_spiflash_erase_sector(rt_flash_t *_dev, void *data, rt_event_t *event)
@@ -259,21 +336,35 @@ static void __rt_spiflash_erase_sector(rt_flash_t *_dev, void *data, rt_event_t 
 
   rt_spiflash_t *flash = (rt_spiflash_t *)_dev;
 
-  flash_cmd.erase.sot0     = SPI_CMD_SOT       (0),
-  flash_cmd.erase.sendCmd0 = SPI_CMD_SEND_CMD  (0x06, 8, 0),    //write enable 
-  flash_cmd.erase.eot0     = SPI_CMD_EOT       (0),
-  flash_cmd.erase.sot1     = SPI_CMD_SOT       (0);
-  flash_cmd.erase.sendCmd1 = SPI_CMD_SEND_CMD  (0xD8, 8, 0);
-  flash_cmd.erase.sendAddr = SPI_CMD_SEND_ADDR (24, 0);
-  flash_cmd.erase.addr     = ((int)data)<<8;
-  flash_cmd.erase.eot1     = SPI_CMD_EOT       (0);
+  int index = 0;
+  cmd_buffer[index++] = SPI_CMD_SOT       (0),
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0x06, 8, 0),    //write enable 
+  cmd_buffer[index++] = SPI_CMD_EOT       (0),
+  cmd_buffer[index++] = SPI_CMD_SOT       (0);
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0x20, 8, 0);
+  cmd_buffer[index++] = SPI_CMD_SEND_ADDR (24, 0);
+  cmd_buffer[index++] = ((int)data)<<8;
+  cmd_buffer[index++] = SPI_CMD_EOT       (0);
 
-  rt_periph_copy(NULL, flash->channel+1, (unsigned int)&flash_cmd, sizeof(flash_cmd.erase), 2<<1, NULL);
+  __rt_spiflash_send(flash, cmd_buffer, index*4);
 
-  while (((__rt_spiflash_read_sr2v(flash) >> 2) & 1) == 0)
+  while ((__rt_spiflash_read_sr1v(flash) & 1) == 1)
   {
     rt_time_wait_us(100);
   }
+
+  index = 0;
+  cmd_buffer[index++] = SPI_CMD_SOT       (0);
+  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0xD0, 8, 0);
+  cmd_buffer[index++] = SPI_CMD_SEND_ADDR (24, 0);
+  cmd_buffer[index++] = ((int)data)<<8;
+  cmd_buffer[index++] = SPI_CMD_EOT       (0);
+
+  __rt_spiflash_send(flash, cmd_buffer, index*4);
+
+  uint32_t err = __rt_spiflash_read_sr2v(flash);
+
+  printf("GOT err %ld\n", err);
 
   rt_irq_restore(irq);
 }
