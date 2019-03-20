@@ -203,24 +203,24 @@ static inline void __rt_i2s_resume(rt_i2s_t *dev)
 
   int hw_div = (div - 1) >> 1;
 
-  udma_i2s_i2s_clkcfg_setup_set(
-    udma_i2s_addr(0),
-    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_CLK_DIV(hw_div & 0xff) |
-    UDMA_I2S_I2S_CLKCFG_SETUP_COMMON_CLK_DIV(hw_div >> 8)  |
-    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_CLK_EN(1)              |
-    UDMA_I2S_I2S_CLKCFG_SETUP_PDM_CLK_EN(1)                |
-    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_NUM(1)
-  );
-
   udma_i2s_i2s_slv_setup_set(
     udma_i2s_addr(0),
-    UDMA_I2S_I2S_SLV_SETUP_SLAVE_WORDS(1)             |
-    UDMA_I2S_I2S_SLV_SETUP_SLAVE_BITS(16)             |
+    UDMA_I2S_I2S_SLV_SETUP_SLAVE_WORDS(1-1)             |
+    UDMA_I2S_I2S_SLV_SETUP_SLAVE_BITS(16-1)             |
     UDMA_I2S_I2S_SLV_SETUP_SLAVE_LSB(0)               |
     UDMA_I2S_I2S_SLV_SETUP_SLAVE_2CH(dev->dual)       |
     UDMA_I2S_I2S_SLV_SETUP_SLAVE_EN(1)
   );
   
+  udma_i2s_i2s_clkcfg_setup_set(
+    udma_i2s_addr(0),
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_CLK_DIV(hw_div & 0xff) |
+    UDMA_I2S_I2S_CLKCFG_SETUP_COMMON_CLK_DIV(hw_div >> 8)  |
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_CLK_EN(1)              |
+    UDMA_I2S_I2S_CLKCFG_SETUP_PDM_CLK_EN(dev->pdm)                |
+    UDMA_I2S_I2S_CLKCFG_SETUP_SLAVE_NUM(1)
+  );
+
 }
 
 void __rt_i2s_start(rt_i2s_t *dev)
