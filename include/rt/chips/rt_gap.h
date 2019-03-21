@@ -17,6 +17,7 @@
 #ifndef __RT_CHIPS_RT_GAP_H__
 #define __RT_CHIPS_RT_GAP_H__
 
+#ifdef CONFIG_GAP
 
 /// @cond IMPLEM
 
@@ -242,5 +243,6 @@ typedef enum {
 //!@}
 
 
+#endif
 
 #endif

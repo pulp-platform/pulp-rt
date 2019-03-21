@@ -61,26 +61,6 @@
 
 /**@{*/
 
-/** \brief Returns the default stack size on the cluster for the master core.
- *
- * The master core is the one receiving a call for the cluster. This stack size is only used if no stack size is specified when generating
- * a call to cluster side.
- *
- * \return           The stack size in bytes.
- */
-static inline int rt_cl_master_stack_size_get();
-
-
-
-/** \brief Returns the default stack size on cluster side for the slave cores.
- *
- * The slave cores are those cores used by the master core to start a multi core task. This stack size is only used if no stack size is
- * specified when starting a call to cluster.
- *
- * \return           The stack size in bytes.
- */
-static inline int rt_cl_slave_stack_size_get();
-
 
 //!@}
 
@@ -199,14 +179,15 @@ static inline int rt_section_cluster_text_size();
 
 #include "hal/pulp.h"
 
+extern unsigned int __rt_platform;
+extern unsigned int __rt_iodev;
+extern unsigned int __rt_iodev_uart_baudrate;
+extern unsigned int __rt_iodev_uart_channel;
+
 extern unsigned char __cluster_text_start;
 extern unsigned char __cluster_text_size;
 static inline void *rt_section_cluster_text_start() { return (void *)&__cluster_text_start; }
 static inline int rt_section_cluster_text_size() { return (int)&__cluster_text_size; }
-
-extern unsigned char __rt_cl_master_stack_size;
-extern unsigned char __rt_cl_slave_stack_size;
-extern unsigned char __rt_stack_size;
 
 #if defined(ARCHI_HAS_CLUSTER)
 
@@ -214,61 +195,46 @@ static inline unsigned int __rt_tas_addr(unsigned int addr) {
   return addr | (1<<ARCHI_L1_TAS_BIT);
 }
 
-static inline int rt_tas_lock_8(unsigned int addr) {
+static inline signed char rt_tas_lock_8(unsigned int addr) {
   __asm__ __volatile__ ("" : : : "memory");
-  int result = *(volatile unsigned char *)__rt_tas_addr(addr);
-  __asm__ __volatile__ ("" : : : "memory");
-  return result;
-}
-
-static inline void rt_tas_unlock_8(unsigned int addr, unsigned char value) {
-  __asm__ __volatile__ ("" : : : "memory");
-  *(volatile unsigned char *)addr = value;
-  __asm__ __volatile__ ("" : : : "memory");
-}
-
-static inline int rt_tas_lock_16(unsigned int addr) {
-  __asm__ __volatile__ ("" : : : "memory");
-  int result = *(volatile unsigned short *)__rt_tas_addr(addr);
+  signed char result = *(volatile signed char *)__rt_tas_addr(addr);
   __asm__ __volatile__ ("" : : : "memory");
   return result;
 }
 
-static inline void rt_tas_unlock_16(unsigned int addr, unsigned short value) {
+static inline void rt_tas_unlock_8(unsigned int addr, signed char value) {
   __asm__ __volatile__ ("" : : : "memory");
-  *(volatile unsigned short *)addr = value;
+  *(volatile signed char *)addr = value;
+  __asm__ __volatile__ ("" : : : "memory");
+}
+
+static inline signed short rt_tas_lock_16(unsigned int addr) {
+  __asm__ __volatile__ ("" : : : "memory");
+  signed short result = *(volatile signed short *)__rt_tas_addr(addr);
+  __asm__ __volatile__ ("" : : : "memory");
+  return result;
+}
+
+static inline void rt_tas_unlock_16(unsigned int addr, signed short value) {
+  __asm__ __volatile__ ("" : : : "memory");
+  *(volatile signed short *)addr = value;
   __asm__ __volatile__ ("" : : : "memory");
 }
 
 static inline int rt_tas_lock_32(unsigned int addr) {
   __asm__ __volatile__ ("" : : : "memory");
-  int result = *(volatile unsigned int *)__rt_tas_addr(addr);
+  signed int result = *(volatile signed int *)__rt_tas_addr(addr);
   __asm__ __volatile__ ("" : : : "memory");
   return result;
 }
 
-static inline void rt_tas_unlock_32(unsigned int addr, unsigned int value) {
+static inline void rt_tas_unlock_32(unsigned int addr, signed int value) {
   __asm__ __volatile__ ("" : : : "memory");
-  *(volatile unsigned int *)addr = value;
+  *(volatile signed int *)addr = value;
   __asm__ __volatile__ ("" : : : "memory");
 }
 
 #endif
-
-static inline int rt_cl_master_stack_size_get()
-{
-  return (int)(long)&__rt_cl_master_stack_size;
-}
-
-static inline int rt_stack_size_get()
-{
-  return (int)(long)&__rt_stack_size;
-}
-
-static inline int rt_cl_slave_stack_size_get()
-{
-  return (int)(long)&__rt_cl_slave_stack_size;
-}
 
 
 #if defined(ARCHI_HAS_L2)
@@ -380,12 +346,6 @@ extern unsigned char __fc_tcdm_heap_size;
 extern unsigned char __l1_heap_start;;
 extern unsigned char __l1_heap_size;
 extern unsigned char __irq_vector_base;
-extern unsigned char __rt_nb_cluster;
-extern unsigned char __rt_nb_pe;
-extern unsigned char __rt_platform;
-extern unsigned char __rt_iodev;
-extern unsigned char __rt_iodev_uart_baudrate;
-extern unsigned char __rt_iodev_uart_channel;
 
 
 static inline int rt_has_fc()
@@ -412,12 +372,20 @@ static inline int rt_core_id()
 
 static inline int rt_nb_cluster()
 {
-  return (int)&__rt_nb_cluster;
+#ifndef ARCHI_NB_CLUSTER
+  return 1;
+#else
+  return ARCHI_NB_CLUSTER;
+#endif
 }
 
 static inline int rt_nb_active_pe()
 {
-  return (int)&__rt_nb_pe;
+#ifdef ARCHI_HAS_CC
+  return ARCHI_CLUSTER_NB_PE + 1;
+#else
+  return ARCHI_CLUSTER_NB_PE;
+#endif
 }
 
 #if defined(PLP_NO_BUILTIN) || defined(__cplusplus)
@@ -460,7 +428,7 @@ static inline int rt_nb_pe()
 
 static inline int rt_platform()
 {
-  return (int)&__rt_platform;
+  return __rt_platform;
 }
 
 #define RT_IODEV_DEFAULT 0
@@ -468,17 +436,17 @@ static inline int rt_platform()
 
 static inline int rt_iodev()
 {
-  return (int)&__rt_iodev;
+  return __rt_iodev;
 }
 
 static inline int rt_iodev_uart_baudrate()
 {
-  return (int)&__rt_iodev_uart_baudrate;
+  return __rt_iodev_uart_baudrate;
 }
 
 static inline int rt_iodev_uart_channel()
 {
-  return (int)&__rt_iodev_uart_channel;
+  return __rt_iodev_uart_channel;
 }
 
 
@@ -809,6 +777,14 @@ static inline void __rt_fc_cluster_lock_wait(rt_fc_lock_req_t *req)
 }
 
 #endif
+
+static inline void __rt_wait_for_event(unsigned int mask) {
+#if defined(ITC_VERSION)
+  hal_itc_wait_for_event_noirq(mask);
+#else
+  eu_evt_maskWaitAndClr(mask);
+#endif
+}
 
 /// @endcond
 

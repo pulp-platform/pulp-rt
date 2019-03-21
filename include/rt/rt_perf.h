@@ -82,16 +82,14 @@ typedef enum {
   RT_PERF_BRANCH        = CSR_PCER_BRANCH,       /*!< Number of branches. Counts both taken and not taken branches. */
   RT_PERF_BTAKEN        = CSR_PCER_TAKEN_BRANCH, /*!< Number of taken branches. */
   RT_PERF_RVC           = CSR_PCER_RVC,          /*!< Number of compressed instructions executed. */
+#ifdef CSR_PCER_ELW
+  RT_PERF_ELW           = CSR_PCER_ELW,          /*!< Number of cycles wasted due to ELW instruction. */
+#endif
   RT_PERF_LD_EXT        = CSR_PCER_LD_EXT,       /*!< Number of memory loads to EXT executed. Misaligned accesses are counted twice. Every non-TCDM access is considered external (cluster only). */
   RT_PERF_ST_EXT        = CSR_PCER_ST_EXT,       /*!< Number of memory stores to EXT executed. Misaligned accesses are counted twice. Every non-TCDM access is considered external (cluster only). */
   RT_PERF_LD_EXT_CYC    = CSR_PCER_LD_EXT_CYC,   /*!< Cycles used for memory loads to EXT. Every non-TCDM access is considered external (cluster only). */
   RT_PERF_ST_EXT_CYC    = CSR_PCER_ST_EXT_CYC,   /*!< Cycles used for memory stores to EXT. Every non-TCDM access is considered external (cluster only). */
   RT_PERF_TCDM_CONT     = CSR_PCER_TCDM_CONT,    /*!< Cycles wasted due to TCDM/log-interconnect contention (cluster only). */
-  RT_PERF_CSR_HAZARD    = CSR_PCER_CSR_HAZARD,   /*!< Cycles wasted due to CSR access. */
-  RT_PERF_FP_TYPE       = CSR_PCER_APU_TY_CONF,  /*!< Cycles wasted due to different latencies of subsequent FP-operations (only available if a hardware floating-point unit is present). */
-  RT_PERF_FP_CONT       = CSR_PCER_APU_CONT,     /*!< Cycles wasted due to contentions at the shared FPU  (only available if a hardware floating-point unit is present). */
-  RT_PERF_FP_DEP        = CSR_PCER_APU_DEP,      /*!< Cycles wasted due to data hazards in subsequent FP instructions (only available if a hardware floating-point unit is present). */
-  RT_PERF_FP_WB         = CSR_PCER_APU_WB,       /*!< Cycles wasted due to FP operations resulting in write-back contentions (only available if a hardware floating-point unit is present). */
 } rt_perf_event_e;
 #endif
 

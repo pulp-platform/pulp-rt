@@ -64,5 +64,6 @@
 #include "rt/rt_voltage.h"
 #include "rt/rt_bridge.h"
 #include "rt/rt_eeprom.h"
+#include "rt/rt_task.h"
 
 #endif

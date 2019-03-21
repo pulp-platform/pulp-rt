@@ -378,6 +378,10 @@ typedef struct rt_flash_dev_s {
   struct rt_flash_s *(*open)(rt_dev_t *dev, rt_flash_conf_t *conf, rt_event_t *event);
   void (*close)(struct rt_flash_s *flash, rt_event_t *event);
   void (*read)(struct rt_flash_s *dev, void *addr, void *data, size_t size, rt_event_t *event);
+  void (*program)(struct rt_flash_s *dev, void *data, void *addr, size_t size, rt_event_t *event);
+  void (*erase_chip)(struct rt_flash_s *dev, rt_event_t *event);
+  void (*erase_sector)(struct rt_flash_s *dev, void *data, rt_event_t *event);
+
 } rt_flash_dev_t;
 
 typedef struct rt_flash_s {
@@ -613,6 +617,43 @@ typedef struct
   int flags;
 } rt_timer_t;
 
+
+
+
+typedef struct rt_task_s rt_task_t;
+
+typedef struct rt_task_s {
+  void (*entry)(rt_task_t *task, int id);
+  uint32_t args[4];
+  rt_task_t *next;
+  void *stacks;
+  void *cluster;
+  rt_event_t *event;
+  uint16_t stack_size;
+  unsigned char nb_cores;
+  unsigned char cid;
+  unsigned char nb_cores_to_pop;
+  unsigned char nb_cores_to_end;
+} rt_task_t;
+
+typedef struct
+{
+  rt_task_t *__rt_task_first_fc_for_cl;
+  rt_task_t *__rt_task_first_fc;
+  rt_task_t *__rt_task_last_fc;
+} rt_task_cluster_loc_t;
+
+typedef struct
+{
+  void *stacks;
+  unsigned int stack_size;
+  int cid;
+  rt_event_t *end_event;
+  rt_task_cluster_loc_t *loc;
+  int nb_cores;
+  int free_stacks;
+} rt_task_cluster_t;
+
 extern rt_padframe_profile_t __rt_padframe_profiles[];
 
 #include "rt/data/rt_data_spim.h"
@@ -703,6 +744,21 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_FC_CLUSTER_DATA_T_CALL_STACKS       12
 #define RT_FC_CLUSTER_DATA_T_CALL_STACKS_SIZE  16
 #define RT_FC_CLUSTER_DATA_T_TRIG_ADDR         20
+
+#define RT_TASK_T_ENTRY       (0*4)
+#define RT_TASK_T_ARGS0       (1*4)
+#define RT_TASK_T_ARGS1       (2*4)
+#define RT_TASK_T_ARGS2       (3*4)
+#define RT_TASK_T_ARGS3       (4*4)
+#define RT_TASK_T_NEXT        (5*4)
+#define RT_TASK_T_STACKS      (6*4)
+#define RT_TASK_T_CLUSTER     (7*4)
+#define RT_TASK_T_EVENT       (8*4)
+#define RT_TASK_T_STACK_SIZE  (9*4)
+#define RT_TASK_T_NB_CORES    (9*4+2)
+#define RT_TASK_T_CID         (9*4+3)
+#define RT_TASK_T_NB_CORES_TO_POP (9*4+4)
+#define RT_TASK_T_NB_CORES_TO_END (9*4+5)
 
 /// @endcond
 

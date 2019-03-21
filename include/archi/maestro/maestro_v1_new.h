@@ -243,6 +243,7 @@ typedef union {
 
 typedef union {
   struct {
+    unsigned int padding0:1 ;
     unsigned int icu_ok_flags    :31; // Bit <x> set to 1 when a rising edge of the signal i_icu_ok_irq[ <x> ] occurs and MSP is requester of the change mode order of the ICU <x>. A read this register clears the register and the bit icu_ok_flag of the DLC_IFR register.
   };
   unsigned int raw;
@@ -250,6 +251,7 @@ typedef union {
 
 typedef union {
   struct {
+    unsigned int padding0:1 ;
     unsigned int icu_delayed_flags:31; // Bit <x> set to 1 when a rising edge of the signal i_icu_delayed_irq[ <x> ] occurs and MSP is requester of the change mode order of the ICU <x>. A read this register clears the register and the bit icu_delayed_flag of the DLC_IFR register.
   };
   unsigned int raw;
@@ -257,10 +259,101 @@ typedef union {
 
 typedef union {
   struct {
+    unsigned int padding0:1 ;
     unsigned int icu_mode_changed_flags:31; // Bit <x> set to 1 when a rising edge of the signal i_icu_mode_changed_irq[ <x> ] occurs. A read this register clears the register and the bit icu_mode_changed_flag of the DLC_IFR register.
   };
   unsigned int raw;
 } __attribute__((packed)) maestro_dlc_imcifr_t;
+
+#endif
+
+
+
+//
+// REGISTERS STRUCTS
+//
+
+#ifdef __GVSOC__
+
+class vp_maestro_dlc_pctrl : public vp::reg_32
+{
+public:
+  inline void start_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_PCTRL_START_BIT, MAESTRO_DLC_PCTRL_START_WIDTH); }
+  inline uint32_t start_get() { return this->get_field(MAESTRO_DLC_PCTRL_START_BIT, MAESTRO_DLC_PCTRL_START_WIDTH); }
+  inline void paddr_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_PCTRL_PADDR_BIT, MAESTRO_DLC_PCTRL_PADDR_WIDTH); }
+  inline uint32_t paddr_get() { return this->get_field(MAESTRO_DLC_PCTRL_PADDR_BIT, MAESTRO_DLC_PCTRL_PADDR_WIDTH); }
+  inline void dir_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_PCTRL_DIR_BIT, MAESTRO_DLC_PCTRL_DIR_WIDTH); }
+  inline uint32_t dir_get() { return this->get_field(MAESTRO_DLC_PCTRL_DIR_BIT, MAESTRO_DLC_PCTRL_DIR_WIDTH); }
+  inline void pwdata_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_PCTRL_PWDATA_BIT, MAESTRO_DLC_PCTRL_PWDATA_WIDTH); }
+  inline uint32_t pwdata_get() { return this->get_field(MAESTRO_DLC_PCTRL_PWDATA_BIT, MAESTRO_DLC_PCTRL_PWDATA_WIDTH); }
+};
+
+class vp_maestro_prdata : public vp::reg_32
+{
+public:
+  inline void prdata_set(uint32_t value) { this->set_field(value, MAESTRO_PRDATA_PRDATA_BIT, MAESTRO_PRDATA_PRDATA_WIDTH); }
+  inline uint32_t prdata_get() { return this->get_field(MAESTRO_PRDATA_PRDATA_BIT, MAESTRO_PRDATA_PRDATA_WIDTH); }
+};
+
+class vp_maestro_dlc_sr : public vp::reg_32
+{
+public:
+  inline void picl_busy_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_SR_PICL_BUSY_BIT, MAESTRO_DLC_SR_PICL_BUSY_WIDTH); }
+  inline uint32_t picl_busy_get() { return this->get_field(MAESTRO_DLC_SR_PICL_BUSY_BIT, MAESTRO_DLC_SR_PICL_BUSY_WIDTH); }
+  inline void scu_busy_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_SR_SCU_BUSY_BIT, MAESTRO_DLC_SR_SCU_BUSY_WIDTH); }
+  inline uint32_t scu_busy_get() { return this->get_field(MAESTRO_DLC_SR_SCU_BUSY_BIT, MAESTRO_DLC_SR_SCU_BUSY_WIDTH); }
+};
+
+class vp_maestro_dlc_imr : public vp::reg_32
+{
+public:
+  inline void icu_ok_mask_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IMR_ICU_OK_MASK_BIT, MAESTRO_DLC_IMR_ICU_OK_MASK_WIDTH); }
+  inline uint32_t icu_ok_mask_get() { return this->get_field(MAESTRO_DLC_IMR_ICU_OK_MASK_BIT, MAESTRO_DLC_IMR_ICU_OK_MASK_WIDTH); }
+  inline void icu_delayed_mask_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IMR_ICU_DELAYED_MASK_BIT, MAESTRO_DLC_IMR_ICU_DELAYED_MASK_WIDTH); }
+  inline uint32_t icu_delayed_mask_get() { return this->get_field(MAESTRO_DLC_IMR_ICU_DELAYED_MASK_BIT, MAESTRO_DLC_IMR_ICU_DELAYED_MASK_WIDTH); }
+  inline void icu_mode_changed_mask_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IMR_ICU_MODE_CHANGED_MASK_BIT, MAESTRO_DLC_IMR_ICU_MODE_CHANGED_MASK_WIDTH); }
+  inline uint32_t icu_mode_changed_mask_get() { return this->get_field(MAESTRO_DLC_IMR_ICU_MODE_CHANGED_MASK_BIT, MAESTRO_DLC_IMR_ICU_MODE_CHANGED_MASK_WIDTH); }
+  inline void picl_ok_mask_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IMR_PICL_OK_MASK_BIT, MAESTRO_DLC_IMR_PICL_OK_MASK_WIDTH); }
+  inline uint32_t picl_ok_mask_get() { return this->get_field(MAESTRO_DLC_IMR_PICL_OK_MASK_BIT, MAESTRO_DLC_IMR_PICL_OK_MASK_WIDTH); }
+  inline void scu_ok_mask_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IMR_SCU_OK_MASK_BIT, MAESTRO_DLC_IMR_SCU_OK_MASK_WIDTH); }
+  inline uint32_t scu_ok_mask_get() { return this->get_field(MAESTRO_DLC_IMR_SCU_OK_MASK_BIT, MAESTRO_DLC_IMR_SCU_OK_MASK_WIDTH); }
+};
+
+class vp_maestro_dlc_ifr : public vp::reg_32
+{
+public:
+  inline void icu_ok_flag_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IFR_ICU_OK_FLAG_BIT, MAESTRO_DLC_IFR_ICU_OK_FLAG_WIDTH); }
+  inline uint32_t icu_ok_flag_get() { return this->get_field(MAESTRO_DLC_IFR_ICU_OK_FLAG_BIT, MAESTRO_DLC_IFR_ICU_OK_FLAG_WIDTH); }
+  inline void icu_delayed_flag_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IFR_ICU_DELAYED_FLAG_BIT, MAESTRO_DLC_IFR_ICU_DELAYED_FLAG_WIDTH); }
+  inline uint32_t icu_delayed_flag_get() { return this->get_field(MAESTRO_DLC_IFR_ICU_DELAYED_FLAG_BIT, MAESTRO_DLC_IFR_ICU_DELAYED_FLAG_WIDTH); }
+  inline void icu_mode_changed_flag_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IFR_ICU_MODE_CHANGED_FLAG_BIT, MAESTRO_DLC_IFR_ICU_MODE_CHANGED_FLAG_WIDTH); }
+  inline uint32_t icu_mode_changed_flag_get() { return this->get_field(MAESTRO_DLC_IFR_ICU_MODE_CHANGED_FLAG_BIT, MAESTRO_DLC_IFR_ICU_MODE_CHANGED_FLAG_WIDTH); }
+  inline void picl_ok_flag_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IFR_PICL_OK_FLAG_BIT, MAESTRO_DLC_IFR_PICL_OK_FLAG_WIDTH); }
+  inline uint32_t picl_ok_flag_get() { return this->get_field(MAESTRO_DLC_IFR_PICL_OK_FLAG_BIT, MAESTRO_DLC_IFR_PICL_OK_FLAG_WIDTH); }
+  inline void scu_ok_flag_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IFR_SCU_OK_FLAG_BIT, MAESTRO_DLC_IFR_SCU_OK_FLAG_WIDTH); }
+  inline uint32_t scu_ok_flag_get() { return this->get_field(MAESTRO_DLC_IFR_SCU_OK_FLAG_BIT, MAESTRO_DLC_IFR_SCU_OK_FLAG_WIDTH); }
+};
+
+class vp_maestro_dlc_ioifr : public vp::reg_32
+{
+public:
+  inline void icu_ok_flags_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IOIFR_ICU_OK_FLAGS_BIT, MAESTRO_DLC_IOIFR_ICU_OK_FLAGS_WIDTH); }
+  inline uint32_t icu_ok_flags_get() { return this->get_field(MAESTRO_DLC_IOIFR_ICU_OK_FLAGS_BIT, MAESTRO_DLC_IOIFR_ICU_OK_FLAGS_WIDTH); }
+};
+
+class vp_maestro_dlc_idifr : public vp::reg_32
+{
+public:
+  inline void icu_delayed_flags_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IDIFR_ICU_DELAYED_FLAGS_BIT, MAESTRO_DLC_IDIFR_ICU_DELAYED_FLAGS_WIDTH); }
+  inline uint32_t icu_delayed_flags_get() { return this->get_field(MAESTRO_DLC_IDIFR_ICU_DELAYED_FLAGS_BIT, MAESTRO_DLC_IDIFR_ICU_DELAYED_FLAGS_WIDTH); }
+};
+
+class vp_maestro_dlc_imcifr : public vp::reg_32
+{
+public:
+  inline void icu_mode_changed_flags_set(uint32_t value) { this->set_field(value, MAESTRO_DLC_IMCIFR_ICU_MODE_CHANGED_FLAGS_BIT, MAESTRO_DLC_IMCIFR_ICU_MODE_CHANGED_FLAGS_WIDTH); }
+  inline uint32_t icu_mode_changed_flags_get() { return this->get_field(MAESTRO_DLC_IMCIFR_ICU_MODE_CHANGED_FLAGS_BIT, MAESTRO_DLC_IMCIFR_ICU_MODE_CHANGED_FLAGS_WIDTH); }
+};
 
 #endif
 
@@ -782,6 +875,156 @@ typedef union {
 
 
 //
+// REGISTERS STRUCTS
+//
+
+#ifdef __GVSOC__
+
+class vp_maestro_wiu_ispmr_0 : public vp::reg_8
+{
+public:
+  inline void mask_modechg_en_irq_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ISPMR_0_MASK_MODECHG_EN_IRQ_BIT, MAESTRO_WIU_ISPMR_0_MASK_MODECHG_EN_IRQ_WIDTH); }
+  inline uint8_t mask_modechg_en_irq_get() { return this->get_field(MAESTRO_WIU_ISPMR_0_MASK_MODECHG_EN_IRQ_BIT, MAESTRO_WIU_ISPMR_0_MASK_MODECHG_EN_IRQ_WIDTH); }
+};
+
+class vp_maestro_wiu_ispmr_1 : public vp::reg_8
+{
+public:
+  inline void mask_modechg_en_irq_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ISPMR_1_MASK_MODECHG_EN_IRQ_BIT, MAESTRO_WIU_ISPMR_1_MASK_MODECHG_EN_IRQ_WIDTH); }
+  inline uint8_t mask_modechg_en_irq_get() { return this->get_field(MAESTRO_WIU_ISPMR_1_MASK_MODECHG_EN_IRQ_BIT, MAESTRO_WIU_ISPMR_1_MASK_MODECHG_EN_IRQ_WIDTH); }
+};
+
+class vp_maestro_wiu_ifr_0 : public vp::reg_8
+{
+public:
+  inline void flag_irq_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_IFR_0_FLAG_IRQ_BIT, MAESTRO_WIU_IFR_0_FLAG_IRQ_WIDTH); }
+  inline uint8_t flag_irq_get() { return this->get_field(MAESTRO_WIU_IFR_0_FLAG_IRQ_BIT, MAESTRO_WIU_IFR_0_FLAG_IRQ_WIDTH); }
+};
+
+class vp_maestro_wiu_ifr_1 : public vp::reg_8
+{
+public:
+  inline void flag_irq_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_IFR_1_FLAG_IRQ_BIT, MAESTRO_WIU_IFR_1_FLAG_IRQ_WIDTH); }
+  inline uint8_t flag_irq_get() { return this->get_field(MAESTRO_WIU_IFR_1_FLAG_IRQ_BIT, MAESTRO_WIU_IFR_1_FLAG_IRQ_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_0 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_0_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_0_SEQ_SEL_IRQ_0_BIT, MAESTRO_WIU_ICR_0_SEQ_SEL_IRQ_0_WIDTH); }
+  inline uint8_t seq_sel_irq_0_get() { return this->get_field(MAESTRO_WIU_ICR_0_SEQ_SEL_IRQ_0_BIT, MAESTRO_WIU_ICR_0_SEQ_SEL_IRQ_0_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_1 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_1_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_1_SEQ_SEL_IRQ_1_BIT, MAESTRO_WIU_ICR_1_SEQ_SEL_IRQ_1_WIDTH); }
+  inline uint8_t seq_sel_irq_1_get() { return this->get_field(MAESTRO_WIU_ICR_1_SEQ_SEL_IRQ_1_BIT, MAESTRO_WIU_ICR_1_SEQ_SEL_IRQ_1_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_2 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_2_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_2_SEQ_SEL_IRQ_2_BIT, MAESTRO_WIU_ICR_2_SEQ_SEL_IRQ_2_WIDTH); }
+  inline uint8_t seq_sel_irq_2_get() { return this->get_field(MAESTRO_WIU_ICR_2_SEQ_SEL_IRQ_2_BIT, MAESTRO_WIU_ICR_2_SEQ_SEL_IRQ_2_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_3 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_3_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_3_SEQ_SEL_IRQ_3_BIT, MAESTRO_WIU_ICR_3_SEQ_SEL_IRQ_3_WIDTH); }
+  inline uint8_t seq_sel_irq_3_get() { return this->get_field(MAESTRO_WIU_ICR_3_SEQ_SEL_IRQ_3_BIT, MAESTRO_WIU_ICR_3_SEQ_SEL_IRQ_3_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_4 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_4_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_4_SEQ_SEL_IRQ_4_BIT, MAESTRO_WIU_ICR_4_SEQ_SEL_IRQ_4_WIDTH); }
+  inline uint8_t seq_sel_irq_4_get() { return this->get_field(MAESTRO_WIU_ICR_4_SEQ_SEL_IRQ_4_BIT, MAESTRO_WIU_ICR_4_SEQ_SEL_IRQ_4_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_5 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_5_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_5_SEQ_SEL_IRQ_5_BIT, MAESTRO_WIU_ICR_5_SEQ_SEL_IRQ_5_WIDTH); }
+  inline uint8_t seq_sel_irq_5_get() { return this->get_field(MAESTRO_WIU_ICR_5_SEQ_SEL_IRQ_5_BIT, MAESTRO_WIU_ICR_5_SEQ_SEL_IRQ_5_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_6 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_6_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_6_SEQ_SEL_IRQ_6_BIT, MAESTRO_WIU_ICR_6_SEQ_SEL_IRQ_6_WIDTH); }
+  inline uint8_t seq_sel_irq_6_get() { return this->get_field(MAESTRO_WIU_ICR_6_SEQ_SEL_IRQ_6_BIT, MAESTRO_WIU_ICR_6_SEQ_SEL_IRQ_6_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_7 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_7_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_7_SEQ_SEL_IRQ_7_BIT, MAESTRO_WIU_ICR_7_SEQ_SEL_IRQ_7_WIDTH); }
+  inline uint8_t seq_sel_irq_7_get() { return this->get_field(MAESTRO_WIU_ICR_7_SEQ_SEL_IRQ_7_BIT, MAESTRO_WIU_ICR_7_SEQ_SEL_IRQ_7_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_8 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_8_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_8_SEQ_SEL_IRQ_8_BIT, MAESTRO_WIU_ICR_8_SEQ_SEL_IRQ_8_WIDTH); }
+  inline uint8_t seq_sel_irq_8_get() { return this->get_field(MAESTRO_WIU_ICR_8_SEQ_SEL_IRQ_8_BIT, MAESTRO_WIU_ICR_8_SEQ_SEL_IRQ_8_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_9 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_9_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_9_SEQ_SEL_IRQ_9_BIT, MAESTRO_WIU_ICR_9_SEQ_SEL_IRQ_9_WIDTH); }
+  inline uint8_t seq_sel_irq_9_get() { return this->get_field(MAESTRO_WIU_ICR_9_SEQ_SEL_IRQ_9_BIT, MAESTRO_WIU_ICR_9_SEQ_SEL_IRQ_9_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_10 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_10_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_10_SEQ_SEL_IRQ_10_BIT, MAESTRO_WIU_ICR_10_SEQ_SEL_IRQ_10_WIDTH); }
+  inline uint8_t seq_sel_irq_10_get() { return this->get_field(MAESTRO_WIU_ICR_10_SEQ_SEL_IRQ_10_BIT, MAESTRO_WIU_ICR_10_SEQ_SEL_IRQ_10_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_11 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_11_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_11_SEQ_SEL_IRQ_11_BIT, MAESTRO_WIU_ICR_11_SEQ_SEL_IRQ_11_WIDTH); }
+  inline uint8_t seq_sel_irq_11_get() { return this->get_field(MAESTRO_WIU_ICR_11_SEQ_SEL_IRQ_11_BIT, MAESTRO_WIU_ICR_11_SEQ_SEL_IRQ_11_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_12 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_12_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_12_SEQ_SEL_IRQ_12_BIT, MAESTRO_WIU_ICR_12_SEQ_SEL_IRQ_12_WIDTH); }
+  inline uint8_t seq_sel_irq_12_get() { return this->get_field(MAESTRO_WIU_ICR_12_SEQ_SEL_IRQ_12_BIT, MAESTRO_WIU_ICR_12_SEQ_SEL_IRQ_12_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_13 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_13_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_13_SEQ_SEL_IRQ_13_BIT, MAESTRO_WIU_ICR_13_SEQ_SEL_IRQ_13_WIDTH); }
+  inline uint8_t seq_sel_irq_13_get() { return this->get_field(MAESTRO_WIU_ICR_13_SEQ_SEL_IRQ_13_BIT, MAESTRO_WIU_ICR_13_SEQ_SEL_IRQ_13_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_14 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_14_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_14_SEQ_SEL_IRQ_14_BIT, MAESTRO_WIU_ICR_14_SEQ_SEL_IRQ_14_WIDTH); }
+  inline uint8_t seq_sel_irq_14_get() { return this->get_field(MAESTRO_WIU_ICR_14_SEQ_SEL_IRQ_14_BIT, MAESTRO_WIU_ICR_14_SEQ_SEL_IRQ_14_WIDTH); }
+};
+
+class vp_maestro_wiu_icr_15 : public vp::reg_8
+{
+public:
+  inline void seq_sel_irq_15_set(uint8_t value) { this->set_field(value, MAESTRO_WIU_ICR_15_SEQ_SEL_IRQ_15_BIT, MAESTRO_WIU_ICR_15_SEQ_SEL_IRQ_15_WIDTH); }
+  inline uint8_t seq_sel_irq_15_get() { return this->get_field(MAESTRO_WIU_ICR_15_SEQ_SEL_IRQ_15_BIT, MAESTRO_WIU_ICR_15_SEQ_SEL_IRQ_15_WIDTH); }
+};
+
+#endif
+
+
+
+//
 // REGISTERS GLOBAL STRUCT
 //
 
@@ -1094,6 +1337,46 @@ typedef union {
 
 
 //
+// REGISTERS STRUCTS
+//
+
+#ifdef __GVSOC__
+
+class vp_maestro_icu_ctrl : public vp::reg_8
+{
+public:
+  inline void icu_ctrl_set(uint8_t value) { this->set_field(value, MAESTRO_ICU_CTRL_ICU_CTRL_BIT, MAESTRO_ICU_CTRL_ICU_CTRL_WIDTH); }
+  inline uint8_t icu_ctrl_get() { return this->get_field(MAESTRO_ICU_CTRL_ICU_CTRL_BIT, MAESTRO_ICU_CTRL_ICU_CTRL_WIDTH); }
+};
+
+class vp_maestro_icu_mode : public vp::reg_8
+{
+public:
+  inline void icu_mode_set(uint8_t value) { this->set_field(value, MAESTRO_ICU_MODE_ICU_MODE_BIT, MAESTRO_ICU_MODE_ICU_MODE_WIDTH); }
+  inline uint8_t icu_mode_get() { return this->get_field(MAESTRO_ICU_MODE_ICU_MODE_BIT, MAESTRO_ICU_MODE_ICU_MODE_WIDTH); }
+  inline void icu_mode_defined_set(uint8_t value) { this->set_field(value, MAESTRO_ICU_MODE_ICU_MODE_DEFINED_BIT, MAESTRO_ICU_MODE_ICU_MODE_DEFINED_WIDTH); }
+  inline uint8_t icu_mode_defined_get() { return this->get_field(MAESTRO_ICU_MODE_ICU_MODE_DEFINED_BIT, MAESTRO_ICU_MODE_ICU_MODE_DEFINED_WIDTH); }
+};
+
+class vp_maestro_island_mode : public vp::reg_8
+{
+public:
+  inline void isl_mode_set(uint8_t value) { this->set_field(value, MAESTRO_ISLAND_MODE_ISL_MODE_BIT, MAESTRO_ISLAND_MODE_ISL_MODE_WIDTH); }
+  inline uint8_t isl_mode_get() { return this->get_field(MAESTRO_ISLAND_MODE_ISL_MODE_BIT, MAESTRO_ISLAND_MODE_ISL_MODE_WIDTH); }
+};
+
+class vp_maestro_dmu_mode : public vp::reg_8
+{
+public:
+  inline void isl_mode_set(uint8_t value) { this->set_field(value, MAESTRO_DMU_MODE_ISL_MODE_BIT, MAESTRO_DMU_MODE_ISL_MODE_WIDTH); }
+  inline uint8_t isl_mode_get() { return this->get_field(MAESTRO_DMU_MODE_ISL_MODE_BIT, MAESTRO_DMU_MODE_ISL_MODE_WIDTH); }
+};
+
+#endif
+
+
+
+//
 // REGISTERS GLOBAL STRUCT
 //
 
@@ -1168,195 +1451,6 @@ static inline void maestro_dmu_mode_set(uint32_t base, uint32_t value) { ARCHI_W
 
 
 //
-// GROUP icu0
-//
-
-#define MAESTRO_ICU0_OFFSET                      0x2
-
-
-
-//
-// REGISTERS
-//
-
-
-
-//
-// REGISTERS FIELDS
-//
-
-
-
-//
-// REGISTERS STRUCTS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
-// REGISTERS GLOBAL STRUCT
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-typedef struct {
-} __attribute__((packed)) maestro_icu0_t;
-
-#endif
-
-
-
-//
-// REGISTERS ACCESS FUNCTIONS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
-// REGISTERS FIELDS MACROS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
-// GROUP icu1
-//
-
-#define MAESTRO_ICU1_OFFSET                      0x3
-
-
-
-//
-// REGISTERS
-//
-
-
-
-//
-// REGISTERS FIELDS
-//
-
-
-
-//
-// REGISTERS STRUCTS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
-// REGISTERS GLOBAL STRUCT
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-typedef struct {
-} __attribute__((packed)) maestro_icu1_t;
-
-#endif
-
-
-
-//
-// REGISTERS ACCESS FUNCTIONS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
-// REGISTERS FIELDS MACROS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
-// GROUP dmu0
-//
-
-#define MAESTRO_DMU0_OFFSET                      0x4
-
-
-
-//
-// REGISTERS
-//
-
-
-
-//
-// REGISTERS FIELDS
-//
-
-
-
-//
-// REGISTERS STRUCTS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
-// REGISTERS GLOBAL STRUCT
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-typedef struct {
-} __attribute__((packed)) maestro_dmu0_t;
-
-#endif
-
-
-
-//
-// REGISTERS ACCESS FUNCTIONS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
-// REGISTERS FIELDS MACROS
-//
-
-#ifndef LANGUAGE_ASSEMBLY
-
-#endif
-
-
-
-//
 // CUSTOM FIELDS
 //
 #define MAESTRO_ICU_SUPPLY_EXT 0x0
@@ -1374,11 +1468,5 @@ typedef struct {
 #define MAESTRO_ICU_CLK_LF 0x1
 #define MAESTRO_ICU_CLK_MF 0x2
 #define MAESTRO_ICU_CLK_NF 0x3
-#define MAESTRO_SOC_ACTIVE_NV 0x01
-#define MAESTRO_SOC_ACTIVE_LV 0x02
-#define MAESTRO_SOC_CLUSTER_ACTIVE_NV 0x04
-#define MAESTRO_SOC_CLUSTER_ACTIVE_LV 0x08
-#define MAESTRO_DEEP_SLEEP_ALL_OFF 0x10
-#define MAESTRO_DEEP_SLEEP_RETENTIVE 0x20
 
 #endif

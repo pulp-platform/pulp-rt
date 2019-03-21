@@ -119,6 +119,21 @@ void rt_event_free(rt_event_sched_t *sched, int nb_events);
 rt_event_t *rt_event_get(rt_event_sched_t *sched, void (*callback)(void *), void *arg);
 
 
+/** \brief Reserve a permanent event and set its callback and argument.
+ *
+ * This gets an event from the free list and initializes it with the specified callback.
+ * The event is then ready to be pushed to the scheduler.
+ * Compared to normal events, this one is never released and can be
+ * reused without being re-allocated, for example for regular actions.
+ *
+ * \param sched    The scheduler for which to get the event for.
+ * \param callback The function which will be called when the event is executed.
+ * \param arg      The argument of the function callback.
+ * \return         The assigned event if there was at least one available, or NULL if not.
+ */
+rt_event_t *rt_event_get_permanent(rt_event_sched_t *sched, void (*callback)(void *), void *arg);
+
+
 
 /** \brief Reserve an IRQ event and set its callback and argument.
  *
@@ -354,6 +369,10 @@ static inline rt_event_t *__rt_wait_event_prepare(rt_event_t *event)
 static inline void __rt_event_save(rt_event_t *event)
 {
   event->saved_pending = event->pending;
+  // The user can still check the event while it is being
+  // reused. It will also check saved_pending to avoid
+  // checking the wrong status.
+  rt_compiler_barrier();
   event->saved_callback = event->callback;
   event->saved_arg = event->arg;
 }
@@ -363,6 +382,8 @@ static inline void __rt_event_restore(rt_event_t *event)
   event->pending = event->saved_pending;
   event->callback = event->saved_callback;
   event->arg = event->saved_arg;
+  rt_compiler_barrier();
+  event->saved_pending = 0;
 }
 
 static inline rt_event_t *__rt_init_event(rt_event_t *event, rt_event_sched_t *sched, void (*callback)(void *), void *arg)

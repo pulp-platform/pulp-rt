@@ -221,6 +221,7 @@ typedef union {
     unsigned int pen             :1 ; // Timer low prescaler enable configuration bitfield:- 1'b0: disabled - 1'b1: enabled
     unsigned int ccfg            :1 ; // Timer low clock source configuration bitfield: - 1'b0: FLL or FLL+Prescaler - 1'b1: Reference clock at 32kHz
     unsigned int pval            :8 ; // Timer low prescaler value bitfield. Ftimer = Fclk / (1 + PRESC_VAL)
+    unsigned int padding0:15;
     unsigned int casc            :1 ; // Timer low  + Timer high 64bit cascaded mode configuration bitfield.
   };
   unsigned int raw;
@@ -295,6 +296,118 @@ typedef union {
   };
   unsigned int raw;
 } __attribute__((packed)) timer_reset_hi_t;
+
+#endif
+
+
+
+//
+// REGISTERS STRUCTS
+//
+
+#ifdef __GVSOC__
+
+class vp_timer_cfg_lo : public vp::reg_32
+{
+public:
+  inline void enable_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_ENABLE_BIT, TIMER_CFG_LO_ENABLE_WIDTH); }
+  inline uint32_t enable_get() { return this->get_field(TIMER_CFG_LO_ENABLE_BIT, TIMER_CFG_LO_ENABLE_WIDTH); }
+  inline void reset_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_RESET_BIT, TIMER_CFG_LO_RESET_WIDTH); }
+  inline uint32_t reset_get() { return this->get_field(TIMER_CFG_LO_RESET_BIT, TIMER_CFG_LO_RESET_WIDTH); }
+  inline void irqen_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_IRQEN_BIT, TIMER_CFG_LO_IRQEN_WIDTH); }
+  inline uint32_t irqen_get() { return this->get_field(TIMER_CFG_LO_IRQEN_BIT, TIMER_CFG_LO_IRQEN_WIDTH); }
+  inline void iem_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_IEM_BIT, TIMER_CFG_LO_IEM_WIDTH); }
+  inline uint32_t iem_get() { return this->get_field(TIMER_CFG_LO_IEM_BIT, TIMER_CFG_LO_IEM_WIDTH); }
+  inline void mode_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_MODE_BIT, TIMER_CFG_LO_MODE_WIDTH); }
+  inline uint32_t mode_get() { return this->get_field(TIMER_CFG_LO_MODE_BIT, TIMER_CFG_LO_MODE_WIDTH); }
+  inline void one_s_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_ONE_S_BIT, TIMER_CFG_LO_ONE_S_WIDTH); }
+  inline uint32_t one_s_get() { return this->get_field(TIMER_CFG_LO_ONE_S_BIT, TIMER_CFG_LO_ONE_S_WIDTH); }
+  inline void pen_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_PEN_BIT, TIMER_CFG_LO_PEN_WIDTH); }
+  inline uint32_t pen_get() { return this->get_field(TIMER_CFG_LO_PEN_BIT, TIMER_CFG_LO_PEN_WIDTH); }
+  inline void ccfg_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_CCFG_BIT, TIMER_CFG_LO_CCFG_WIDTH); }
+  inline uint32_t ccfg_get() { return this->get_field(TIMER_CFG_LO_CCFG_BIT, TIMER_CFG_LO_CCFG_WIDTH); }
+  inline void pval_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_PVAL_BIT, TIMER_CFG_LO_PVAL_WIDTH); }
+  inline uint32_t pval_get() { return this->get_field(TIMER_CFG_LO_PVAL_BIT, TIMER_CFG_LO_PVAL_WIDTH); }
+  inline void casc_set(uint32_t value) { this->set_field(value, TIMER_CFG_LO_CASC_BIT, TIMER_CFG_LO_CASC_WIDTH); }
+  inline uint32_t casc_get() { return this->get_field(TIMER_CFG_LO_CASC_BIT, TIMER_CFG_LO_CASC_WIDTH); }
+};
+
+class vp_timer_cfg_hi : public vp::reg_32
+{
+public:
+  inline void enable_set(uint32_t value) { this->set_field(value, TIMER_CFG_HI_ENABLE_BIT, TIMER_CFG_HI_ENABLE_WIDTH); }
+  inline uint32_t enable_get() { return this->get_field(TIMER_CFG_HI_ENABLE_BIT, TIMER_CFG_HI_ENABLE_WIDTH); }
+  inline void reset_set(uint32_t value) { this->set_field(value, TIMER_CFG_HI_RESET_BIT, TIMER_CFG_HI_RESET_WIDTH); }
+  inline uint32_t reset_get() { return this->get_field(TIMER_CFG_HI_RESET_BIT, TIMER_CFG_HI_RESET_WIDTH); }
+  inline void irqen_set(uint32_t value) { this->set_field(value, TIMER_CFG_HI_IRQEN_BIT, TIMER_CFG_HI_IRQEN_WIDTH); }
+  inline uint32_t irqen_get() { return this->get_field(TIMER_CFG_HI_IRQEN_BIT, TIMER_CFG_HI_IRQEN_WIDTH); }
+  inline void iem_set(uint32_t value) { this->set_field(value, TIMER_CFG_HI_IEM_BIT, TIMER_CFG_HI_IEM_WIDTH); }
+  inline uint32_t iem_get() { return this->get_field(TIMER_CFG_HI_IEM_BIT, TIMER_CFG_HI_IEM_WIDTH); }
+  inline void mode_set(uint32_t value) { this->set_field(value, TIMER_CFG_HI_MODE_BIT, TIMER_CFG_HI_MODE_WIDTH); }
+  inline uint32_t mode_get() { return this->get_field(TIMER_CFG_HI_MODE_BIT, TIMER_CFG_HI_MODE_WIDTH); }
+  inline void one_s_set(uint32_t value) { this->set_field(value, TIMER_CFG_HI_ONE_S_BIT, TIMER_CFG_HI_ONE_S_WIDTH); }
+  inline uint32_t one_s_get() { return this->get_field(TIMER_CFG_HI_ONE_S_BIT, TIMER_CFG_HI_ONE_S_WIDTH); }
+  inline void pen_set(uint32_t value) { this->set_field(value, TIMER_CFG_HI_PEN_BIT, TIMER_CFG_HI_PEN_WIDTH); }
+  inline uint32_t pen_get() { return this->get_field(TIMER_CFG_HI_PEN_BIT, TIMER_CFG_HI_PEN_WIDTH); }
+  inline void clkcfg_set(uint32_t value) { this->set_field(value, TIMER_CFG_HI_CLKCFG_BIT, TIMER_CFG_HI_CLKCFG_WIDTH); }
+  inline uint32_t clkcfg_get() { return this->get_field(TIMER_CFG_HI_CLKCFG_BIT, TIMER_CFG_HI_CLKCFG_WIDTH); }
+};
+
+class vp_timer_cnt_lo : public vp::reg_32
+{
+public:
+  inline void cnt_lo_set(uint32_t value) { this->set_field(value, TIMER_CNT_LO_CNT_LO_BIT, TIMER_CNT_LO_CNT_LO_WIDTH); }
+  inline uint32_t cnt_lo_get() { return this->get_field(TIMER_CNT_LO_CNT_LO_BIT, TIMER_CNT_LO_CNT_LO_WIDTH); }
+};
+
+class vp_timer_cnt_hi : public vp::reg_32
+{
+public:
+  inline void cnt_hi_set(uint32_t value) { this->set_field(value, TIMER_CNT_HI_CNT_HI_BIT, TIMER_CNT_HI_CNT_HI_WIDTH); }
+  inline uint32_t cnt_hi_get() { return this->get_field(TIMER_CNT_HI_CNT_HI_BIT, TIMER_CNT_HI_CNT_HI_WIDTH); }
+};
+
+class vp_timer_cmp_lo : public vp::reg_32
+{
+public:
+  inline void cmp_lo_set(uint32_t value) { this->set_field(value, TIMER_CMP_LO_CMP_LO_BIT, TIMER_CMP_LO_CMP_LO_WIDTH); }
+  inline uint32_t cmp_lo_get() { return this->get_field(TIMER_CMP_LO_CMP_LO_BIT, TIMER_CMP_LO_CMP_LO_WIDTH); }
+};
+
+class vp_timer_cmp_hi : public vp::reg_32
+{
+public:
+  inline void cmp_hi_set(uint32_t value) { this->set_field(value, TIMER_CMP_HI_CMP_HI_BIT, TIMER_CMP_HI_CMP_HI_WIDTH); }
+  inline uint32_t cmp_hi_get() { return this->get_field(TIMER_CMP_HI_CMP_HI_BIT, TIMER_CMP_HI_CMP_HI_WIDTH); }
+};
+
+class vp_timer_start_lo : public vp::reg_32
+{
+public:
+  inline void strt_lo_set(uint32_t value) { this->set_field(value, TIMER_START_LO_STRT_LO_BIT, TIMER_START_LO_STRT_LO_WIDTH); }
+  inline uint32_t strt_lo_get() { return this->get_field(TIMER_START_LO_STRT_LO_BIT, TIMER_START_LO_STRT_LO_WIDTH); }
+};
+
+class vp_timer_start_hi : public vp::reg_32
+{
+public:
+  inline void strt_hi_set(uint32_t value) { this->set_field(value, TIMER_START_HI_STRT_HI_BIT, TIMER_START_HI_STRT_HI_WIDTH); }
+  inline uint32_t strt_hi_get() { return this->get_field(TIMER_START_HI_STRT_HI_BIT, TIMER_START_HI_STRT_HI_WIDTH); }
+};
+
+class vp_timer_reset_lo : public vp::reg_32
+{
+public:
+  inline void rst_lo_set(uint32_t value) { this->set_field(value, TIMER_RESET_LO_RST_LO_BIT, TIMER_RESET_LO_RST_LO_WIDTH); }
+  inline uint32_t rst_lo_get() { return this->get_field(TIMER_RESET_LO_RST_LO_BIT, TIMER_RESET_LO_RST_LO_WIDTH); }
+};
+
+class vp_timer_reset_hi : public vp::reg_32
+{
+public:
+  inline void rst_hi_set(uint32_t value) { this->set_field(value, TIMER_RESET_HI_RST_HI_BIT, TIMER_RESET_HI_RST_HI_WIDTH); }
+  inline uint32_t rst_hi_get() { return this->get_field(TIMER_RESET_HI_RST_HI_BIT, TIMER_RESET_HI_RST_HI_WIDTH); }
+};
 
 #endif
 

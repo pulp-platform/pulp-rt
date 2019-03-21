@@ -17,6 +17,8 @@
 #ifndef __ARCHI_GPIO_GPIO_V2_H__
 #define __ARCHI_GPIO_GPIO_V2_H__
 
+#include "archi/gpio/gpio_v2_new.h"
+
 #define ARCHI_GPIO_PADDIR    0x0    // Direction		i:0..31, GPIOi => Bit[i] = 1 Output, Bit[i] = 0 Input (Default)
 #define ARCHI_GPIO_PADIN     0x4    // i:0..31, Bit[i] Received bit from GPIOi
 #define ARCHI_GPIO_PADOUT    0x8    // i:0..31, Bit[i] Bit to transmit through GPIOi
