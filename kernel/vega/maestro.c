@@ -27,7 +27,7 @@
 
 void __rt_pmu_cluster_power_down()
 {
-  maestro_icu_set_state(ARCHI_PMU_CLU_ID, PMU_CLUSTER_EXT_NV);
+  //maestro_icu_set_state(ARCHI_PMU_CLU_ID, PMU_CLUSTER_EXT_NV);
 }
 
 int __rt_pmu_cluster_power_up()
