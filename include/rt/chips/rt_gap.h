@@ -104,7 +104,7 @@ typedef enum {
 
 /** \enum rt_pad_func_e
  * \brief List of pad functions which can be specified when a pad is being configured.
- * 
+ *
  * This can be used to specify which function a pad is using.
  */
 typedef enum {
