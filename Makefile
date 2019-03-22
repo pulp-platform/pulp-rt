@@ -59,7 +59,7 @@ install_headers: $(HEADER_DIR)
 	install -D $(GAP_SDK_HOME)/pulp-os/include/gap8_emul.h $(TARGET_INSTALL_DIR)/include
 
 install_rt: install_headers
-	make -C  $(GAP_SDK_HOME)/pulp-os/pulp-rt MK_ROOT=$(GAP_SDK_HOME)/pulp-os/pulp-rt/mk/gap clean build install
+	make -C  $(GAP_SDK_HOME)/pulp-os/pulp-rt MK_ROOT=$(GAP_SDK_HOME)/pulp-os/pulp-rt/mk/gap clean header build install
 
 # Rules for creating the libs.
 #------------------------------------------
