@@ -105,6 +105,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
   #else 
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
+#if __RT_FREQ_DOMAIN_CL >= RT_FREQ_NB_DOMAIN
       // Setup FLL
       int init_freq = __rt_fll_init(__RT_FLL_CL);
 
@@ -120,7 +121,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
       {
         __rt_freq_set_value(RT_FREQ_DOMAIN_CL, init_freq);
       }
-
+#endif
     }
   #endif  
 #endif

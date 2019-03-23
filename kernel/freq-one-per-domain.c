@@ -51,4 +51,13 @@ void __rt_freq_init()
 #if __RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
   __rt_freq_domains[RT_FREQ_DOMAIN_CL] = __rt_fll_init(__RT_FLL_CL);
 #endif
+
+#if PULP_CHIP == CHIP_VEGA
+  // By default on Vega, we connect each FLL on each domain
+  apb_soc_clk_sel_set(
+    ARCHI_APB_SOC_CTRL_ADDR,
+    APB_SOC_CLK_SEL_CLK_SOC(1) | 
+    APB_SOC_CLK_SEL_CLK_CLUSTER(2)
+  );
+#endif
 }

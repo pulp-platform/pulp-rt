@@ -25,14 +25,18 @@
 #include "stdio.h"
 
 
+
 void __rt_pmu_cluster_power_down()
 {
-  maestro_icu_set_state(ARCHI_PMU_CLU_ID, PMU_CLUSTER_EXT_NV);
+  //maestro_icu_set_state(ARCHI_PMU_CLU_ID, PMU_CLUSTER_EXT_NV);
 }
 
 int __rt_pmu_cluster_power_up()
 {
   maestro_trigger_sequence(ARCHI_PMU_STATE_SOC_NV_CLU_NV);
+
+  // Temporary workaround until HW bug on cluster isolation is fixed
+  apb_soc_cl_isolate_set(ARCHI_APB_SOC_CTRL_ADDR, 0);
 
   return 1;
 }

@@ -172,7 +172,6 @@ unsigned int __rt_fll_init(int fll)
 
   __rt_fll_is_on[fll] = 1;
 
-
   rt_trace(RT_TRACE_INIT, "FLL is locked (fll: %d, freq: %d)\n", fll, freq);
 
   return freq;
