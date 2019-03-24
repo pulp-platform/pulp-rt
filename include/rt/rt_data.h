@@ -348,6 +348,10 @@ typedef struct {
   void *call_stacks;
   int call_stacks_size;
   unsigned int trig_addr;
+  int powered_up;
+  int state;
+  int cid;
+  rt_event_t *mount_event;
 } rt_fc_cluster_data_t;
 
 typedef struct {

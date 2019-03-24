@@ -187,18 +187,18 @@ extern void __rt_set_slave_stack();
 
 #if defined(PULP_CHIP_FAMILY) && (PULP_CHIP_FAMILY == CHIP_VEGA || PULP_CHIP_FAMILY == CHIP_DEVCHIP || PULP_CHIP_FAMILY == CHIP_WOLFE || PULP_CHIP_FAMILY == CHIP_GAP)
 
-int __rt_pmu_cluster_power_up();
+int __rt_pmu_cluster_power_up(rt_event_t *event, int *pending);
 
-void __rt_pmu_cluster_power_down();
+void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending);
   
 #else
 
-static inline int __rt_pmu_cluster_power_up()
+static inline int __rt_pmu_cluster_power_up(rt_event_t *event, int *pending)
 {
   return 0;
 }
 
-static inline void __rt_pmu_cluster_power_down()
+static inline void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 {
 }
   

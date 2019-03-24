@@ -201,7 +201,7 @@ static void PMU_ChangeDCDCSetting(PMU_RegulatorStateT DCDC_OperPoint, unsigned i
   unsigned int *ConfigReg = (unsigned int *) PMU_DCDC_CONFIG_REG;
   *ConfigReg = __builtin_bitinsert_r(*ConfigReg, Value, DCDC_RANGE, ToHWDCDC_Pos[DCDC_OperPoint]);
 }
-void __rt_pmu_cluster_power_down()
+void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 
 {
   if (rt_platform() == ARCHI_PLATFORM_FPGA) return;
@@ -236,7 +236,7 @@ void __rt_pmu_cluster_power_down()
 
 void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState);
 
-int __rt_pmu_cluster_power_up() // unsigned int ClusterFreq)
+int __rt_pmu_cluster_power_up(rt_event_t *event, int *pending) // unsigned int ClusterFreq)
 {
   if (CLUSTER_STATE(PMUState.State) == CLUSTER_OFF)
   {
@@ -500,7 +500,7 @@ void FinalizeInitPMUDriver()
   PMURetentionState.Raw = GetRetentiveState();
   if (PMURetentionState.Fields.BootType != COLD_BOOT && PMURetentionState.Fields.ClusterWakeUpState) {
           // ChangePowerSystemState(POWER_SYSTEM_STATE(PMURetentionState.Fields.WakeupState, PMURetentionState.Fields.ClusterWakeUpState), 0);
-    __rt_pmu_cluster_power_up();
+    __rt_pmu_cluster_power_up(NULL, NULL);
     if (PMU_ClusterIsRunning() && PMURetentionState.Fields.FllClusterRetention) InitOneFll(FLL_CLUSTER, 1);
   }
 }

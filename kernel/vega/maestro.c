@@ -1,5 +1,3 @@
-#if 1
-
 /*
  * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
@@ -17,138 +15,133 @@
  */
 
 /* 
- * Authors: Eric Flamand, GreenWaves Technologies (eric.flamand@greenwaves-technologies.com)
- *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
+ * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
 #include "rt/rt_api.h"
 #include "stdio.h"
 
 
+#define RT_PMU_MRAM_ID    0
+#define RT_PMU_CLUSTER_ID 1
 
-void __rt_pmu_cluster_power_down()
+#define RT_PMU_STATE_OFF 0
+#define RT_PMU_STATE_ON  1
+
+/* Maestro internal events */
+#define MAESTRO_EVENT_ICU_OK            (1<<0)
+#define MAESTRO_EVENT_ICU_DELAYED       (1<<1)
+#define MAESTRO_EVENT_MODE_CHANGED      (1<<2)
+#define MAESTRO_EVENT_PICL_OK           (1<<3)
+#define MAESTRO_EVENT_SCU_OK            (1<<4)
+
+RT_L2_RET_DATA static uint32_t __rt_pmu_domains_on;
+RT_L2_RET_DATA static uint32_t __rt_pmu_domains_on_pending;
+
+RT_FC_DATA static rt_event_t *__rt_pmu_pending_requests;
+RT_FC_DATA static rt_event_t *__rt_pmu_pending_requests_tail;
+
+
+
+static inline __attribute__((always_inline)) void __rt_pmu_apply_state(int domain, int state)
 {
-  //maestro_icu_set_state(ARCHI_PMU_CLU_ID, PMU_CLUSTER_EXT_NV);
+  __rt_pmu_domains_on_pending = (__rt_pmu_domains_on & ~(1 << domain)) | (state << domain);
+
+  maestro_trigger_sequence(1 << __rt_pmu_domains_on_pending);
 }
 
-int __rt_pmu_cluster_power_up()
-{
-  maestro_trigger_sequence(ARCHI_PMU_STATE_SOC_NV_CLU_NV);
 
+
+static void __attribute__((interrupt)) __rt_pmu_scu_handler()
+{
+  //   Clear PICL_OK interrupt
+  PMU_WRITE(MAESTRO_DLC_IFR_OFFSET, MAESTRO_EVENT_SCU_OK);
+
+  __rt_pmu_domains_on = __rt_pmu_domains_on_pending;
+
+  rt_event_t *event = __rt_pmu_pending_requests;
+  if (event)
+  {
+    __rt_pmu_pending_requests = event->next;
+
+    __rt_pmu_apply_state(event->data[0], event->data[1]);
+
+    if (event->data[0] == RT_PMU_CLUSTER_ID && event->data[1] == RT_PMU_STATE_ON)
+    {
+      // Temporary workaround until HW bug on cluster isolation is fixed
+      apb_soc_cl_isolate_set(ARCHI_APB_SOC_CTRL_ADDR, 0);
+    }
+
+    __rt_push_event(event->sched, event);
+  }
+}
+
+
+
+static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int domain, int state)
+{
+  if (__rt_pmu_domains_on_pending == __rt_pmu_domains_on)
+  {
+    __rt_pmu_apply_state(domain, state);
+  }
+  else
+  {
+    event->data[0] = domain;
+    event->data[1] = state;
+
+    if (__rt_pmu_pending_requests == NULL)
+      __rt_pmu_pending_requests = event;
+    else
+      __rt_pmu_pending_requests_tail->next = event;
+
+    __rt_pmu_pending_requests_tail = event;
+    event->next = NULL;
+
+
+    *pending = 1;
+  }
+}
+
+
+
+void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
+{
   // Temporary workaround until HW bug on cluster isolation is fixed
-  apb_soc_cl_isolate_set(ARCHI_APB_SOC_CTRL_ADDR, 0);
+  apb_soc_cl_isolate_set(ARCHI_APB_SOC_CTRL_ADDR, 1);
+
+  __rt_pmu_change_domain_power(event, pending, RT_PMU_CLUSTER_ID, RT_PMU_STATE_OFF);
+}
+
+
+
+int __rt_pmu_cluster_power_up(rt_event_t *event, int *pending)
+{
+  __rt_pmu_change_domain_power(event, pending, RT_PMU_CLUSTER_ID, RT_PMU_STATE_ON);
+
+  if (*pending == 0)
+  {
+    // Temporary workaround until HW bug on cluster isolation is fixed
+    apb_soc_cl_isolate_set(ARCHI_APB_SOC_CTRL_ADDR, 0);
+  }
 
   return 1;
 }
 
-void __rt_pmu_init()
-{
-}
 
-#else
-
-/*
- * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/* 
- * Authors: Eric Flamand, GreenWaves Technologies (eric.flamand@greenwaves-technologies.com)
- *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
- */
-
-#include "rt/rt_api.h"
-#include "stdio.h"
-#include "hal/maestro/pmu_v2.h"
-
-#define PMU_DLC_PCTRL_REG ARCHI_PMU_ADDR + 0x00
-#define PMU_DLC_IFR_REG   ARCHI_PMU_ADDR + 0x10
-
-#define PMU_STATE_SOC_NV     2
-#define PMU_STATE_SOC_LV     3
-#define PMU_STATE_SOC_CLU_NV 4
-#define PMU_STATE_SOC_CLU_LV 5
-#define PMU_STATE_DEEP_SLEEP 0
-
-#define PMU_PICL_WIU  1
-#define PMU_PICL_ICU0 2
-#define PMU_PICL_ICU1 3
-#define PMU_PICL_ICU2 4
-
-#define PMU_WIU_ISPMR_0 0
-#define PMU_WIU_ISPMR_1 1
-#define PMU_WIU_IFR_0   2
-#define PMU_WIU_IFR_1   3
-
-
-void set_PMUState(unsigned int state) {
-  pulp_write32(PMU_DLC_IFR_REG,0xFF); //clears previous interrupts
-  unsigned int SetSCUInt = ((1<<state)<<16)|((PMU_PICL_WIU)<<6)|((PMU_WIU_IFR_1)<<1)|1;
-  pulp_write32(PMU_DLC_PCTRL_REG,SetSCUInt);
-  __rt_periph_wait_event(ARCHI_SOC_EVENT_SCU_OK, 1);
-}
-
-
-void __rt_pmu_cluster_power_down()
-{
-#if 0
-  //plp_trace(RT_TRACE_PMU, "Cluster power down\n");
-
-  // Check bit 14 of bypass register to see if an external tool (like gdb) is preventing us
-  // from shutting down the cluster
-  if ((hal_pmu_bypass_get() >> APB_SOC_BYPASS_USER1_BIT) & 1) return;
-
-  // Wait until cluster is not busy anymore as isolating it while
-  // AXI transactions are sent would break everything
-  // This part does not need to be done asynchronously as the caller is supposed to make 
-  // sure the cluster is not active anymore..
-  while (apb_soc_busy_get()) {
-    __rt_wait_for_event(1<<ARCHI_FC_EVT_CLUSTER_NOT_BUSY);
-  }
-
-  // Block transactions from dc fifos to soc
-  apb_soc_cluster_isolate_set(1);
-
-  // Cluster clock-gating
-  hal_pmu_bypass_set( (1<<ARCHI_PMU_BYPASS_ENABLE_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_POWER_BIT) );
-  __rt_wait_for_event(1<<ARCHI_FC_EVT_CLUSTER_CG_OK);
-
-  // Cluster shutdown
-  hal_pmu_bypass_set( (1<<ARCHI_PMU_BYPASS_ENABLE_BIT) );
-  __rt_wait_for_event(1<<ARCHI_FC_EVT_CLUSTER_POK);
-  // We should not need to wait for power off as it is really quick but we actually do
-#endif
-}
-
-void __rt_pmu_cluster_power_up()
-{
-  //plp_trace(RT_TRACE_PMU, "Cluster power up\n");
-
-  /* Turn on power, this will also clock ungate the cluster */
-  set_PMUState(PMU_STATE_SOC_CLU_NV);
-
-  // Unblock transactions from dc fifos to soc
-  apb_soc_cluster_isolate_set(0);
-
-  // Tell external loader (such as gdb) that the cluster is on so that it can take it
-  // into account
-  hal_pmu_bypass_set( (1<<ARCHI_PMU_BYPASS_ENABLE_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_POWER_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_RESET_BIT) | (1<<ARCHI_PMU_BYPASS_CLUSTER_CLOCK_BIT) | (1 << APB_SOC_BYPASS_USER0_BIT));
-}
 
 void __rt_pmu_init()
 {
-  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_SCU_OK);
-}
+  // At startup, everything is off.
+  // TODO once wakeup is supported, see if we keep some domains on
+  __rt_pmu_domains_on = 0;
+  __rt_pmu_domains_on_pending = 0;
+  __rt_pmu_pending_requests = NULL;
 
-#endif
+  // Activate SCU handler, it will be called every time a sequence is
+  // finished to clear the interrupt in Maestro
+  rt_irq_set_handler(ARCHI_FC_EVT_SCU_OK, __rt_pmu_scu_handler);
+  rt_irq_mask_set(1<<ARCHI_FC_EVT_SCU_OK);
+
+  // Disable all Maestro interrupts but PICL_OK and SCU_OK
+  PMU_WRITE(MAESTRO_DLC_IMR_OFFSET, 0x7);
+}

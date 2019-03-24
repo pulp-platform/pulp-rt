@@ -43,7 +43,7 @@ static RT_FC_TINY_DATA unsigned int __rt_pmu_current_sequence;
 
 
 
-void __rt_pmu_cluster_power_down()
+void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 {
   //plp_trace(RT_TRACE_PMU, "Cluster power down\n");
 
@@ -74,7 +74,7 @@ void __rt_pmu_cluster_power_down()
 
 
 
-int __rt_pmu_cluster_power_up()
+int __rt_pmu_cluster_power_up(rt_event_t *event, int *pending)
 {
   //plp_trace(RT_TRACE_PMU, "Cluster power up\n");
 
