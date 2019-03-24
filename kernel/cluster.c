@@ -261,6 +261,8 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(rt_fc_clust
 
 #endif
 
+    rt_event_push(event);
+
   }
 }
 
