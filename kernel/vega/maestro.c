@@ -278,12 +278,4 @@ void __rt_pmu_init()
 
   // Disable all Maestro interrupts but PICL_OK and SCU_OK
   PMU_WRITE(MAESTRO_DLC_IMR_OFFSET, 0x7);
-
-  // TODO temporary work-around until HW is doing it
-  // Activate all sequences
-  maestro_picl_write(MAESTRO_WIU_OFFSET, MAESTRO_WIU_ISPMR_0_OFFSET, 0);
-  while((PMU_READ(MAESTRO_DLC_SR_OFFSET) & 1) == 1);
-
-  maestro_picl_write(MAESTRO_WIU_OFFSET, MAESTRO_WIU_ISPMR_1_OFFSET, 0);
-  while((PMU_READ(MAESTRO_DLC_SR_OFFSET) & 1) == 1);
 }
