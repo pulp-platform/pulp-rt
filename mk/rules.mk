@@ -131,14 +131,14 @@ $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rt).a: $(rt_OBJS)
 	@rm -f $@
 	$(PULP_AR) -r $@ $^
 
-$(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_rt).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rt).a
+$(TARGET_INSTALL_DIR)/lib/${pulp_chip}/lib$(PULP_LIB_NAME_rt).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rt).a
 	@mkdir -p `dirname $@`
 	cp $^ $@ 
 
 
 TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rt).a
 CLEAN_TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rt).a $($(PULP_LIB_NAME_rt)_OBJS)
-INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_rt).a
+INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/${pulp_chip}/lib$(PULP_LIB_NAME_rt).a
 
 
 
@@ -245,14 +245,14 @@ $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_omp).a: $(omp_OBJS)
 	@rm -f $@
 	$(PULP_AR) -r $@ $^
 
-$(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_omp).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_omp).a
+$(TARGET_INSTALL_DIR)/lib/${pulp_chip}/lib$(PULP_LIB_NAME_omp).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_omp).a
 	@mkdir -p `dirname $@`
 	cp $^ $@ 
 
 
 TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_omp).a
 CLEAN_TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_omp).a $($(PULP_LIB_NAME_omp)_OBJS)
-INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_omp).a
+INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/${pulp_chip}/lib$(PULP_LIB_NAME_omp).a
 
 
 
@@ -359,14 +359,14 @@ $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rtio).a: $(rtio_OBJS)
 	@rm -f $@
 	$(PULP_AR) -r $@ $^
 
-$(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_rtio).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rtio).a
+$(TARGET_INSTALL_DIR)/lib/${pulp_chip}/lib$(PULP_LIB_NAME_rtio).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rtio).a
 	@mkdir -p `dirname $@`
 	cp $^ $@ 
 
 
 TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rtio).a
 CLEAN_TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rtio).a $($(PULP_LIB_NAME_rtio)_OBJS)
-INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_rtio).a
+INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/${pulp_chip}/lib$(PULP_LIB_NAME_rtio).a
 
 
 
@@ -473,14 +473,14 @@ $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_bench).a: $(bench_OBJS)
 	@rm -f $@
 	$(PULP_AR) -r $@ $^
 
-$(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_bench).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_bench).a
+$(TARGET_INSTALL_DIR)/lib/${pulp_chip}/lib$(PULP_LIB_NAME_bench).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_bench).a
 	@mkdir -p `dirname $@`
 	cp $^ $@ 
 
 
 TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_bench).a
 CLEAN_TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_bench).a $($(PULP_LIB_NAME_bench)_OBJS)
-INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_bench).a
+INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/${pulp_chip}/lib$(PULP_LIB_NAME_bench).a
 
 
 header:: $(INSTALL_HEADERS) $(WS_INSTALL_HEADERS)

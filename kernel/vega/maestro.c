@@ -68,15 +68,20 @@ static inline __attribute__((always_inline)) void __rt_pmu_apply_state(int domai
   // this one is finished.
   __rt_pmu_pending_sequence = 1;
 
+  // Compute the right sequence
   if (domain == RT_PMU_CHIP_ID)
   {
+    // For soc, 4 is deep sleep, 5 retentive deep sleep, and 6 and 7 the same
+    // with smart wakeup on.
     sequence = 4 + ret;
   }
   else
   {
+    // For other domains, first sequence if OFF, second is ON
     sequence = domain*2 + 8 + state;
   }
 
+  // Finally ask Maestro to trigger the sequence
   maestro_trigger_sequence(sequence);
 }
 
