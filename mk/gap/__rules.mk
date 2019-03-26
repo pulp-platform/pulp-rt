@@ -27,29 +27,6 @@ $(foreach file, $(INSTALL_FILES), $(eval $(call declareInstallFile,$(file))))
 
 $(foreach file, $(WS_INSTALL_FILES), $(eval $(call declareWsInstallFile,$(file))))
 
-define exportSrcFile
-
-$(TARGET_INSTALL_DIR)/pulp_rt/$(1): $(1)
-	install -D -m 664 $(1) $$@
-
-EXPORT_SRCS += $(TARGET_INSTALL_DIR)/pulp_rt/$(1)
-
-endef
-
-ALL_SRC_FILES +=  $(PULP_LIB_CL_SRCS_rt) $(PULP_CL_SRCS_rt) $(PULP_LIB_CL_SRCS) $(PULP_APP_SRCS) $(PULP_CL_EXTRA_SRCS_rt)
-ALL_SRC_FILES +=  $(PULP_LIB_CL_ASM_SRCS_rt) $(PULP_CL_ASM_SRCS_rt) $(PULP_LIB_CL_ASM_SRCS) $(PULP_APP_ASM_SRCS) $(PULP_CL_EXTRA_ASM_SRCS_rt)
-
-ALL_SRC_FILES +=  $(PULP_LIB_FC_SRCS_rt) $(PULP_FC_SRCS_rt) $(PULP_LIB_FC_SRCS)  $(PULP_FC_EXTRA_SRCS_rt)
-ALL_SRC_FILES +=  $(PULP_LIB_FC_ASM_SRCS_rt) $(PULP_FC_ASM_SRCS_rt) $(PULP_LIB_FC_ASM_SRCS)  $(PULP_FC_EXTRA_ASM_SRCS_rt)
-
-ALL_SRC_FILES +=  $(PULP_LIB_CL_SRCS_rtio) $(PULP_CL_SRCS_rtio) $(PULP_LIB_CL_SRCS) $(PULP_APP_SRCS) $(PULP_CL_EXTRA_SRCS_rtio)
-ALL_SRC_FILES += $(PULP_LIB_CL_ASM_SRCS_rtio) $(PULP_CL_ASM_SRCS_rtio) $(PULP_LIB_CL_ASM_SRCS) $(PULP_APP_ASM_SRCS) $(PULP_CL_EXTRA_ASM_SRCS_rtio)
-
-ALL_SRC_FILES +=  $(PULP_LIB_FC_SRCS_rtio) $(PULP_FC_SRCS_rtio) $(PULP_LIB_FC_SRCS)  $(PULP_FC_EXTRA_SRCS_rtio)
-ALL_SRC_FILES += $(PULP_LIB_FC_ASM_SRCS_rtio) $(PULP_FC_ASM_SRCS_rtio) $(PULP_LIB_FC_ASM_SRCS)  $(PULP_FC_EXTRA_ASM_SRCS_rtio)
-
-
-$(foreach file, $(ALL_SRC_FILES), $(eval $(call exportSrcFile,$(file))))
 
 #
 # CC RULES for domain: cluster
@@ -57,9 +34,9 @@ $(foreach file, $(ALL_SRC_FILES), $(eval $(call exportSrcFile,$(file))))
 
 PULP_LIB_NAME_rt ?= rt
 
-PULP_CL_EXTRA_SRCS_rt =
-PULP_CL_EXTRA_ASM_SRCS_rt =
-PULP_CL_EXTRA_OMP_SRCS_rt =
+PULP_CL_EXTRA_SRCS_rt = 
+PULP_CL_EXTRA_ASM_SRCS_rt = 
+PULP_CL_EXTRA_OMP_SRCS_rt = 
 
 rt_CL_OBJS =     $(patsubst %.cpp,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/cl/%.o, $(patsubst %.c,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/cl/%.o, $(PULP_LIB_CL_SRCS_rt) $(PULP_CL_SRCS_rt) $(PULP_LIB_CL_SRCS) $(PULP_APP_SRCS) $(PULP_CL_EXTRA_SRCS_rt)))
 rt_CL_ASM_OBJS = $(patsubst %.S,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/cl/%.o, $(PULP_LIB_CL_ASM_SRCS_rt) $(PULP_CL_ASM_SRCS_rt) $(PULP_LIB_CL_ASM_SRCS) $(PULP_APP_ASM_SRCS) $(PULP_CL_EXTRA_ASM_SRCS_rt))
@@ -103,9 +80,9 @@ rt_OBJS += $(rt_CL_OBJS) $(rt_CL_ASM_OBJS) $(rt_CL_OMP_OBJS)
 
 PULP_LIB_NAME_rt ?= rt
 
-PULP_FC_EXTRA_SRCS_rt =
-PULP_FC_EXTRA_ASM_SRCS_rt =
-PULP_FC_EXTRA_OMP_SRCS_rt =
+PULP_FC_EXTRA_SRCS_rt = 
+PULP_FC_EXTRA_ASM_SRCS_rt = 
+PULP_FC_EXTRA_OMP_SRCS_rt = 
 
 rt_FC_OBJS =     $(patsubst %.cpp,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/%.o, $(patsubst %.c,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/%.o, $(PULP_LIB_FC_SRCS_rt) $(PULP_FC_SRCS_rt) $(PULP_LIB_FC_SRCS)  $(PULP_FC_EXTRA_SRCS_rt)))
 rt_FC_ASM_OBJS = $(patsubst %.S,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rt)/fc/%.o, $(PULP_LIB_FC_ASM_SRCS_rt) $(PULP_FC_ASM_SRCS_rt) $(PULP_LIB_FC_ASM_SRCS)  $(PULP_FC_EXTRA_ASM_SRCS_rt))
@@ -156,7 +133,7 @@ $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rt).a: $(rt_OBJS)
 
 $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_rt).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rt).a
 	@mkdir -p `dirname $@`
-	cp $^ $@
+	cp $^ $@ 
 
 
 TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rt).a
@@ -171,9 +148,9 @@ INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_rt).a
 
 PULP_LIB_NAME_omp ?= omp
 
-PULP_CL_EXTRA_SRCS_omp =
-PULP_CL_EXTRA_ASM_SRCS_omp =
-PULP_CL_EXTRA_OMP_SRCS_omp =
+PULP_CL_EXTRA_SRCS_omp = 
+PULP_CL_EXTRA_ASM_SRCS_omp = 
+PULP_CL_EXTRA_OMP_SRCS_omp = 
 
 omp_CL_OBJS =     $(patsubst %.cpp,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_omp)/cl/%.o, $(patsubst %.c,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_omp)/cl/%.o, $(PULP_LIB_CL_SRCS_omp) $(PULP_CL_SRCS_omp) $(PULP_LIB_CL_SRCS) $(PULP_APP_SRCS) $(PULP_CL_EXTRA_SRCS_omp)))
 omp_CL_ASM_OBJS = $(patsubst %.S,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_omp)/cl/%.o, $(PULP_LIB_CL_ASM_SRCS_omp) $(PULP_CL_ASM_SRCS_omp) $(PULP_LIB_CL_ASM_SRCS) $(PULP_APP_ASM_SRCS) $(PULP_CL_EXTRA_ASM_SRCS_omp))
@@ -217,9 +194,9 @@ omp_OBJS += $(omp_CL_OBJS) $(omp_CL_ASM_OBJS) $(omp_CL_OMP_OBJS)
 
 PULP_LIB_NAME_omp ?= omp
 
-PULP_FC_EXTRA_SRCS_omp =
-PULP_FC_EXTRA_ASM_SRCS_omp =
-PULP_FC_EXTRA_OMP_SRCS_omp =
+PULP_FC_EXTRA_SRCS_omp = 
+PULP_FC_EXTRA_ASM_SRCS_omp = 
+PULP_FC_EXTRA_OMP_SRCS_omp = 
 
 omp_FC_OBJS =     $(patsubst %.cpp,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_omp)/fc/%.o, $(patsubst %.c,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_omp)/fc/%.o, $(PULP_LIB_FC_SRCS_omp) $(PULP_FC_SRCS_omp) $(PULP_LIB_FC_SRCS)  $(PULP_FC_EXTRA_SRCS_omp)))
 omp_FC_ASM_OBJS = $(patsubst %.S,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_omp)/fc/%.o, $(PULP_LIB_FC_ASM_SRCS_omp) $(PULP_FC_ASM_SRCS_omp) $(PULP_LIB_FC_ASM_SRCS)  $(PULP_FC_EXTRA_ASM_SRCS_omp))
@@ -270,7 +247,7 @@ $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_omp).a: $(omp_OBJS)
 
 $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_omp).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_omp).a
 	@mkdir -p `dirname $@`
-	cp $^ $@
+	cp $^ $@ 
 
 
 TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_omp).a
@@ -285,9 +262,9 @@ INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_omp).a
 
 PULP_LIB_NAME_rtio ?= rtio
 
-PULP_CL_EXTRA_SRCS_rtio =
-PULP_CL_EXTRA_ASM_SRCS_rtio =
-PULP_CL_EXTRA_OMP_SRCS_rtio =
+PULP_CL_EXTRA_SRCS_rtio = 
+PULP_CL_EXTRA_ASM_SRCS_rtio = 
+PULP_CL_EXTRA_OMP_SRCS_rtio = 
 
 rtio_CL_OBJS =     $(patsubst %.cpp,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rtio)/cl/%.o, $(patsubst %.c,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rtio)/cl/%.o, $(PULP_LIB_CL_SRCS_rtio) $(PULP_CL_SRCS_rtio) $(PULP_LIB_CL_SRCS) $(PULP_APP_SRCS) $(PULP_CL_EXTRA_SRCS_rtio)))
 rtio_CL_ASM_OBJS = $(patsubst %.S,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rtio)/cl/%.o, $(PULP_LIB_CL_ASM_SRCS_rtio) $(PULP_CL_ASM_SRCS_rtio) $(PULP_LIB_CL_ASM_SRCS) $(PULP_APP_ASM_SRCS) $(PULP_CL_EXTRA_ASM_SRCS_rtio))
@@ -331,9 +308,9 @@ rtio_OBJS += $(rtio_CL_OBJS) $(rtio_CL_ASM_OBJS) $(rtio_CL_OMP_OBJS)
 
 PULP_LIB_NAME_rtio ?= rtio
 
-PULP_FC_EXTRA_SRCS_rtio =
-PULP_FC_EXTRA_ASM_SRCS_rtio =
-PULP_FC_EXTRA_OMP_SRCS_rtio =
+PULP_FC_EXTRA_SRCS_rtio = 
+PULP_FC_EXTRA_ASM_SRCS_rtio = 
+PULP_FC_EXTRA_OMP_SRCS_rtio = 
 
 rtio_FC_OBJS =     $(patsubst %.cpp,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rtio)/fc/%.o, $(patsubst %.c,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rtio)/fc/%.o, $(PULP_LIB_FC_SRCS_rtio) $(PULP_FC_SRCS_rtio) $(PULP_LIB_FC_SRCS)  $(PULP_FC_EXTRA_SRCS_rtio)))
 rtio_FC_ASM_OBJS = $(patsubst %.S,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_rtio)/fc/%.o, $(PULP_LIB_FC_ASM_SRCS_rtio) $(PULP_FC_ASM_SRCS_rtio) $(PULP_LIB_FC_ASM_SRCS)  $(PULP_FC_EXTRA_ASM_SRCS_rtio))
@@ -384,7 +361,7 @@ $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rtio).a: $(rtio_OBJS)
 
 $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_rtio).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rtio).a
 	@mkdir -p `dirname $@`
-	cp $^ $@
+	cp $^ $@ 
 
 
 TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_rtio).a
@@ -399,9 +376,9 @@ INSTALL_TARGETS += $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_rtio).a
 
 PULP_LIB_NAME_bench ?= bench
 
-PULP_CL_EXTRA_SRCS_bench =
-PULP_CL_EXTRA_ASM_SRCS_bench =
-PULP_CL_EXTRA_OMP_SRCS_bench =
+PULP_CL_EXTRA_SRCS_bench = 
+PULP_CL_EXTRA_ASM_SRCS_bench = 
+PULP_CL_EXTRA_OMP_SRCS_bench = 
 
 bench_CL_OBJS =     $(patsubst %.cpp,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_bench)/cl/%.o, $(patsubst %.c,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_bench)/cl/%.o, $(PULP_LIB_CL_SRCS_bench) $(PULP_CL_SRCS_bench) $(PULP_LIB_CL_SRCS) $(PULP_APP_SRCS) $(PULP_CL_EXTRA_SRCS_bench)))
 bench_CL_ASM_OBJS = $(patsubst %.S,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_bench)/cl/%.o, $(PULP_LIB_CL_ASM_SRCS_bench) $(PULP_CL_ASM_SRCS_bench) $(PULP_LIB_CL_ASM_SRCS) $(PULP_APP_ASM_SRCS) $(PULP_CL_EXTRA_ASM_SRCS_bench))
@@ -445,9 +422,9 @@ bench_OBJS += $(bench_CL_OBJS) $(bench_CL_ASM_OBJS) $(bench_CL_OMP_OBJS)
 
 PULP_LIB_NAME_bench ?= bench
 
-PULP_FC_EXTRA_SRCS_bench =
-PULP_FC_EXTRA_ASM_SRCS_bench =
-PULP_FC_EXTRA_OMP_SRCS_bench =
+PULP_FC_EXTRA_SRCS_bench = 
+PULP_FC_EXTRA_ASM_SRCS_bench = 
+PULP_FC_EXTRA_OMP_SRCS_bench = 
 
 bench_FC_OBJS =     $(patsubst %.cpp,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_bench)/fc/%.o, $(patsubst %.c,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_bench)/fc/%.o, $(PULP_LIB_FC_SRCS_bench) $(PULP_FC_SRCS_bench) $(PULP_LIB_FC_SRCS)  $(PULP_FC_EXTRA_SRCS_bench)))
 bench_FC_ASM_OBJS = $(patsubst %.S,$(CONFIG_BUILD_DIR)/$(PULP_LIB_NAME_bench)/fc/%.o, $(PULP_LIB_FC_ASM_SRCS_bench) $(PULP_FC_ASM_SRCS_bench) $(PULP_LIB_FC_ASM_SRCS)  $(PULP_FC_EXTRA_ASM_SRCS_bench))
@@ -498,7 +475,7 @@ $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_bench).a: $(bench_OBJS)
 
 $(TARGET_INSTALL_DIR)/lib/gap/lib$(PULP_LIB_NAME_bench).a: $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_bench).a
 	@mkdir -p `dirname $@`
-	cp $^ $@
+	cp $^ $@ 
 
 
 TARGETS += $(CONFIG_BUILD_DIR)/lib$(PULP_LIB_NAME_bench).a
@@ -534,6 +511,4 @@ install:: $(INSTALL_TARGETS)
 run::
 	pulp-run $(pulpRunOpt)
 
-export: $(EXPORT_SRCS)
-
-.PHONY: clean header prepare all install run build export
+.PHONY: clean header prepare all install run build
