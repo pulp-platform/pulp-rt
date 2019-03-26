@@ -228,6 +228,9 @@ void rt_rtc_conf_init(rt_rtc_conf_t *conf)
 
 static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
 {
+  // TODI this would be better to always have these events active so that 
+  // the runtime can clear interrupts during boot and before the RTC is opened
+  // so that the user can clear pending wkaeup flags before opening RTC
   soc_eu_fcEventMask_setEvent(RTC_RTC_INT_EVENT);
   soc_eu_fcEventMask_setEvent(RTC_RTC_APB_EVENT);
   rt_rtc_reset();
@@ -243,6 +246,14 @@ static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
   rtc->alarm_event = NULL;
   rtc->countdown_event = NULL;
   rtc->calib_event = NULL;
+
+  // TODO for now, we clear all interrupts as we might have waken-up
+  // from deep sleep, so that it does not prevent us from going again
+  // to deep sleep. This is fine for now, as the user is supposed
+  // to re-open everything after wake-up. Once we support a mode where
+  // everything is restored, we should make sure the associated event
+  // is executed
+  rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Timer1_Flag | RTC_Irq_Calibration_Flag | RTC_Irq_Calibration_Flag);
 }
 
 rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *rtc_conf, rt_event_t *event)

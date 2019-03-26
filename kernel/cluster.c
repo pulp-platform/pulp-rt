@@ -24,6 +24,13 @@
 
 #if defined(ARCHI_HAS_CLUSTER)
 
+typedef enum 
+{
+  RT_CLUSTER_MOUNT_START,
+  RT_CLUSTER_MOUNT_POWERED_ON,
+  RT_CLUSTER_MOUNT_DONE,
+} __rt_cluster_mount_step_e;
+
 rt_fc_cluster_data_t *__rt_fc_cluster_data;
 RT_L1_TINY_DATA __rt_cluster_call_t __rt_cluster_call[2];
 RT_L1_TINY_DATA rt_event_sched_t *__rt_cluster_sched_current;
@@ -76,18 +83,32 @@ static void __rt_init_cluster_data(int cid)
 #endif
 }
 
-static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, int flags, rt_event_t *event)
+
+
+static int __rt_cluster_power_up(rt_fc_cluster_data_t *cluster)
 {
-  rt_trace(RT_TRACE_CONF, "Mounting cluster (cluster: %d)\n", cid);
+  int cid = cluster->cid;
 
-  if (rt_is_fc() || (cid && !rt_has_fc()))
+  cluster->powered_up = 0;
+
+  // Power-up the cluster
+  // For now the PMU is only supporting one cluster
+  if (cid == 0)
   {
-    int powered_up = 0;
+    int pending = 0;
+    cluster->powered_up = __rt_pmu_cluster_power_up(cluster->mount_event, &pending);
+    return pending;
+  }
 
-    // Power-up the cluster
-    // For now the PMU is only supporting one cluster
-    if (cid == 0)
-      powered_up = __rt_pmu_cluster_power_up();
+  return 0;
+}
+
+
+
+static int __rt_cluster_setup(rt_fc_cluster_data_t *cluster)
+{
+  int cid = cluster->cid;
+  rt_event_t *event = cluster->mount_event;
 
 #ifdef FLL_VERSION
   #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
@@ -105,6 +126,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
   #else 
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
+#if __RT_FREQ_DOMAIN_CL >= RT_FREQ_NB_DOMAIN
       // Setup FLL
       int init_freq = __rt_fll_init(__RT_FLL_CL);
 
@@ -120,7 +142,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
       {
         __rt_freq_set_value(RT_FREQ_DOMAIN_CL, init_freq);
       }
-
+#endif
     }
   #endif  
 #endif
@@ -137,8 +159,10 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
     __rt_alloc_init_l1(cid);
 
     // Initialize FC data for this cluster
-    if (powered_up)
+    if (cluster->powered_up)
+    {
       __rt_fc_cluster_data[cid].call_head = 0;
+    }
 
     // Activate icache
     hal_icache_cluster_enable(cid);
@@ -160,12 +184,57 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
     eoc_fetch_enable_remote(cid, (1<<rt_nb_active_pe()) - 1);
 #endif
 
-    // For now the whole sequence is blocking so we just handle the event here.
-    // The power-up sequence could be done asynchronously and would then use the event
-    if (event) rt_event_push(event);
-
 #endif
 
+    return 0;
+}
+
+
+
+static void __rt_cluster_mount_step(void *_cluster)
+{
+  int end = 0;
+  rt_fc_cluster_data_t *cluster = (rt_fc_cluster_data_t *)_cluster;
+
+  while(!end)
+  {
+    switch (cluster->state)
+    {
+      case RT_CLUSTER_MOUNT_START:
+        end = __rt_cluster_power_up(cluster);
+        break;
+
+      case RT_CLUSTER_MOUNT_POWERED_ON:
+        end = __rt_cluster_setup(cluster);
+        break;
+
+      case RT_CLUSTER_MOUNT_DONE:
+        __rt_event_restore(cluster->mount_event);
+        __rt_event_enqueue(cluster->mount_event);
+        end = 1;
+        break;
+    }
+
+    cluster->state++;
+  }
+}
+
+
+
+static inline __attribute__((always_inline)) void __rt_cluster_mount(rt_fc_cluster_data_t *cluster, int cid, int flags, rt_event_t *event)
+{
+  rt_trace(RT_TRACE_CONF, "Mounting cluster (cluster: %d)\n", cid);
+
+  if (rt_is_fc() || (cid && !rt_has_fc()))
+  {
+    cluster->state = RT_CLUSTER_MOUNT_START;
+    cluster->mount_event = event;
+
+    __rt_event_save(event);
+    __rt_init_event(event, event->sched, __rt_cluster_mount_step, (void *)cluster);
+    __rt_event_set_pending(event);
+
+    __rt_cluster_mount_step((void *)cluster);
   }
   else
   {
@@ -191,6 +260,8 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
     eoc_fetch_enable_remote(cid, -1);    
 
 #endif
+
+    rt_event_push(event);
 
   }
 }
@@ -222,11 +293,15 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
 
   // Power-up the cluster
   // For now the PMU is only supporting one cluster
-  if (cid == 0) __rt_pmu_cluster_power_down();
+    int pending = 0;
+  if (cid == 0) __rt_pmu_cluster_power_down(event, &pending);
 
   // For now the whole sequence is blocking so we just handle the event here.
   // The power-down sequence could be done asynchronously and would then use the event
-  if (event) rt_event_push(event);
+  if (event && !pending) 
+    {
+      rt_event_push(event);
+    }
 }
 
 
@@ -235,13 +310,17 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
+  rt_event_t *call_event = __rt_wait_event_prepare(event);
+
   rt_fc_cluster_data_t *cluster = &__rt_fc_cluster_data[cid];
 
   if (mount) cluster->mount_count++;
   else cluster->mount_count--;
 
-  if (cluster->mount_count == 0) __rt_cluster_unmount(cid, flags, event);
-  else if (cluster->mount_count == 1) __rt_cluster_mount(cid, flags, event);
+  if (cluster->mount_count == 0) __rt_cluster_unmount(cid, flags, call_event);
+  else if (cluster->mount_count == 1) __rt_cluster_mount(cluster, cid, flags, call_event);
+
+  __rt_wait_event_check(event, call_event);
 
   rt_irq_restore(irq);
 }
@@ -424,6 +503,11 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
   }
 
   memset(__rt_fc_cluster_data, 0, data_size);
+
+  for (int i=0; i<nb_cluster; i++)
+  {
+    __rt_fc_cluster_data[i].cid = i;
+  }
 
   rt_irq_set_handler(RT_FC_ENQUEUE_EVENT, __rt_remote_enqueue_event);
   rt_irq_mask_set(1<<RT_FC_ENQUEUE_EVENT);

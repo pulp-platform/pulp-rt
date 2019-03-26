@@ -140,7 +140,7 @@ int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_ev
 
 
 
-void __rt_pmu_cluster_power_down()
+void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 {
   if (rt_platform() == ARCHI_PLATFORM_FPGA)
   {
@@ -171,7 +171,7 @@ void __rt_pmu_cluster_power_down()
   }
 }
 
-void __rt_pmu_cluster_power_up()
+void __rt_pmu_cluster_power_up(rt_event_t *event, int *pending)
 {
   if (rt_platform() == ARCHI_PLATFORM_FPGA)
   {
