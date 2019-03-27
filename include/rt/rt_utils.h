@@ -707,7 +707,7 @@ static inline unsigned int __rt_get_fc_vector_base()
 #else
   if (rt_is_fc()) {
 #if defined(ARCHI_CORE_HAS_SECURITY)
-    return __builtin_pulp_spr_read(SR_MTVEC);
+    return __builtin_pulp_spr_read(SR_MTVEC) & ~1;
 #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
     return apb_soc_bootaddr_get();
 #endif
@@ -731,7 +731,7 @@ static inline void __rt_set_fc_vector_base(unsigned int base)
 #else
   if (rt_is_fc()) {
 #if defined(ARCHI_CORE_HAS_SECURITY)
-    __builtin_pulp_spr_write(SR_MTVEC, base);
+    __builtin_pulp_spr_write(SR_MTVEC, base | 1);
 #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
     apb_soc_bootaddr_set(base);
 #endif
@@ -805,6 +805,14 @@ static inline void __rt_fc_cluster_lock_wait(rt_fc_lock_req_t *req)
 }
 
 #endif
+
+static inline void __rt_wait_for_event(unsigned int mask) {
+#if defined(ITC_VERSION)
+  hal_itc_wait_for_event_noirq(mask);
+#else
+  eu_evt_maskWaitAndClr(mask);
+#endif
+}
 
 /// @endcond
 
