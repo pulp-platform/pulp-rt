@@ -45,15 +45,18 @@
 #define MAESTRO_EVENT_SCU_OK            (1<<4)
 
 // 1 if a sequence is pending, 0 otherwise
-RT_L2_RET_DATA static uint32_t __rt_pmu_pending_sequence;
+RT_FC_DATA static uint32_t __rt_pmu_pending_sequence;
 
 // 1 bit per domain, 1 means ON, 0 means OFF
-RT_L2_RET_DATA static uint32_t __rt_pmu_domains_on;
+RT_FC_DATA static uint32_t __rt_pmu_domains_on;
 
 // First pending sequence (waiting for current one to finish)
 RT_FC_DATA static rt_event_t *__rt_pmu_pending_requests;
 // Last pending sequence
 RT_FC_DATA static rt_event_t *__rt_pmu_pending_requests_tail;
+
+// Contains user configuration for external wakeup
+RT_FC_DATA static uint32_t __rt_pmu_sleep_ctrl_extwake;
 
 
 
@@ -68,15 +71,20 @@ static inline __attribute__((always_inline)) void __rt_pmu_apply_state(int domai
   // this one is finished.
   __rt_pmu_pending_sequence = 1;
 
+  // Compute the right sequence
   if (domain == RT_PMU_CHIP_ID)
   {
+    // For soc, 4 is deep sleep, 5 retentive deep sleep, and 6 and 7 the same
+    // with smart wakeup on.
     sequence = 4 + ret;
   }
   else
   {
+    // For other domains, first sequence if OFF, second is ON
     sequence = domain*2 + 8 + state;
   }
 
+  // Finally ask Maestro to trigger the sequence
   maestro_trigger_sequence(sequence);
 }
 
@@ -170,24 +178,21 @@ void rt_pm_wakeup_clear_all()
 
 void rt_pm_wakeup_gpio_conf(int active, int gpio, rt_pm_wakeup_gpio_mode_e mode)
 {
-#if 0
-  // 6 -> 10 : gpio number which cam wakeup chip
-  PMURetentionState.Fields.ExternalWakeUpSource = gpio;
-
-  // 11 -> 12 : falling or raising edge
-  PMURetentionState.Fields.ExternalWakeUpMode   = mode;
-
-  // 13 : GPIO wakeup enabled
-  PMURetentionState.Fields.ExternalWakeupEnable = active;
-
-  // Write to APB SOC SLEEP_CTRL
-  SetRetentiveState(PMURetentionState.Raw);
-#endif
+  if (active)
+  {
+    __rt_pmu_sleep_ctrl_extwake = 
+      APB_SOC_SAFE_PMU_SLEEPCTRL_EXTWAKE_EN(1) |
+      APB_SOC_SAFE_PMU_SLEEPCTRL_EXTWAKE_TYPE(mode);
+  }
+  else
+  {
+    __rt_pmu_sleep_ctrl_extwake = APB_SOC_SAFE_PMU_SLEEPCTRL_EXTWAKE_EN(0);
+  }
 }
 
 
 
-static void __attribute__((aligned(16))) __rt_pmu_shutdown(int retentive)
+static void __rt_pmu_shutdown(int retentive)
 {
   int irq = rt_irq_disable();
 
@@ -197,8 +202,9 @@ static void __attribute__((aligned(16))) __rt_pmu_shutdown(int retentive)
   // cuts retentive
   apb_soc_safe_pmu_sleepctrl_set(
     ARCHI_APB_SOC_CTRL_ADDR,
-    APB_SOC_SAFE_PMU_SLEEPCTRL_REBOOT(boot_mode)  |
-    APB_SOC_SAFE_PMU_SLEEPCTRL_RTCWAKE_EN(1)      |
+    __rt_pmu_sleep_ctrl_extwake                                |
+    APB_SOC_SAFE_PMU_SLEEPCTRL_REBOOT(boot_mode)               |
+    APB_SOC_SAFE_PMU_SLEEPCTRL_RTCWAKE_EN(1)                   |
     APB_SOC_SAFE_PMU_SLEEPCTRL_RET_MEM(0xffff)
   );
 
@@ -270,6 +276,7 @@ void __rt_pmu_init()
   __rt_pmu_domains_on = 1 << RT_PMU_CHIP_ID;
   __rt_pmu_pending_sequence = 0;
   __rt_pmu_pending_requests = NULL;
+  __rt_pmu_sleep_ctrl_extwake = 0;
 
   // Activate SCU handler, it will be called every time a sequence is
   // finished to clear the interrupt in Maestro

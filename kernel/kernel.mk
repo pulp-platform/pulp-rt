@@ -86,7 +86,7 @@ endif
 endif
 
 ifneq '$(soc_eu/version)' ''
-ifneq '$(fc_itc)' ''
+ifneq '$(fc_itc/version)' ''
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/soc_event_itc-v$(soc_eu/version).S
 else
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/soc_event_eu.S
