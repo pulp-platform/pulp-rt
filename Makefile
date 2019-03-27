@@ -88,14 +88,8 @@ endef
 
 $(foreach file, $(HAL_FILES), $(eval $(call halSrcRules,$(patsubst %.c,%.o,$(file)),$(file))))
 
-
 ifeq '$(pulp_chip_family)' 'vega'
 CHIP_TARGETS += gen_linker_script
-MK_OPT=MK_ROOT=mk/vega
-endif
-
-ifeq '$(pulp_chip)' 'gap'
-MK_OPT=MK_ROOT=mk/gap
 endif
 
 
