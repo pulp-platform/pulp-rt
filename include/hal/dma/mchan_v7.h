@@ -20,6 +20,24 @@
 #include <archi/dma/mchan_v7.h>
 #include "hal/pulp.h"
 
+#define PLP_DMA_LOC2EXT 0
+#define PLP_DMA_EXT2LOC 1
+
+#define PLP_DMA_1D 0
+#define PLP_DMA_2D 1
+
+#define PLP_DMA_NO_TRIG_EVT 0
+#define PLP_DMA_TRIG_EVT    1
+
+#define PLP_DMA_NO_TRIG_IRQ 0
+#define PLP_DMA_TRIG_IRQ    1
+
+#define PLP_DMA_PRIV        0
+#define PLP_DMA_SHARED      1
+
+#define PLP_DMA_FIX         0
+#define PLP_DMA_INC         1
+
 #if defined(ARCHI_HAS_MCHAN_64) && ARCHI_HAS_MCHAN_64 == 1
 typedef unsigned long long mchan_ext_t;
 #else
@@ -236,7 +254,7 @@ static inline void plp_dma_cmd_push(unsigned int cmd, unsigned int locAddr, mcha
   \param      cmd        The command that specifies the type of the transfer. This can be generated using plp_dma_getStrides.
   \param      strides    The command that specifies the 2D transfer (stride and len). This can be generated using plp_dma_getStrides.
   */
-static inline void plp_dma_cmd_push_2d(unsigned int cmd, unsigned int locAddr, mchan_ext_t extAddr, unsigned strides);
+static inline void plp_dma_cmd_push_2d(unsigned int cmd, unsigned int locAddr, mchan_ext_t extAddr, unsigned int stride, unsigned int length);
 
 /** Return the counter status.
  * 
@@ -249,55 +267,53 @@ static inline unsigned int plp_dma_status();
 /// @cond IMPLEM
 
 #if defined(__riscv__) && !defined(RV_ISA_RV32) && !defined(__LLVM__)
-#define DMA_WRITE(value, offset) __builtin_pulp_OffsetedWrite((value), (int *)ARCHI_DEMUX_PERIPHERALS_ADDR, ARCHI_MCHAN_DEMUX_OFFSET + (offset))
-#define DMA_READ(offset) __builtin_pulp_OffsetedRead((int *)ARCHI_DEMUX_PERIPHERALS_ADDR, ARCHI_MCHAN_DEMUX_OFFSET + (offset))
+#define DMA_WRITE(value, offset) __builtin_pulp_OffsetedWrite((value), (int *)ARCHI_MCHAN_EXT_ADDR, (offset))
+#define DMA_READ(offset) __builtin_pulp_OffsetedRead((int *)ARCHI_MCHAN_EXT_ADDR, (offset))
 #else
-#define DMA_WRITE(value, offset) pulp_write32(ARCHI_DEMUX_PERIPHERALS_ADDR + ARCHI_MCHAN_DEMUX_OFFSET + (offset), (value))
-#define DMA_READ(offset) pulp_read32(ARCHI_DEMUX_PERIPHERALS_ADDR + ARCHI_MCHAN_DEMUX_OFFSET + (offset))
+#define DMA_WRITE(value, offset) pulp_write32(ARCHI_MCHAN_EXT_ADDR + (offset), (value))
+#define DMA_READ(offset) pulp_read32(ARCHI_MCHAN_EXT_ADDR + (offset))
 #endif
 
 static inline int plp_dma_counter_alloc() {
-  return DMA_READ(PLP_DMA_QUEUE_OFFSET);
+  return DMA_READ(MCHAN_CMD_OFFSET);
 }
 
 static inline void plp_dma_counter_free(int counter) {
-  DMA_WRITE(1<<counter, PLP_DMA_STATUS_OFFSET);
+  DMA_WRITE(1<<counter, MCHAN_STATUS_OFFSET);
 }
 
 static inline unsigned int plp_dma_getCmd(int ext2loc, unsigned int size, int is2D, int trigEvt, int trigIrq, int broadcast) {
 #if defined(__riscv__)
   unsigned int res;
-  res = __builtin_bitinsert(0,  ext2loc,      1, PLP_DMA_TYPE_BIT);
-  res = __builtin_bitinsert(res, PLP_DMA_INC, 1, PLP_DMA_INCR_BIT);
-  res = __builtin_bitinsert(res, is2D,        1, PLP_DMA_2D_BIT);
-  res = __builtin_bitinsert(res, size,        PLP_DMA_SIZE_WIDTH, PLP_DMA_SIZE_BIT);
-  res = __builtin_bitinsert(res, trigEvt,     1, PLP_DMA_ELE_BIT);
-  res = __builtin_bitinsert(res, trigIrq,     1, PLP_DMA_ILE_BIT);
-  res = __builtin_bitinsert(res, broadcast,   1, PLP_DMA_BLE_BIT);
+  res = __builtin_bitinsert(0,  ext2loc,      1, MCHAN_CMD_CMD_TYPE_BIT);
+  res = __builtin_bitinsert(res, PLP_DMA_INC, 1, MCHAN_CMD_CMD_INC_BIT);
+  res = __builtin_bitinsert(res, is2D,        1, MCHAN_CMD_CMD__2D_EXT_BIT);
+  res = __builtin_bitinsert(res, size,        MCHAN_CMD_CMD_LEN_WIDTH, MCHAN_CMD_CMD_LEN_BIT);
+  res = __builtin_bitinsert(res, trigEvt,     1, MCHAN_CMD_CMD_ELE_BIT);
+  res = __builtin_bitinsert(res, trigIrq,     1, MCHAN_CMD_CMD_ILE_BIT);
+  res = __builtin_bitinsert(res, broadcast,   1, MCHAN_CMD_CMD_BLE_BIT);
   return res;
 #else
-  return (ext2loc << PLP_DMA_TYPE_BIT) | (PLP_DMA_INC << PLP_DMA_INCR_BIT) | (is2D << PLP_DMA_2D_BIT) | (size << PLP_DMA_SIZE_BIT) | (trigEvt<<PLP_DMA_ELE_BIT) | (trigIrq<<PLP_DMA_ILE_BIT) | (broadcast<<PLP_DMA_BLE_BIT);
+  return (ext2loc << MCHAN_CMD_CMD_TYPE_BIT) | (PLP_DMA_INC << MCHAN_CMD_CMD_INC_BIT) | (is2D << MCHAN_CMD_CMD__2D_EXT_BIT) | (size << MCHAN_CMD_CMD_LEN_BIT) | (trigEvt<<MCHAN_CMD_ELE_BIT) | (trigIrq<<MCHAN_CMD_ILE_BIT) | (broadcast<<MCHAN_CMD_CMD_BLE_BIT);
 #endif
 }
 
-static inline unsigned int plp_dma_getStrides(unsigned short stride, unsigned short len) {
-  return (stride << PLP_DMA_2D_STRIDE_BIT) | (len << PLP_DMA_2D_LEN_BIT);
-}
 
 static inline void plp_dma_cmd_push(unsigned int cmd, unsigned int locAddr, mchan_ext_t extAddr) {
-  DMA_WRITE(cmd, PLP_DMA_QUEUE_OFFSET);
-  DMA_WRITE(locAddr, PLP_DMA_QUEUE_OFFSET);
+  DMA_WRITE(cmd, MCHAN_CMD_OFFSET);
+  DMA_WRITE(locAddr, MCHAN_CMD_OFFSET);
 #if defined(ARCHI_HAS_MCHAN_64) && ARCHI_HAS_MCHAN_64 == 1
-  DMA_WRITE((int)extAddr, PLP_DMA_QUEUE_OFFSET);
-  DMA_WRITE((int)(extAddr>>32), PLP_DMA_QUEUE_OFFSET);
+  DMA_WRITE((int)extAddr, MCHAN_CMD_OFFSET);
+  DMA_WRITE((int)(extAddr>>32), MCHAN_CMD_OFFSET);
 #else
-  DMA_WRITE(extAddr, PLP_DMA_QUEUE_OFFSET);
+  DMA_WRITE(extAddr, MCHAN_CMD_OFFSET);
 #endif
 }
 
-static inline void plp_dma_cmd_push_2d(unsigned int cmd, unsigned int locAddr, mchan_ext_t extAddr, unsigned strides) {
+static inline void plp_dma_cmd_push_2d(unsigned int cmd, unsigned int locAddr, mchan_ext_t extAddr, unsigned int stride, unsigned int length) {
   plp_dma_cmd_push(cmd, locAddr, extAddr);
-  DMA_WRITE(strides, PLP_DMA_QUEUE_OFFSET);
+  DMA_WRITE(length, MCHAN_CMD_OFFSET);
+  DMA_WRITE(stride, MCHAN_CMD_OFFSET);
 }
 
 static inline int plp_dma_memcpy(mchan_ext_t ext, unsigned int loc, unsigned short size, int ext2loc) {
@@ -344,7 +360,7 @@ static inline int plp_dma_extToL1_irq(unsigned int loc, mchan_ext_t ext, unsigne
 
 static inline void plp_dma_memcpy_2d_keepCounter(mchan_ext_t ext, unsigned int loc, unsigned short size, unsigned short stride, unsigned short length, int ext2loc) {
   unsigned int cmd = plp_dma_getCmd(ext2loc, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
-  plp_dma_cmd_push_2d(cmd, loc, ext, plp_dma_getStrides(stride, length));
+  plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
 }
 
 static inline int plp_dma_memcpy_2d(mchan_ext_t ext, unsigned int loc, unsigned short size, unsigned short stride, unsigned short length, int ext2loc) {
@@ -356,54 +372,54 @@ static inline int plp_dma_memcpy_2d(mchan_ext_t ext, unsigned int loc, unsigned 
 static inline int plp_dma_l1ToExt_2d(mchan_ext_t ext, unsigned int loc, unsigned short size, unsigned short stride, unsigned short length) {
   unsigned int counter = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(PLP_DMA_LOC2EXT, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
-  plp_dma_cmd_push_2d(cmd, loc, ext, plp_dma_getStrides(stride, length));
+  plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
   return counter;
 }
 
 static inline int plp_dma_extToL1_2d(unsigned int loc, mchan_ext_t ext, unsigned short size, unsigned short stride, unsigned short length) {
   unsigned int counter = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(PLP_DMA_EXT2LOC, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
-  plp_dma_cmd_push_2d(cmd, loc, ext, plp_dma_getStrides(stride, length));
+  plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
   return counter;
 }
 
 static inline int plp_dma_memcpy_2d_irq(mchan_ext_t ext, unsigned int loc, unsigned short size, unsigned short stride, unsigned short length, int ext2loc) {
   unsigned int counter = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(ext2loc, size, PLP_DMA_2D, PLP_DMA_NO_TRIG_EVT, PLP_DMA_TRIG_IRQ, PLP_DMA_SHARED);
-  plp_dma_cmd_push_2d(cmd, loc, ext, plp_dma_getStrides(stride, length));
+  plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
   return counter;
 }
 
 static inline int plp_dma_l1ToExt_2d_irq(mchan_ext_t ext, unsigned int loc, unsigned short size, unsigned short stride, unsigned short length) {
   unsigned int counter = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(PLP_DMA_LOC2EXT, size, PLP_DMA_2D, PLP_DMA_NO_TRIG_EVT, PLP_DMA_TRIG_IRQ, PLP_DMA_SHARED);
-  plp_dma_cmd_push_2d(cmd, loc, ext, plp_dma_getStrides(stride, length));
+  plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
   return counter;
 }
 
 static inline int plp_dma_extToL1_2d_irq(unsigned int loc, mchan_ext_t ext, unsigned short size, unsigned short stride, unsigned short length) {
   unsigned int counter = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(PLP_DMA_EXT2LOC, size, PLP_DMA_2D, PLP_DMA_NO_TRIG_EVT, PLP_DMA_TRIG_IRQ, PLP_DMA_SHARED);
-  plp_dma_cmd_push_2d(cmd, loc, ext, plp_dma_getStrides(stride, length));
+  plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
   return counter;
 }
 
 static inline void plp_dma_barrier() {
-  while(DMA_READ(PLP_DMA_STATUS_OFFSET) & 0xFFFF) {
+  while(DMA_READ(MCHAN_STATUS_OFFSET) & 0xFFFF) {
     eu_evt_maskWaitAndClr(1<<ARCHI_CL_EVT_DMA0);
   }
-  DMA_WRITE(-1, PLP_DMA_STATUS_OFFSET);
+  DMA_WRITE(-1, MCHAN_STATUS_OFFSET);
 }
 
 static inline void plp_dma_wait(unsigned int counter) {
-  while(DMA_READ(PLP_DMA_STATUS_OFFSET) & (1 << counter)) {
+  while(DMA_READ(MCHAN_STATUS_OFFSET) & (1 << counter)) {
     eu_evt_maskWaitAndClr(1<<ARCHI_CL_EVT_DMA0);
   }
   plp_dma_counter_free(counter);
 }
 
 static inline unsigned int plp_dma_status() {
-  return DMA_READ(PLP_DMA_STATUS_OFFSET);
+  return DMA_READ(MCHAN_STATUS_OFFSET);
 }
 
 /// @endcond

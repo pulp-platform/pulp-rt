@@ -140,7 +140,7 @@
 #define ARCHI_UDMA_NB_SPIM      4
 #define ARCHI_UDMA_NB_HYPER     1
 #define ARCHI_UDMA_NB_SDIO      1
-#define ARCHI_UDMA_NB_UART      2
+#define ARCHI_UDMA_NB_UART      3
 #define ARCHI_UDMA_NB_I2C       1
 #define ARCHI_UDMA_NB_I2S       1
 #define ARCHI_UDMA_NB_JTAG_FIFO 1
@@ -153,17 +153,17 @@
 
 #define ARCHI_UDMA_SPIM_ID(id)      (0   + (id))
 #define ARCHI_UDMA_UART_ID(id)      (4   + (id))
-#define ARCHI_UDMA_I2C_ID(id)       (6   + (id))
-#define ARCHI_UDMA_HYPER_ID(id)     (7   + (id))
-#define ARCHI_UDMA_JTAG_FIFO_ID(id) (8   + (id))
-#define ARCHI_UDMA_SDIO_ID(id)      (9   + (id))
-#define ARCHI_UDMA_I2S_ID(id)       (10  + (id))
-#define ARCHI_UDMA_CAM_ID(id)       (11  + (id))
-#define ARCHI_UDMA_CSI2_ID(id)      (12  + (id))
-#define ARCHI_UDMA_MRAM_ID(id)      (13  + (id))
-#define ARCHI_UDMA_FILTER_ID(id)    (14  + (id))
+#define ARCHI_UDMA_I2C_ID(id)       (7   + (id))
+#define ARCHI_UDMA_HYPER_ID(id)     (8   + (id))
+#define ARCHI_UDMA_JTAG_FIFO_ID(id) (9   + (id))
+#define ARCHI_UDMA_SDIO_ID(id)      (10  + (id))
+#define ARCHI_UDMA_I2S_ID(id)       (11  + (id))
+#define ARCHI_UDMA_CAM_ID(id)       (12  + (id))
+#define ARCHI_UDMA_CSI2_ID(id)      (13  + (id))
+#define ARCHI_UDMA_MRAM_ID(id)      (14  + (id))
+#define ARCHI_UDMA_FILTER_ID(id)    (15  + (id))
 
-#define ARCHI_NB_PERIPH             (15)
+#define ARCHI_NB_PERIPH             (16)
 
 
 /*
@@ -223,31 +223,36 @@
 #define ARCHI_SOC_EVENT_UART1_EOT         22
 #define ARCHI_SOC_EVENT_UART1_RX_DATA     23
 
-#define ARCHI_SOC_EVENT_I2C0_RX           24
-#define ARCHI_SOC_EVENT_I2C0_TX           25
+#define ARCHI_SOC_EVENT_UART2_RX          24
+#define ARCHI_SOC_EVENT_UART2_TX          25
+#define ARCHI_SOC_EVENT_UART2_EOT         26
+#define ARCHI_SOC_EVENT_UART2_RX_DATA     27
 
-#define ARCHI_SOC_EVENT_HYPER0_RX         28
-#define ARCHI_SOC_EVENT_HYPER0_TX         29
+#define ARCHI_SOC_EVENT_I2C0_RX           28
+#define ARCHI_SOC_EVENT_I2C0_TX           29
 
-#define ARCHI_SOC_EVENT_JTAG_FIFO0_RX     32
-#define ARCHI_SOC_EVENT_JTAG_FIFO0_TX     33
+#define ARCHI_SOC_EVENT_HYPER0_RX         32
+#define ARCHI_SOC_EVENT_HYPER0_TX         33
 
-#define ARCHI_SOC_EVENT_SDIO0_RX          36
-#define ARCHI_SOC_EVENT_SDIO0_TX          37
+#define ARCHI_SOC_EVENT_JTAG_FIFO0_RX     36
+#define ARCHI_SOC_EVENT_JTAG_FIFO0_TX     37
 
-#define ARCHI_SOC_EVENT_I2S0_RX           40
-#define ARCHI_SOC_EVENT_I2S0_TX           41
+#define ARCHI_SOC_EVENT_SDIO0_RX          40
+#define ARCHI_SOC_EVENT_SDIO0_TX          41
 
-#define ARCHI_SOC_EVENT_CPI0_RX           44
+#define ARCHI_SOC_EVENT_I2S0_RX           44
+#define ARCHI_SOC_EVENT_I2S0_TX           45
 
-#define ARCHI_SOC_EVENT_CIS2_0_CH0_RX     48
-#define ARCHI_SOC_EVENT_CIS2_0_CH1_RX     49
+#define ARCHI_SOC_EVENT_CPI0_RX           48
 
-#define ARCHI_SOC_EVENT_MRAM0_ERASE       52
-#define ARCHI_SOC_EVENT_MRAM0_EOTX        53
+#define ARCHI_SOC_EVENT_CIS2_0_CH0_RX     52
+#define ARCHI_SOC_EVENT_CIS2_0_CH1_RX     53
 
-#define ARCHI_SOC_EVENT_FILTER0_RX        56
-#define ARCHI_SOC_EVENT_FILTER0_TX        57
+#define ARCHI_SOC_EVENT_MRAM0_ERASE       56
+#define ARCHI_SOC_EVENT_MRAM0_EOTX        57
+
+#define ARCHI_SOC_EVENT_FILTER0_RX        60
+#define ARCHI_SOC_EVENT_FILTER0_TX        61
 
 #define ARCHI_SOC_EVENT_CLUSTER_ON_OFF    128
 #define ARCHI_SOC_EVENT_CLUSTER_NOT_BUSY  131   

@@ -39,9 +39,12 @@ static inline void maestro_picl_write(unsigned int island, unsigned int addr, un
 }
 
 
-static inline void maestro_trigger_sequence(unsigned int seq)
+static inline __attribute__((always_inline)) void maestro_trigger_sequence(unsigned int seq)
 {
-  maestro_picl_write(MAESTRO_WIU_OFFSET, MAESTRO_WIU_IFR_0_OFFSET, seq);
+  int reg_id = MAESTRO_WIU_IFR_0_OFFSET + (seq >> 3);
+  int seq_id = seq & 0x7;
+
+  maestro_picl_write(MAESTRO_WIU_OFFSET, reg_id, 1<<seq_id);
 }
 
 
