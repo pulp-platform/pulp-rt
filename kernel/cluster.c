@@ -116,7 +116,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(int cid, in
 
     // Fetch all cores, they will directly jump to the PE loop waiting from orders through the dispatcher
     for (int i=0; i<rt_nb_active_pe(); i++) {
-      plp_ctrl_core_bootaddr_set_remote(cid, i, ((int)_start) & 0xffffff00);
+      plp_ctrl_core_bootaddr_set_remote(cid, i, ((int)_start));
     }
 #ifndef ARCHI_HAS_NO_DISPATCH
     eoc_fetch_enable_remote(cid, (1<<rt_nb_active_pe()) - 1);

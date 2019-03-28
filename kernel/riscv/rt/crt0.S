@@ -20,7 +20,7 @@
 
 #include "archi/pulp.h"
 
-  .section .text
+.section .text
 
 _entry:
   # Cluster PEs will also starts here to avoid aligning another entry point
@@ -37,7 +37,7 @@ _entry:
   li      a2, ARCHI_FC_CID
   bne     a0, a2, __rt_pe_start
 #else
-  // In case we don't have FC, just let cluster 0 pe 0 be the FC and other jump
+  // In case we dont have FC, just let cluster 0 pe 0 be the FC and other jump
   // to the slave entry point
   bne     a1, x0, __rt_pe_start
   bne     a0, x0, __rt_pe_start
