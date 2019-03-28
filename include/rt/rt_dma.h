@@ -186,7 +186,7 @@ static inline void rt_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned
   // Prevent the compiler from pushing the transfer before all previous
   // stores are done
   __asm__ __volatile__ ("" : : : "memory");
-  plp_dma_cmd_push_2d(cmd, loc, ext, plp_dma_getStrides(stride, length));
+  plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
   if (!merge) copy->id = id;
 
 #ifdef __RT_USE_PROFILE
