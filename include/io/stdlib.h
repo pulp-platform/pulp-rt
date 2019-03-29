@@ -33,8 +33,14 @@
 #ifndef __RTIO_STDLIB_H__
 #define __RTIO_STDLIB_H__
 
+#include <stddef.h>
+
 void exit(int status);
 
 void abort(void);
+
+void *malloc(size_t size);
+
+void free(void *ptr);
 
 #endif

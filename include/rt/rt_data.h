@@ -738,7 +738,7 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_CLUSTER_CALL_T_EVENT        24
 #define RT_CLUSTER_CALL_T_SCHED        28
 
-#define RT_FC_CLUSTER_DATA_T_SIZEOF       (6*4)
+#define RT_FC_CLUSTER_DATA_T_SIZEOF       (10*4)
 #define RT_FC_CLUSTER_DATA_T_MOUNT_COUNT  0
 #define RT_FC_CLUSTER_DATA_T_CALL_HEAD    4
 #define RT_FC_CLUSTER_DATA_T_EVENTS       8
