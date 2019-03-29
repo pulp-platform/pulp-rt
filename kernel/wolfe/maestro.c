@@ -56,7 +56,7 @@ void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
   // This part does not need to be done asynchronously as the caller is supposed to make 
   // sure the cluster is not active anymore..
   while (apb_soc_busy_get()) {
-    __rt_wait_for_event(1<<ARCHI_FC_EVT_CLUSTER_NOT_BUSY);
+    rt_time_wait_us(1);
   }
 
   // Block transactions from dc fifos to soc
