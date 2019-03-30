@@ -38,14 +38,11 @@
 
 void _camera_drop_frame(rt_cam_conf_t *cam, unsigned int *arg){
   plpUdmaCamCustom_u _cpi;
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_CAM_ID(0)));   // Activate CAM channel
   _cpi.raw = hal_cpi_glob_read(0);
   _cpi.cfg_glob.framedrop_enable = ENABLE & MASK_1BIT;
   _cpi.cfg_glob.framedrop_value =  *arg & MASK_6BITS;
 
   hal_cpi_glob_set(0, _cpi.raw);
-  plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
-
 }
 
 void _camera_normlize(rt_cam_conf_t *cam, unsigned int *arg){
@@ -62,7 +59,6 @@ void _camera_filter(rt_cam_conf_t *cam, rt_img_filter_t *filter){
 
 void _camera_extract(rt_cam_conf_t *cam, rt_img_slice_t *slicer){
   plpUdmaCamCustom_u _cpi;
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_CAM_ID(0)));   // Activate CAM channel
   // Write the coordinate of lower left corner
   _cpi.cfg_ll.frameslice_llx = (slicer->slice_ll.x/2) & MASK_16BITS;
   _cpi.cfg_ll.frameslice_lly = slicer->slice_ll.y & MASK_16BITS;
@@ -78,9 +74,6 @@ void _camera_extract(rt_cam_conf_t *cam, rt_img_slice_t *slicer){
   _cpi.raw = hal_cpi_glob_read(0);
   _cpi.cfg_glob.frameslice_enable = ENABLE;
   hal_cpi_glob_set(0, _cpi.raw);
-
-  plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
-
 }
 
 void _camera_stop(){
@@ -88,11 +81,9 @@ void _camera_stop(){
   _cpi.raw = hal_cpi_glob_read(0);
   _cpi.cfg_glob.enable = DISABLE;
   hal_cpi_glob_set(0, _cpi.raw);
-  plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
 }
 
 void _camera_start(){
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_CAM_ID(0)));   // Activate CAM channel
   plpUdmaCamCustom_u _cpi;
   _cpi.raw = hal_cpi_glob_read(0);
   _cpi.cfg_glob.enable = ENABLE;
