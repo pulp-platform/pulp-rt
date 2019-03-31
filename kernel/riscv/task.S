@@ -260,8 +260,6 @@ __rt_task_fc_mc_stack_no_check:
 
     j       __rt_task_fc_mc_end
 
-#endif
-
 __rt_task_exit:
     lw      t0, 12(s0)
     addi    t0, t0, -1
@@ -279,3 +277,5 @@ __rt_task_exit:
     sw      x0, EU_MUTEX_DEMUX_OFFSET(s2)
     la      t1, _entry
     jr      t1
+
+#endif
