@@ -263,6 +263,11 @@ __rt_task_fc_mc_stack_no_check:
 #endif
 
 __rt_task_exit:
+    lw      t0, 12(s0)
+    addi    t0, t0, -1
+    sw      t0, 12(s0)
+    li      t1, 1<<RT_FC_SYNC
+    sw      t1, 0(s9)
     sw      x0, EU_MUTEX_DEMUX_OFFSET(s2)
     la      t1, _entry
     jr      t1
