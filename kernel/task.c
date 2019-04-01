@@ -142,10 +142,24 @@ void rt_task_cluster_deinit(rt_task_cluster_t *cluster, rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
+  // Init now the counter to check that all cores has exited the loop, before
+  // they start accessing it
+  cluster->loc->nb_cores_done = cluster->nb_cores;
+  rt_compiler_barrier();
+
   // Notify all the cores to leave the task framework with a special value
   cluster->loc->__rt_task_first_fc_for_cl = (rt_task_t *)-1;
   rt_compiler_barrier();
   eu_evt_trig(eu_evt_trig_cluster_addr(cluster->cid, RT_CLUSTER_CALL_EVT), 0);
+
+  // Wait until they all leave the task code before freeing cluster struct as
+  // it may still be used
+  rt_irq_enable();
+  while(*(volatile int *)&cluster->loc->nb_cores_done != 0)
+  {
+    __rt_wait_for_event(1<<RT_FC_SYNC);
+  }
+  rt_irq_disable();
 
   // Since the cores will just reexecute from scratch, we need to reinitialize
   // the cluster driver

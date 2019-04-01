@@ -260,9 +260,22 @@ __rt_task_fc_mc_stack_no_check:
 
     j       __rt_task_fc_mc_end
 
-#endif
-
 __rt_task_exit:
+    lw      t0, 12(s0)
+    addi    t0, t0, -1
+    sw      t0, 12(s0)
+
+#if defined(ITC_VERSION)
+    li      t2, ARCHI_FC_ITC_ADDR + ITC_STATUS_SET_OFFSET
+    li      t1, 1<<RT_FC_SYNC
+#else
+    li      t2, ARCHI_FC_GLOBAL_ADDR + ARCHI_FC_PERIPHERALS_OFFSET + ARCHI_FC_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (RT_FC_SYNC << 2)
+    li      t1, 1
+#endif
+    sw      t1, 0(t2)
+
     sw      x0, EU_MUTEX_DEMUX_OFFSET(s2)
     la      t1, _entry
     jr      t1
+
+#endif

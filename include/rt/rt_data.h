@@ -77,6 +77,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 
 #define RT_FC_ENQUEUE_EVENT 1
+#define RT_FC_SYNC          2
 #define RT_CL_SYNC_EVENT 1
 #define PLP_RT_NOTIF_EVENT 3    // TODO this is a temp def, should be removed
 
@@ -642,6 +643,7 @@ typedef struct
   rt_task_t *__rt_task_first_fc_for_cl;
   rt_task_t *__rt_task_first_fc;
   rt_task_t *__rt_task_last_fc;
+  int nb_cores_done;
 } rt_task_cluster_loc_t;
 
 typedef struct
