@@ -25,7 +25,9 @@
 #else
 #include "archi/udma/udma_v3.h"
 #endif
-#if SOC_EU_VERSION == 2
+#if SOC_EU_VERSION == 3
+#include "archi/soc_eu/soc_eu_v3.h"
+#elif SOC_EU_VERSION == 2
 #include "archi/soc_eu/soc_eu_v2.h"
 #else
 #include "archi/soc_eu/soc_eu_v1.h"
