@@ -110,6 +110,7 @@
 
 #define ARCHI_FC_CID        31
 #define ARCHI_HAS_FC_ITC     1
+#define ARCHI_FC_HAS_ICACHE 1
 
 
 

@@ -60,43 +60,43 @@
 
 // Transfer length in bytes configuration bitfield. (access: W)
 #define MCHAN_CMD_CMD_LEN_BIT                                        0
-#define MCHAN_CMD_CMD_LEN_WIDTH                                      16
-#define MCHAN_CMD_CMD_LEN_MASK                                       0xffff
+#define MCHAN_CMD_CMD_LEN_WIDTH                                      17
+#define MCHAN_CMD_CMD_LEN_MASK                                       0x1ffff
 
 // Transfer direction configuration bitfield: - 1'b0: L1 to L2 - 1'b1: L2 to L2 (access: W)
-#define MCHAN_CMD_CMD_TYPE_BIT                                       16
+#define MCHAN_CMD_CMD_TYPE_BIT                                       17
 #define MCHAN_CMD_CMD_TYPE_WIDTH                                     1
-#define MCHAN_CMD_CMD_TYPE_MASK                                      0x10000
+#define MCHAN_CMD_CMD_TYPE_MASK                                      0x20000
 
 // Transfer incremental configuration bitfield: - 1'b0: non incremental - 1'b1: incremental (access: W)
-#define MCHAN_CMD_CMD_INC_BIT                                        17
+#define MCHAN_CMD_CMD_INC_BIT                                        18
 #define MCHAN_CMD_CMD_INC_WIDTH                                      1
-#define MCHAN_CMD_CMD_INC_MASK                                       0x20000
+#define MCHAN_CMD_CMD_INC_MASK                                       0x40000
 
 // Transfer type configuration bitfield: - 1'b0: linear transfer in EXT interface - 1'b1: 2D transfer in EXT interface (access: W)
-#define MCHAN_CMD_CMD__2D_EXT_BIT                                    18
+#define MCHAN_CMD_CMD__2D_EXT_BIT                                    19
 #define MCHAN_CMD_CMD__2D_EXT_WIDTH                                  1
-#define MCHAN_CMD_CMD__2D_EXT_MASK                                   0x40000
+#define MCHAN_CMD_CMD__2D_EXT_MASK                                   0x80000
 
 // Transfer event generation configuration bitfield: - 1'b0: disabled - 1'b1: enabled (access: W)
-#define MCHAN_CMD_CMD_ELE_BIT                                        19
+#define MCHAN_CMD_CMD_ELE_BIT                                        20
 #define MCHAN_CMD_CMD_ELE_WIDTH                                      1
-#define MCHAN_CMD_CMD_ELE_MASK                                       0x80000
+#define MCHAN_CMD_CMD_ELE_MASK                                       0x100000
 
 // Transfer interrupt generation configuration bitfield: - 1'b0: disabled - 1'b1: enabled (access: W)
-#define MCHAN_CMD_CMD_ILE_BIT                                        20
+#define MCHAN_CMD_CMD_ILE_BIT                                        21
 #define MCHAN_CMD_CMD_ILE_WIDTH                                      1
-#define MCHAN_CMD_CMD_ILE_MASK                                       0x100000
+#define MCHAN_CMD_CMD_ILE_MASK                                       0x200000
 
 // Transfer event or interrupt broadcast configuration bitfield: - 1'b0: event or interrupt is routed to the cluster core who initiated the transfer - 1'b1: event or interrupt are broadcasted to all cluster cores (access: W)
-#define MCHAN_CMD_CMD_BLE_BIT                                        21
+#define MCHAN_CMD_CMD_BLE_BIT                                        22
 #define MCHAN_CMD_CMD_BLE_WIDTH                                      1
-#define MCHAN_CMD_CMD_BLE_MASK                                       0x200000
+#define MCHAN_CMD_CMD_BLE_MASK                                       0x400000
 
 // Transfer type configuration bitfield: - 1'b0: linear transfer in TCDM interface - 1'b1: 2D transfer in TCDM interface (access: W)
-#define MCHAN_CMD_CMD__2D_TCDM_BIT                                   18
+#define MCHAN_CMD_CMD__2D_TCDM_BIT                                   23
 #define MCHAN_CMD_CMD__2D_TCDM_WIDTH                                 1
-#define MCHAN_CMD_CMD__2D_TCDM_MASK                                  0x40000
+#define MCHAN_CMD_CMD__2D_TCDM_MASK                                  0x800000
 
 // Transfer identifier value bitfield. (access: R)
 #define MCHAN_CMD_GET_TID_TID_BIT                                    0
@@ -172,7 +172,7 @@ typedef union {
 
 typedef union {
   struct {
-    unsigned int len             :16; // Transfer length in bytes configuration bitfield.
+    unsigned int len             :17; // Transfer length in bytes configuration bitfield.
     unsigned int type            :1 ; // Transfer direction configuration bitfield: - 1'b0: L1 to L2 - 1'b1: L2 to L2
     unsigned int inc             :1 ; // Transfer incremental configuration bitfield: - 1'b0: non incremental - 1'b1: incremental
     unsigned int _2d_ext         :1 ; // Transfer type configuration bitfield: - 1'b0: linear transfer in EXT interface - 1'b1: 2D transfer in EXT interface
@@ -270,27 +270,6 @@ class vp_mchan_status : public vp::reg_32
 public:
   inline void status_set(uint32_t value) { this->set_field(value, MCHAN_STATUS_STATUS_BIT, MCHAN_STATUS_STATUS_WIDTH); }
   inline uint32_t status_get() { return this->get_field(MCHAN_STATUS_STATUS_BIT, MCHAN_STATUS_STATUS_WIDTH); }
-};
-
-class vp_mchan_cmd_cmd : public vp::reg_16
-{
-public:
-  inline void len_set(uint16_t value) { this->set_field(value, MCHAN_CMD_CMD_LEN_BIT, MCHAN_CMD_CMD_LEN_WIDTH); }
-  inline uint16_t len_get() { return this->get_field(MCHAN_CMD_CMD_LEN_BIT, MCHAN_CMD_CMD_LEN_WIDTH); }
-  inline void type_set(uint16_t value) { this->set_field(value, MCHAN_CMD_CMD_TYPE_BIT, MCHAN_CMD_CMD_TYPE_WIDTH); }
-  inline uint16_t type_get() { return this->get_field(MCHAN_CMD_CMD_TYPE_BIT, MCHAN_CMD_CMD_TYPE_WIDTH); }
-  inline void inc_set(uint16_t value) { this->set_field(value, MCHAN_CMD_CMD_INC_BIT, MCHAN_CMD_CMD_INC_WIDTH); }
-  inline uint16_t inc_get() { return this->get_field(MCHAN_CMD_CMD_INC_BIT, MCHAN_CMD_CMD_INC_WIDTH); }
-  inline void _2d_ext_set(uint16_t value) { this->set_field(value, MCHAN_CMD_CMD__2D_EXT_BIT, MCHAN_CMD_CMD__2D_EXT_WIDTH); }
-  inline uint16_t _2d_ext_get() { return this->get_field(MCHAN_CMD_CMD__2D_EXT_BIT, MCHAN_CMD_CMD__2D_EXT_WIDTH); }
-  inline void ele_set(uint16_t value) { this->set_field(value, MCHAN_CMD_CMD_ELE_BIT, MCHAN_CMD_CMD_ELE_WIDTH); }
-  inline uint16_t ele_get() { return this->get_field(MCHAN_CMD_CMD_ELE_BIT, MCHAN_CMD_CMD_ELE_WIDTH); }
-  inline void ile_set(uint16_t value) { this->set_field(value, MCHAN_CMD_CMD_ILE_BIT, MCHAN_CMD_CMD_ILE_WIDTH); }
-  inline uint16_t ile_get() { return this->get_field(MCHAN_CMD_CMD_ILE_BIT, MCHAN_CMD_CMD_ILE_WIDTH); }
-  inline void ble_set(uint16_t value) { this->set_field(value, MCHAN_CMD_CMD_BLE_BIT, MCHAN_CMD_CMD_BLE_WIDTH); }
-  inline uint16_t ble_get() { return this->get_field(MCHAN_CMD_CMD_BLE_BIT, MCHAN_CMD_CMD_BLE_WIDTH); }
-  inline void _2d_tcdm_set(uint16_t value) { this->set_field(value, MCHAN_CMD_CMD__2D_TCDM_BIT, MCHAN_CMD_CMD__2D_TCDM_WIDTH); }
-  inline uint16_t _2d_tcdm_get() { return this->get_field(MCHAN_CMD_CMD__2D_TCDM_BIT, MCHAN_CMD_CMD__2D_TCDM_WIDTH); }
 };
 
 class vp_mchan_cmd_tcdm_addr : public vp::reg_32
@@ -412,45 +391,45 @@ static inline void mchan_status_set(uint32_t base, uint32_t value) { ARCHI_WRITE
 #define MCHAN_STATUS_STATUS_SET(value,field)               (ARCHI_BINSERT((value),(field),32,0))
 #define MCHAN_STATUS_STATUS(val)                           ((val) << 0)
 
-#define MCHAN_CMD_CMD_LEN_GET(value)                       (ARCHI_BEXTRACTU((value),16,0))
-#define MCHAN_CMD_CMD_LEN_GETS(value)                      (ARCHI_BEXTRACT((value),16,0))
-#define MCHAN_CMD_CMD_LEN_SET(value,field)                 (ARCHI_BINSERT((value),(field),16,0))
+#define MCHAN_CMD_CMD_LEN_GET(value)                       (ARCHI_BEXTRACTU((value),17,0))
+#define MCHAN_CMD_CMD_LEN_GETS(value)                      (ARCHI_BEXTRACT((value),17,0))
+#define MCHAN_CMD_CMD_LEN_SET(value,field)                 (ARCHI_BINSERT((value),(field),17,0))
 #define MCHAN_CMD_CMD_LEN(val)                             ((val) << 0)
 
-#define MCHAN_CMD_CMD_TYPE_GET(value)                      (ARCHI_BEXTRACTU((value),1,16))
-#define MCHAN_CMD_CMD_TYPE_GETS(value)                     (ARCHI_BEXTRACT((value),1,16))
-#define MCHAN_CMD_CMD_TYPE_SET(value,field)                (ARCHI_BINSERT((value),(field),1,16))
-#define MCHAN_CMD_CMD_TYPE(val)                            ((val) << 16)
+#define MCHAN_CMD_CMD_TYPE_GET(value)                      (ARCHI_BEXTRACTU((value),1,17))
+#define MCHAN_CMD_CMD_TYPE_GETS(value)                     (ARCHI_BEXTRACT((value),1,17))
+#define MCHAN_CMD_CMD_TYPE_SET(value,field)                (ARCHI_BINSERT((value),(field),1,17))
+#define MCHAN_CMD_CMD_TYPE(val)                            ((val) << 17)
 
-#define MCHAN_CMD_CMD_INC_GET(value)                       (ARCHI_BEXTRACTU((value),1,17))
-#define MCHAN_CMD_CMD_INC_GETS(value)                      (ARCHI_BEXTRACT((value),1,17))
-#define MCHAN_CMD_CMD_INC_SET(value,field)                 (ARCHI_BINSERT((value),(field),1,17))
-#define MCHAN_CMD_CMD_INC(val)                             ((val) << 17)
+#define MCHAN_CMD_CMD_INC_GET(value)                       (ARCHI_BEXTRACTU((value),1,18))
+#define MCHAN_CMD_CMD_INC_GETS(value)                      (ARCHI_BEXTRACT((value),1,18))
+#define MCHAN_CMD_CMD_INC_SET(value,field)                 (ARCHI_BINSERT((value),(field),1,18))
+#define MCHAN_CMD_CMD_INC(val)                             ((val) << 18)
 
-#define MCHAN_CMD_CMD__2D_EXT_GET(value)                   (ARCHI_BEXTRACTU((value),1,18))
-#define MCHAN_CMD_CMD__2D_EXT_GETS(value)                  (ARCHI_BEXTRACT((value),1,18))
-#define MCHAN_CMD_CMD__2D_EXT_SET(value,field)             (ARCHI_BINSERT((value),(field),1,18))
-#define MCHAN_CMD_CMD__2D_EXT(val)                         ((val) << 18)
+#define MCHAN_CMD_CMD__2D_EXT_GET(value)                   (ARCHI_BEXTRACTU((value),1,19))
+#define MCHAN_CMD_CMD__2D_EXT_GETS(value)                  (ARCHI_BEXTRACT((value),1,19))
+#define MCHAN_CMD_CMD__2D_EXT_SET(value,field)             (ARCHI_BINSERT((value),(field),1,19))
+#define MCHAN_CMD_CMD__2D_EXT(val)                         ((val) << 19)
 
-#define MCHAN_CMD_CMD_ELE_GET(value)                       (ARCHI_BEXTRACTU((value),1,19))
-#define MCHAN_CMD_CMD_ELE_GETS(value)                      (ARCHI_BEXTRACT((value),1,19))
-#define MCHAN_CMD_CMD_ELE_SET(value,field)                 (ARCHI_BINSERT((value),(field),1,19))
-#define MCHAN_CMD_CMD_ELE(val)                             ((val) << 19)
+#define MCHAN_CMD_CMD_ELE_GET(value)                       (ARCHI_BEXTRACTU((value),1,20))
+#define MCHAN_CMD_CMD_ELE_GETS(value)                      (ARCHI_BEXTRACT((value),1,20))
+#define MCHAN_CMD_CMD_ELE_SET(value,field)                 (ARCHI_BINSERT((value),(field),1,20))
+#define MCHAN_CMD_CMD_ELE(val)                             ((val) << 20)
 
-#define MCHAN_CMD_CMD_ILE_GET(value)                       (ARCHI_BEXTRACTU((value),1,20))
-#define MCHAN_CMD_CMD_ILE_GETS(value)                      (ARCHI_BEXTRACT((value),1,20))
-#define MCHAN_CMD_CMD_ILE_SET(value,field)                 (ARCHI_BINSERT((value),(field),1,20))
-#define MCHAN_CMD_CMD_ILE(val)                             ((val) << 20)
+#define MCHAN_CMD_CMD_ILE_GET(value)                       (ARCHI_BEXTRACTU((value),1,21))
+#define MCHAN_CMD_CMD_ILE_GETS(value)                      (ARCHI_BEXTRACT((value),1,21))
+#define MCHAN_CMD_CMD_ILE_SET(value,field)                 (ARCHI_BINSERT((value),(field),1,21))
+#define MCHAN_CMD_CMD_ILE(val)                             ((val) << 21)
 
-#define MCHAN_CMD_CMD_BLE_GET(value)                       (ARCHI_BEXTRACTU((value),1,21))
-#define MCHAN_CMD_CMD_BLE_GETS(value)                      (ARCHI_BEXTRACT((value),1,21))
-#define MCHAN_CMD_CMD_BLE_SET(value,field)                 (ARCHI_BINSERT((value),(field),1,21))
-#define MCHAN_CMD_CMD_BLE(val)                             ((val) << 21)
+#define MCHAN_CMD_CMD_BLE_GET(value)                       (ARCHI_BEXTRACTU((value),1,22))
+#define MCHAN_CMD_CMD_BLE_GETS(value)                      (ARCHI_BEXTRACT((value),1,22))
+#define MCHAN_CMD_CMD_BLE_SET(value,field)                 (ARCHI_BINSERT((value),(field),1,22))
+#define MCHAN_CMD_CMD_BLE(val)                             ((val) << 22)
 
-#define MCHAN_CMD_CMD__2D_TCDM_GET(value)                  (ARCHI_BEXTRACTU((value),1,18))
-#define MCHAN_CMD_CMD__2D_TCDM_GETS(value)                 (ARCHI_BEXTRACT((value),1,18))
-#define MCHAN_CMD_CMD__2D_TCDM_SET(value,field)            (ARCHI_BINSERT((value),(field),1,18))
-#define MCHAN_CMD_CMD__2D_TCDM(val)                        ((val) << 18)
+#define MCHAN_CMD_CMD__2D_TCDM_GET(value)                  (ARCHI_BEXTRACTU((value),1,23))
+#define MCHAN_CMD_CMD__2D_TCDM_GETS(value)                 (ARCHI_BEXTRACT((value),1,23))
+#define MCHAN_CMD_CMD__2D_TCDM_SET(value,field)            (ARCHI_BINSERT((value),(field),1,23))
+#define MCHAN_CMD_CMD__2D_TCDM(val)                        ((val) << 23)
 
 #define MCHAN_CMD_GET_TID_TID_GET(value)                   (ARCHI_BEXTRACTU((value),4,0))
 #define MCHAN_CMD_GET_TID_TID_GETS(value)                  (ARCHI_BEXTRACT((value),4,0))
