@@ -112,8 +112,7 @@ void __rt_init()
 
   if (rt_is_fc()) {
 #if defined(ARCHI_FC_HAS_ICACHE)
-    // Enable instruction cache, initialize all memories
-    enable_all_icache_banks();
+    icache_enable(ARCHI_FC_ICACHE_ADDR);
 #endif
   } else {
 #if defined(ARCHI_HAS_CLUSTER)

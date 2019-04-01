@@ -230,8 +230,6 @@ static void _himaxParamInit(rt_camera_t *dev_cam, rt_cam_conf_t *cam_conf){
 
 // TODO: For each case, should add the configuration of camera if necessary.
 static void _himaxConfig(rt_cam_conf_t *cam){
-
-    plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_CAM_ID(0)));   // Activate CAM channel
     plpUdmaCamCustom_u _cpi;
     _cpi.raw = 0;
     switch (cam->resolution){
@@ -262,7 +260,6 @@ static void _himaxConfig(rt_cam_conf_t *cam){
     _cpi.cfg_glob.enable = DISABLE;
 
     hal_cpi_glob_set(0, _cpi.raw);
-    plp_udma_cg_set(plp_udma_cg_get() & ~(1<<ARCHI_UDMA_CAM_ID(0)));
 }
 
 void __rt_himax_close(rt_camera_t *dev_cam, rt_event_t *event){
@@ -363,6 +360,8 @@ rt_camera_t* __rt_himax_open(int channel, rt_cam_conf_t* cam, rt_event_t*event){
         // the I2C of Himax freq: 400kHz max.
 
    }
+
+    plp_udma_cg_set(plp_udma_cg_get() | (1<<ARCHI_UDMA_CAM_ID(0)));   // Activate CAM channel
 
     soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(ARCHI_UDMA_CAM_ID(0)));
     _himaxReset(camera);
