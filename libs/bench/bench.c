@@ -223,12 +223,37 @@ void illegal_insn_handler_c(void)
 static int __rt_bench_retval;
 static int (*__rt_bench_entry)();
 
+static void __rt_bench_pe_entry(void *arg)
+{
+  int retval = __rt_bench_entry();
+
+  if (rt_core_id() == 0)
+    __rt_bench_retval = retval;
+}
+
+  
 static void __rt_bench_cluster_entry(void *arg)
 {
-  __rt_bench_retval = __rt_bench_entry();
+  rt_team_fork(0, __rt_bench_pe_entry, NULL);
 }
 
 int bench_cluster_exec(int cid, int (*entry)())
+{
+  if (rt_cluster_id() != cid)
+  {
+    __rt_bench_entry = entry;
+    rt_cluster_mount(1, 0, 0, NULL);
+    rt_cluster_call(NULL, cid, __rt_bench_cluster_entry, NULL, NULL, 0, 0, 0, NULL);
+    rt_cluster_mount(0, 0, 0, NULL);
+
+    return __rt_bench_retval;
+  }
+
+  return 0;
+}
+
+
+int bench_cluster_exec2(int cid, int (*entry)())
 {
   if (rt_cluster_id() != cid)
   {
