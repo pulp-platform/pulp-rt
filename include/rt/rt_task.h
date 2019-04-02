@@ -206,6 +206,7 @@ static inline void rt_task_init(rt_task_t *task, void (*entry)(rt_task_t *task, 
   task->entry = entry;
   task->nb_cores = 0;
   task->stacks = NULL;
+  task->pending = 1;
 }
 
 static inline void rt_task_cores(rt_task_t *task, int nb_cores)

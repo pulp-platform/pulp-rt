@@ -203,7 +203,7 @@ static void __rt_task_handle_end_of_task(void *_task)
   // At least this task won't be there anymore after we update, and maybe even
   // more tasks, which is not an issue, as we compare against the head.
   rt_task_t *current = cluster_loc->__rt_task_first_fc;
-  while (current && current != cluster_loc->__rt_task_first_fc_for_cl)
+  while (current && current->pending == 0)
   {
     current = current->next;
   }
