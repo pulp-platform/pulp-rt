@@ -42,6 +42,9 @@ __rt_set_slave_stack:
 __rt_pe_start:
 
 #endif
+    // set mtvec
+    la t0, __irq_vector_base
+    csrw mtvec, t0
 
     // Activate a few events
     li      t0, (1<<PULP_DISPATCH_EVENT) | (1<<PULP_HW_BAR_EVENT) | (1<<PULP_MUTEX_EVENT)
