@@ -225,10 +225,7 @@ static int (*__rt_bench_entry)();
 
 static void __rt_bench_pe_entry(void *arg)
 {
-  int retval = __rt_bench_entry();
-
-  if (rt_core_id() == 0)
-    __rt_bench_retval = retval;
+  __rt_bench_retval = __rt_bench_entry();
 }
 
   
