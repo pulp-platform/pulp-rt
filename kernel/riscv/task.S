@@ -100,6 +100,7 @@ __rt_task_fc:
     li      t5, -1
     beq     a0, t5, __rt_task_exit
     lb      a1, RT_TASK_T_NB_CORES(a0)
+    sb      x0, RT_TASK_T_PENDING(a0)
     bnez    a1, __rt_task_handle_from_fc_mc
 
 

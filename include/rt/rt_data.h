@@ -639,6 +639,7 @@ typedef struct rt_task_s {
   unsigned char cid;
   unsigned char nb_cores_to_pop;
   unsigned char nb_cores_to_end;
+  unsigned char pending;
 } rt_task_t;
 
 typedef struct
@@ -765,6 +766,7 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_TASK_T_CID         (9*4+3)
 #define RT_TASK_T_NB_CORES_TO_POP (9*4+4)
 #define RT_TASK_T_NB_CORES_TO_END (9*4+5)
+#define RT_TASK_T_PENDING     (9*4+6)
 
 /// @endcond
 
