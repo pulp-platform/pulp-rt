@@ -231,7 +231,11 @@ static void __rt_bench_pe_entry(void *arg)
   
 static void __rt_bench_cluster_entry(void *arg)
 {
+#if defined(ARCHI_HAS_CLUSTER)
   rt_team_fork(0, __rt_bench_pe_entry, NULL);
+#else
+  __rt_bench_pe_entry(arg);
+#endif
 }
 
 int bench_cluster_exec(int cid, int (*entry)())
