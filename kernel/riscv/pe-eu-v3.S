@@ -46,9 +46,6 @@ __rt_pe_start:
     la t0, __irq_vector_base
     csrw mtvec, t0
 
-    la t0, __irq_vector_base
-    csrw mtvec, t0
-
     // Activate a few events
     li      t0, (1<<PULP_DISPATCH_EVENT) | (1<<PULP_HW_BAR_EVENT) | (1<<PULP_MUTEX_EVENT)
     li      t1, ARCHI_EU_DEMUX_ADDR
