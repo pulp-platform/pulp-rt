@@ -20,47 +20,45 @@ __rt_freq_domain_settings_t __rt_freq_domain_settings[RT_FREQ_NB_DOMAIN];
 
 void __rt_freq_init(void)
 {
-  if (rt_platform() != ARCHI_PLATFORM_RTL) {
-    // flls
-    __rt_flls_constructor();  // init fll set constructor
+  // flls
+  __rt_flls_constructor();  // init fll set constructor
 
-    __rt_fll_set_init(HAL_FLL_CL);  // init fll set register
+  __rt_fll_set_init(HAL_FLL_CL);  // init fll set register
 
-    // take care here!!
-    if(hal_fll_check_ref_fast()) hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_16M); // fast reference up and running
-    else hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_32K); // take slow reference because fast is not running properly
+  // take care here!!
+  if(hal_fll_check_ref_fast()) hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_16M); // fast reference up and running
+  else hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_32K); // take slow reference because fast is not running properly
 
-    __rt_fll_set_init(HAL_FLL_SOC);  // init fll set register
+  __rt_fll_set_init(HAL_FLL_SOC);  // init fll set register
 
-    hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);  // switch back to fll_soc clock for soc_clk
+  hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);  // switch back to fll_soc clock for soc_clk
 
-    __rt_fll_set_init(HAL_FLL_PER);  // init fll set register
+  __rt_fll_set_init(HAL_FLL_PER);  // init fll set register
 
-    // freq domains
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_freq =            __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_fll_on =          1;  // soc fll is on from beginning
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_alt_fll_on =      0; 
-    hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
+  // freq domains
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_freq =            __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_fll_on =          1;  // soc fll is on from beginning
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_CL].__rt_freq_domain_alt_fll_on =      0; 
+  hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
 
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_freq =            __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_fll_on =          1;  // soc fll is on from beginning
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_alt_fll_on =      -1; // there is no alternative fll available
-    hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_freq =            __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_fll_on =          1;  // soc fll is on from beginning
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_FC].__rt_freq_domain_alt_fll_on =      -1; // there is no alternative fll available
+  hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
 
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_freq =        __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_config =      FREQ_DOMAIN_CLK_TREE_FLL_SOC;
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_fll_on =      1;  // soc fll is on from beginning
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_alt_fll_on =  0; 
-    hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_freq =        __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_config =      FREQ_DOMAIN_CLK_TREE_FLL_SOC;
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_fll_on =      1;  // soc fll is on from beginning
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_PERIPH].__rt_freq_domain_alt_fll_on =  0; 
+  hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
 
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_freq =            __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_fll_on =          1;  // soc fll is on from beginning
-    __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_alt_fll_on =      -1; // there is no alternative fll available
-    hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
-  }
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_freq =            __rt_fll_set_freq_get(HAL_FLL_SOC, 0);
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_config =          FREQ_DOMAIN_CLK_TREE_FLL_SOC;
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_fll_on =          1;  // soc fll is on from beginning
+  __rt_freq_domain_settings[RT_FREQ_DOMAIN_PM].__rt_freq_domain_alt_fll_on =      -1; // there is no alternative fll available
+  hal_freq_soc_clk_tree_config_set(FREQ_DOMAIN_CLK_TREE_FLL_SOC);
 }
 
 int rt_freq_config_set(rt_freq_domain_e domain, hal_freq_domain_clk_tree_config_e config)
