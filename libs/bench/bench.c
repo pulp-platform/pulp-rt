@@ -253,6 +253,12 @@ int bench_cluster_exec(int cid, int (*entry)())
   return 0;
 }
 
+extern int main(int argc, const char * const argv[]);
+
+int bench_cluster_forward(int cid)
+{
+  return bench_cluster_exec(cid, main);
+}
 
 int bench_cluster_exec2(int cid, int (*entry)())
 {
