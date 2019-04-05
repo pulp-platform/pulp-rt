@@ -59,14 +59,21 @@ __rt_task_loop_entry:
     li      s8, 1
 #endif
 
-    lw      t0, 4(a0)
+    lw      s11, 4(a0)
     lw      sp, 0(a0)
     addi    t1, s5, 1
-    mul     t0, t0, t1
+    mul     t0, s11, t1
     add     sp, sp, t0
     mv      s10, sp
-    addi    s11, s2, RT_CLUSTER_CALL_EVT<<2
     mv      s5, ra
+    sub     s11, sp, s11
+
+#ifdef __RT_USE_ASSERT
+    // Activate global stack checking information
+    csrw    0x7D1, s11
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
+#endif
 
     j       __rt_task_loop
 
@@ -153,7 +160,9 @@ __rt_task_cl_end:
     li      t2, 1
     sw      t2, RT_TASK_T_EVENT(s6)
 
-    sw      x0, EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT(s11)
+
+    addi    t6, s2, RT_CLUSTER_CALL_EVT<<2
+    sw      x0, EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT(t6)
 
 
     j __rt_task_loop
@@ -165,20 +174,23 @@ __rt_task_handle_from_fc_stack:
 
 #ifdef __RT_USE_ASSERT
     // Update stack checking information
-    la      t6, __rt_platform
     lh      t4, RT_TASK_T_STACK_SIZE(s6)
-    lw      t6, 0(t6)
-    li      t1, 3
-    bne     t6, t1, __rt_task_handle_from_fc_stack_no_check
     sub     t6, sp, t4
-    csrwi   0x7B0, 0
-    csrw    0x7B1, t6
-    csrw    0x7B2, sp
-    csrwi   0x7B0, 1
+    csrwi   0x7D0, 0
+    csrw    0x7D1, t6
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
 #endif
 
-__rt_task_handle_from_fc_stack_no_check:
     jalr    ra, t2
+
+#ifdef __RT_USE_ASSERT
+    // Reactivate global stack checking
+    csrwi   0x7D0, 0
+    csrw    0x7D1, s11
+    csrw    0x7D2, s10
+    csrwi   0x7D0, 1
+#endif
 
     mv      sp, s10
 
@@ -241,19 +253,22 @@ __rt_task_fc_mc_stack:
 
 #ifdef __RT_USE_ASSERT
     // Update stack checking information
-    la      t6, __rt_platform
-    lw      t6, 0(t6)
-    li      t1, 3
-    bne     t6, t1, __rt_task_fc_mc_stack_no_check
     sub     t6, sp, t4
-    csrwi   0x7B0, 0
-    csrw    0x7B1, t6
-    csrw    0x7B2, sp
-    csrwi   0x7B0, 1
+    csrwi   0x7D0, 0
+    csrw    0x7D1, t6
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
 #endif
 
-__rt_task_fc_mc_stack_no_check:
     jalr    ra, t2
+
+#ifdef __RT_USE_ASSERT
+    // Reactivate global stack checking
+    csrwi   0x7D0, 0
+    csrw    0x7D1, s11
+    csrw    0x7D2, s10
+    csrwi   0x7D0, 1
+#endif
 
     mv      sp, s10
 
