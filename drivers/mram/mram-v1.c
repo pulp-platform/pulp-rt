@@ -293,10 +293,9 @@ static rt_flash_t *__rt_mram_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt_event
   soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(mram->periph_id)+3);
   plp_udma_cg_set(plp_udma_cg_get() | (1<<mram->periph_id));
 
+  rt_pm_domain_state_switch(RT_PM_DOMAIN_MRAM, RT_PM_DOMAIN_STATE_ON, NULL);
 
   __rt_mram_init(mram);
-
-  if (event) __rt_event_enqueue(event);
 
   return (rt_flash_t *)mram;
 

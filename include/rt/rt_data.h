@@ -268,7 +268,7 @@ typedef struct rt_event_s {
   union {
     rt_periph_copy_t copy;
     struct {
-      unsigned int data[3];
+      unsigned int data[4];
     };
     struct {
       unsigned int time;

@@ -20,106 +20,42 @@
 
 #include "rt/rt_api.h"
 #include "stdio.h"
+#include "maestro.h"
 
-#define COLD_BOOT       0     /* SoC cold boot, from Flash usually */
-#define DEEP_SLEEP_BOOT 1     /* Reboot from deep sleep state, state has been lost, somehow equivalent to COLD_BOOT */
-#define RETENTIVE_BOOT  2     /* Reboot from Retentive state, state has been retained, should bypass flash reload */
-
-
-#define RT_PMU_MRAM_ID    0
-#define RT_PMU_CSI_ID     1
-#define RT_PMU_CLUSTER_ID 2
-#define RT_PMU_CHIP_ID    3
-
-#define RT_PMU_STATE_OFF 0
-#define RT_PMU_STATE_ON  1
-
-#define RT_PMU_RETENTION_OFF 0
-#define RT_PMU_RETENTION_ON  1
-
-/* Maestro internal events */
-#define MAESTRO_EVENT_ICU_OK            (1<<0)
-#define MAESTRO_EVENT_ICU_DELAYED       (1<<1)
-#define MAESTRO_EVENT_MODE_CHANGED      (1<<2)
-#define MAESTRO_EVENT_PICL_OK           (1<<3)
-#define MAESTRO_EVENT_SCU_OK            (1<<4)
 
 // 1 if a sequence is pending, 0 otherwise
-RT_FC_DATA static uint32_t __rt_pmu_pending_sequence;
+RT_FC_DATA uint32_t __rt_pmu_pending_sequence;
 
 // 1 bit per domain, 1 means ON, 0 means OFF
-RT_FC_DATA static uint32_t __rt_pmu_domains_on;
+RT_FC_DATA uint32_t __rt_pmu_domains_on;
 
 // First pending sequence (waiting for current one to finish)
-RT_FC_DATA static rt_event_t *__rt_pmu_pending_requests;
+RT_FC_DATA rt_event_t *__rt_pmu_pending_requests;
 // Last pending sequence
 RT_FC_DATA static rt_event_t *__rt_pmu_pending_requests_tail;
 
 // Contains user configuration for external wakeup
 RT_FC_DATA static uint32_t __rt_pmu_sleep_ctrl_extwake;
 
-
-
-static inline __attribute__((always_inline)) void __rt_pmu_apply_state(int domain, int state, int ret)
-{
-  int sequence;
-
-  // Update local domain status
-  __rt_pmu_domains_on = (__rt_pmu_domains_on & ~(1 << domain)) | (state << domain);
-
-  // Remember that a sequence is pending as no other one should be enqueued until
-  // this one is finished.
-  __rt_pmu_pending_sequence = 1;
-
-  // Compute the right sequence
-  if (domain == RT_PMU_CHIP_ID)
-  {
-    // For soc, 4 is deep sleep, 5 retentive deep sleep, and 6 and 7 the same
-    // with smart wakeup on.
-    sequence = 4 + ret;
-  }
-  else
-  {
-    // For other domains, first sequence if OFF, second is ON
-    sequence = domain*2 + 8 + state;
-  }
-
-  // Finally ask Maestro to trigger the sequence
-  maestro_trigger_sequence(sequence);
-}
+// If not NULL, contains the event which should be pushed when the next pending
+// sequeunce is done.s
+RT_FC_TINY_DATA rt_event_t *__rt_pmu_scu_event;
 
 
 
-static void __attribute__((interrupt)) __rt_pmu_scu_handler()
-{
-  // This handler gets called when a sequence is finished. It should then
-  // acknoledge it and continue with the next pending sequence.
-
-  // Clear end of sequence interrupt
-  PMU_WRITE(MAESTRO_DLC_IFR_OFFSET, MAESTRO_EVENT_SCU_OK);
-
-  // Notify that nothing is pending
-  __rt_pmu_pending_sequence = 0;
-
-  // And handle the next pending sequence
-  rt_event_t *event = __rt_pmu_pending_requests;
-  if (event)
-  {
-    __rt_pmu_pending_requests = event->next;
-
-    __rt_pmu_apply_state(event->data[0], event->data[1], event->data[2]);
-
-    __rt_push_event(event->sched, event);
-  }
-}
 
 
 
 static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int domain, int state, int retentive)
 {
+  int wait_end_of_sequence = domain != RT_PMU_CLUSTER_ID && domain != RT_PMU_CHIP_ID;
+
   // In case, no sequence is pending, just apply the new one and leave
   if (__rt_pmu_pending_sequence == 0)
   {
+    if (wait_end_of_sequence)
+      __rt_pmu_scu_event = event;
+
     // Note that this is asynchronous but we can notify the caller that it's done
     // as any access will be put on hold.
     // TODO this is probably not true for MRAM and CSI.
@@ -132,6 +68,7 @@ static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int do
     event->data[0] = domain;
     event->data[1] = state;
     event->data[2] = retentive;
+    event->data[3] = wait_end_of_sequence;
 
     if (__rt_pmu_pending_requests == NULL)
       __rt_pmu_pending_requests = event;
@@ -225,6 +162,23 @@ static void __rt_pmu_shutdown(int retentive)
 
 
 
+int rt_pm_domain_state_switch(rt_pm_domain_e domain, rt_pm_domain_state_e state, rt_event_t *event)
+{
+  int irq = rt_irq_disable();
+
+  rt_event_t *call_event = __rt_wait_event_prepare(event);
+
+  __rt_pmu_change_domain_power(call_event, NULL, domain, state, 0);
+
+  __rt_wait_event_check(event, call_event);
+
+  rt_irq_restore(irq);
+
+  return 0;
+}
+
+
+
 int rt_pm_state_switch(rt_pm_state_e state, rt_pm_state_flags_e flags)
 {
   if (state == RT_PM_STATE_DEEP_SLEEP)
@@ -269,6 +223,31 @@ rt_pm_wakeup_e rt_pm_wakeup_state()
 
 
 
+#if 0
+static void __rt_pmu_set_dcdc(unsigned int voltage)
+{
+  int dcdc_value = (voltage - 550) / 50;
+  
+}
+
+
+
+int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_event_t *event)
+{
+  int irq = rt_irq_disable();
+
+  __rt_pmu_set_dcdc(new_state, new_voltage);
+
+  if (event) __rt_event_enqueue(event);
+
+  rt_irq_restore(irq);
+
+  return 0;
+}
+#endif
+
+
+
 void __rt_pmu_init()
 {
   // At startup, everything is off.
@@ -285,4 +264,6 @@ void __rt_pmu_init()
 
   // Disable all Maestro interrupts but PICL_OK and SCU_OK
   PMU_WRITE(MAESTRO_DLC_IMR_OFFSET, 0x7);
+
+  __rt_pmu_scu_event = NULL;
 }
