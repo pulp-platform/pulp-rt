@@ -72,6 +72,12 @@ rt_flash_t *rt_flash_open(char *dev_name, rt_flash_conf_t *conf, rt_event_t *eve
       desc = &hyperflash_desc;
     }
 #endif
+#ifdef ARCHI_UDMA_HAS_MRAM
+    else if (conf->type == RT_FLASH_TYPE_MRAM)
+    {
+      desc = &mram_desc;
+    }
+#endif
     else
       return NULL;
   }
@@ -93,6 +99,11 @@ void rt_flash_close(rt_flash_t *handle, rt_event_t *event)
 void __rt_flash_program(rt_flash_t *handle, void *data, void *addr, size_t size, rt_event_t *event)
 {
   handle->desc.program(handle, data, addr, size, event);
+}
+
+void __rt_flash_erase(rt_flash_t *handle, void *addr, int size, rt_event_t *event)
+{
+  handle->desc.erase(handle, addr, size, event);
 }
 
 void __rt_flash_erase_chip(rt_flash_t *handle, rt_event_t *event)
