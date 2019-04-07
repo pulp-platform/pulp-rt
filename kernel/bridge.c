@@ -166,16 +166,16 @@ static int __rt_bridge_check_flash_open(int type, unsigned int itf, unsigned int
     __rt_bridge_flash_itf = itf;
     __rt_bridge_flash_cs = cs;
 
-#ifdef PADS_VERSION
     if (type == RT_FLASH_TYPE_HYPER)
     {
+#ifdef PADS_VERSION
       rt_padframe_profile_t *profile_hyper = rt_pad_profile_get("hyper");
       if (profile_hyper == NULL) {
           return 1;
       }
       rt_padframe_set(profile_hyper);
-    }
 #endif
+    }
 
     __rt_bridge_flash_handle = rt_flash_open(NULL, &conf, NULL);
 
@@ -203,6 +203,22 @@ static int __rt_bridge_flash_access(int type, unsigned int itf, unsigned int cs,
   return 0;
 }
 
+
+
+static int __rt_bridge_flash_erase(int type, unsigned int itf, unsigned int cs, void *data, int size)
+{
+  printf("Flash erase (type: %d, itf: %d, cs: %d, addr: %p, size: 0x%x)\n", type, itf, cs, data, size);
+
+  if (__rt_bridge_check_flash_open(type, itf, cs))
+    return -1;
+
+  __rt_flash_erase(__rt_bridge_flash_handle, data, size, NULL);
+
+  return 0;
+}
+
+
+
 static int __rt_bridge_flash_erase_chip(int type, unsigned int itf, unsigned int cs)
 {
   printf("Flash erase chip (type: %d, itf: %d, cs: %d)\n", type, itf, cs);
@@ -214,6 +230,8 @@ static int __rt_bridge_flash_erase_chip(int type, unsigned int itf, unsigned int
 
   return 0;
 }
+
+
 
 static int __rt_bridge_flash_erase_sector(int type, unsigned int itf, unsigned int cs, void *data)
 {
