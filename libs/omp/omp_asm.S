@@ -35,6 +35,7 @@ GOMP_parallel_do:
   mv      a0, a1
   jalr      ra, a2
   lw        ra, %tiny(parallelTemp0)(x0)
+  lui       t0, 0x204000 >> 12
 #ifdef ARCHI_HAS_CC
   // When having a cluster controller, the fork is using barrier 1 to
   // sync all slaves.
