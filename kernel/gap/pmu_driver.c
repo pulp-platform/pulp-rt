@@ -679,9 +679,8 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
 #if 1
       /* Check FLL converge by compare status register with multiply factor */
 
-  fll_reg_conf2_t fll_conf2;
-  fll_conf2.raw = hal_fll_conf_reg2_get(Fll);
-  int tolerance = fll_conf2.lock_tolerance;
+  // We set tolerance to Mult/20 to get a precision of 5% against specified freq
+  int tolerance = Mult / 20;
 
   do {
     int mult_factor_diff = hal_fll_status_reg_get(Fll) - Mult;
@@ -768,9 +767,8 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
 
 #if 1
 
-  fll_reg_conf2_t fll_conf2;
-  fll_conf2.raw = hal_fll_conf_reg2_get(WhichFll);
-  int tolerance = fll_conf2.lock_tolerance;
+  // We set tolerance to Mult/20 to get a precision of 5% against specified freq
+  int tolerance = Mult/20;
 
   do {
     int mult_factor_diff = hal_fll_status_reg_get(WhichFll) - Mult;
