@@ -65,7 +65,8 @@
  */
 typedef enum {
   RT_FLASH_TYPE_SPI,     /*!< SPI flash. */
-  RT_FLASH_TYPE_HYPER    /*!< Hyperflash. */
+  RT_FLASH_TYPE_HYPER,    /*!< Hyperflash. */
+  RT_FLASH_TYPE_MRAM     /*!< MRAM. */
 } rt_flash_type_e;
 
 
@@ -177,6 +178,8 @@ static inline void rt_flash_cluster_wait(rt_flash_req_t *req);
 
 void __rt_flash_program(rt_flash_t *_dev, void *data, void *addr, size_t size, rt_event_t *event);
 
+void __rt_flash_erase(rt_flash_t *_dev, void *addr, int size, rt_event_t *event);
+
 void __rt_flash_erase_chip(rt_flash_t *_dev, rt_event_t *event);
 
 void __rt_flash_erase_sector(rt_flash_t *_dev, void *data, rt_event_t *event);
@@ -212,6 +215,7 @@ typedef struct rt_file_s {
 
 extern rt_flash_dev_t hyperflash_desc;
 extern rt_flash_dev_t spiflash_desc;
+extern rt_flash_dev_t mram_desc;
 
 static inline void rt_flash_read(rt_flash_t *dev, void *addr, void *data, size_t size, rt_event_t *event)
 {

@@ -244,7 +244,7 @@ int bench_cluster_exec(int cid, int (*entry)())
   {
     __rt_bench_entry = entry;
     rt_cluster_mount(1, 0, 0, NULL);
-    rt_cluster_call(NULL, cid, __rt_bench_cluster_entry, NULL, NULL, 0, 0, 0, NULL);
+    rt_cluster_call(NULL, cid, __rt_bench_cluster_entry, NULL, NULL, 4096, 4096, 0, NULL);
     rt_cluster_mount(0, 0, 0, NULL);
 
     return __rt_bench_retval;
@@ -253,6 +253,12 @@ int bench_cluster_exec(int cid, int (*entry)())
   return 0;
 }
 
+extern int main(int argc, const char * const argv[]);
+
+int bench_cluster_forward(int cid)
+{
+  return bench_cluster_exec(cid, main);
+}
 
 int bench_cluster_exec2(int cid, int (*entry)())
 {

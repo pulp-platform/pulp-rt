@@ -34,6 +34,15 @@ endif
 endif
 
 
+# MRAM
+
+ifeq '$(CONFIG_MRAM_ENABLED)' '1'
+ifneq '$(udma/mram/version)' ''
+PULP_LIB_FC_SRCS_rt += drivers/mram/mram-v$(udma/mram/version).c
+endif
+endif
+
+
 # UART
 
 ifeq '$(CONFIG_UART_ENABLED)' '1'

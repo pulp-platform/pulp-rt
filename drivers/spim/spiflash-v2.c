@@ -37,6 +37,11 @@
 
 #include "rt/rt_api.h"
 
+typedef struct rt_spiflash_s {
+  rt_flash_t header;
+  rt_spim_t *spim;
+} rt_spiflash_t;
+
 #define CMD_BUFF_SIZE 16
 
 typedef struct {
@@ -53,7 +58,7 @@ typedef struct {
 
 static RT_L2_DATA uint32_t cmd_buffer[CMD_BUFF_SIZE];
 static RT_L2_DATA flashRead_t flash_read;
-static volatile RT_L2_DATA int __rt_spiflash_rcv_buffer;
+static volatile RT_L2_DATA uint32_t __rt_spiflash_rcv_buffer;
 
 
 
@@ -68,19 +73,23 @@ static void __rt_spiflash_free(rt_spiflash_t *flash)
 
 static void __rt_spiflash_send_and_rcv(rt_spiflash_t *flash, void *snd_buff, int snd_size, void *rcv_buff, int rcv_size)
 {
+#if 0
   rt_event_t *event = __rt_wait_event_prepare_blocking();
   rt_periph_copy_t *copy = &event->copy;
   rt_periph_copy_init(copy, 0);
   copy->event = event;
   rt_periph_dual_copy_safe(copy, flash->channel, (unsigned int)snd_buff, snd_size, (int)rcv_buff, rcv_size, 2<<1);
   __rt_wait_event(event);
+#endif
 }
 
 
 
 static void __rt_spiflash_send(rt_spiflash_t *flash, void *buff, int size)
 {
+#if 0
   rt_periph_copy(NULL, flash->channel+1, (unsigned int)buff, size, 2<<1, NULL);
+#endif
 }
 
 
@@ -107,18 +116,71 @@ static uint32_t __rt_spiflash_read_flash_id(rt_spiflash_t *flash)
 {
   int index = 0;
 
-  cmd_buffer[index++] = SPI_CMD_CFG       (0, 0, 0);
-  cmd_buffer[index++] = SPI_CMD_SOT       (0);
-  cmd_buffer[index++] = SPI_CMD_SEND_CMD  (0x9F, 8, 0);
-  cmd_buffer[index++] = SPI_CMD_RX_DATA   (32, 0, SPI_CMD_BYTE_ALIGN_ENA);
-  cmd_buffer[index++] = SPI_CMD_EOT       (0);
+  cmd_buffer[index++] = 0x9F;
 
-  __rt_spiflash_send_and_rcv(flash, cmd_buffer, index*4, (void *)&__rt_spiflash_rcv_buffer, 4);
+  rt_spim_send(
+    flash->spim, cmd_buffer, index*8, RT_SPIM_CS_KEEP, NULL
+  );
+  
+  rt_spim_receive(
+    flash->spim, (void *)&__rt_spiflash_rcv_buffer, 4*8, RT_SPIM_CS_AUTO, NULL
+  );
 
   return __rt_spiflash_rcv_buffer;
 }
 
 
+static uint32_t __rt_spiflash_confreg_init(rt_spiflash_t *flash)
+{
+  int index = 0;
+
+  //cmd_buffer[index++] = 0x03020101;
+  cmd_buffer[index++] = 0x01000000;
+
+  rt_spim_send(
+    flash->spim, cmd_buffer, index*32, RT_SPIM_CS_KEEP, NULL
+  );
+  
+  return __rt_spiflash_rcv_buffer;
+
+}
+
+static uint32_t __rt_spiflash_reg_read(rt_spiflash_t *flash, uint32_t addr)
+{
+  int index = 0;
+
+  cmd_buffer[index++] = 0x00000065;
+  cmd_buffer[index++] = addr;
+
+  rt_spim_send(
+    flash->spim, cmd_buffer, index*32, RT_SPIM_CS_KEEP, NULL
+  );
+  
+  rt_spim_receive(
+    flash->spim, (void *)&__rt_spiflash_rcv_buffer, 4*8, RT_SPIM_CS_AUTO, NULL
+  );
+
+  return __rt_spiflash_rcv_buffer;
+
+}
+
+static uint32_t __rt_spiflash_confreg_read(rt_spiflash_t *flash)
+{
+  int index = 0;
+
+  cmd_buffer[index++] = 0x35;
+
+  rt_spim_send(
+    flash->spim, cmd_buffer, 8, RT_SPIM_CS_KEEP, NULL
+  );
+  
+  rt_spim_receive(
+    flash->spim, (void *)&__rt_spiflash_rcv_buffer, 4*8, RT_SPIM_CS_AUTO, NULL
+  );
+
+  return __rt_spiflash_rcv_buffer;
+
+}
 
 static rt_flash_t *__rt_spiflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt_event_t *event)
 {
@@ -129,28 +191,24 @@ static rt_flash_t *__rt_spiflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt_e
   flash = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_spiflash_t));
   if (flash == NULL) goto error;
 
-  int periph_id;
-
-  if (dev)
-  {
-    periph_id = dev->channel;
-  }
-  else
-  {
-    periph_id = ARCHI_UDMA_SPIM_ID(conf->id);
-  }
-  
-  int channel_id = periph_id*2;
-
-  flash->channel = channel_id;
-
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<(periph_id)));
-
-  soc_eu_fcEventMask_setEvent(channel_id);
-  soc_eu_fcEventMask_setEvent(channel_id+1);
+  rt_spim_conf_t spi_conf;
+  rt_spim_conf_init(&spi_conf);
+  spi_conf.max_baudrate = 1000000;
+  spi_conf.polarity = 0;
+  spi_conf.phase = 0;
+  spi_conf.id = 0; 
+  spi_conf.cs = 1;
+  flash->spim = rt_spim_open(NULL, &spi_conf, NULL);
 
   uint32_t id = __rt_spiflash_read_flash_id(flash);
   printf("Got ID %lx\n", id);
+
+  //__rt_spiflash_confreg_init(flash);
+
+  printf("CR1V=%lx\n", __rt_spiflash_reg_read(flash, 0x00800002));
+  printf("CR2V=%lx\n", __rt_spiflash_reg_read(flash, 0x00800003));
+  printf("CR1V=%lx\n", __rt_spiflash_confreg_read(flash));
+
 
   flash_read.sot      = SPI_CMD_SOT       (0);
   flash_read.sendCmd  = SPI_CMD_SEND_CMD  (0x03, 8, 0);
@@ -191,6 +249,7 @@ void __rt_spiflash_enqueue_callback();
 
 static void __rt_spiflash_read(rt_flash_t *_dev, void *data, void *addr, size_t size, rt_event_t *event)
 {
+  #if 0
   rt_trace(RT_TRACE_FLASH, "[UDMA] Enqueueing SPI flash read (dev: %p, data: %p, addr: %p, size 0x%x, event: %p)\n", _dev, data, addr, size, event);
 
   int irq = rt_irq_disable();
@@ -240,6 +299,7 @@ static void __rt_spiflash_read(rt_flash_t *_dev, void *data, void *addr, size_t 
 __rt_wait_event_check(event, call_event);
 
   rt_irq_restore(irq);
+#endif
 }
 
 

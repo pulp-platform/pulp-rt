@@ -51,6 +51,10 @@ PULP_LIB_FC_SRCS_rt     += kernel/periph-v$(udma/archi).c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma-v$(udma/archi).S kernel/$(fc_archi)/udma_spim-v$(udma/spim/version).S
 endif
 
+ifneq '$(udma/mram/version)' ''
+PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/udma_mram-v$(udma/mram/version).S
+endif
+
 ifneq '$(soc/fll/version)' ''
 ifeq '$(pulp_chip_family)' 'gap'
 PULP_LIB_FC_SRCS_rt     += kernel/gap/freq.c kernel/gap/pm.c
@@ -108,7 +112,7 @@ PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
 ifeq '$(pulp_chip_family)' 'vega'
-PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c
+PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c kernel/vega/maestro_irq.c
 endif
 
 ifeq '$(pulp_chip_family)' 'gap'

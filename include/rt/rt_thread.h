@@ -145,7 +145,7 @@ static inline rt_thread_t *__rt_thread_dequeue_ready()
   return thread;
 }
 
-static inline void __rt_thread_enqueue_ready_check(rt_thread_t *thread)
+static inline __attribute__((always_inline)) void __rt_thread_enqueue_ready_check(rt_thread_t *thread)
 {
   if (thread->state != RT_THREAD_STATE_READY) {
     __rt_thread_enqueue_ready(thread);

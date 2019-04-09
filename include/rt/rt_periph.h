@@ -177,6 +177,8 @@ void udma_event_handler();
 
 void __rt_spim_handle_eot();
 
+void __rt_mram_handle_event();
+
 #if UDMA_VERSION <= 2
 
 void __rt_spim_handle_event();

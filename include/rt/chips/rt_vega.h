@@ -26,6 +26,19 @@
 
 /// @endcond
 
+
+/** \enum rt_pm_domain_e
+ * \brief Power domains.
+ *
+ * Describes the available power domains (other than the chip itself).
+ */
+typedef enum {
+  RT_PM_DOMAIN_MRAM=0,  /*!< Embedded MRAM. */
+  RT_PM_DOMAIN_CSI =1   /*!< CSI2 interface. */
+} rt_pm_domain_e;
+
+
+
 /** Specify that the I2S channel should be multiplexed with only 1 stream. */
 #define RT_I2S_FLAGS_MUX_1CH       (0<<__RT_FLAGS_MUX_BIT)
 

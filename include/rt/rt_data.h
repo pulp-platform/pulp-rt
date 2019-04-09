@@ -268,7 +268,7 @@ typedef struct rt_event_s {
   union {
     rt_periph_copy_t copy;
     struct {
-      unsigned int data[3];
+      unsigned int data[4];
     };
     struct {
       unsigned int time;
@@ -379,6 +379,7 @@ typedef struct {
 struct rt_flash_s;
 typedef struct rt_flash_conf_s rt_flash_conf_t;
 
+// BEWARE, assembly offsets in all flash structures must be updated below if this structure is modified
 typedef struct rt_flash_dev_s {
   struct rt_flash_s *(*open)(rt_dev_t *dev, rt_flash_conf_t *conf, rt_event_t *event);
   void (*close)(struct rt_flash_s *flash, rt_event_t *event);
@@ -386,9 +387,11 @@ typedef struct rt_flash_dev_s {
   void (*program)(struct rt_flash_s *dev, void *data, void *addr, size_t size, rt_event_t *event);
   void (*erase_chip)(struct rt_flash_s *dev, rt_event_t *event);
   void (*erase_sector)(struct rt_flash_s *dev, void *data, rt_event_t *event);
+  void (*erase)(struct rt_flash_s *dev, void *addr, int size, rt_event_t *event);
 
 } rt_flash_dev_t;
 
+// BEWARE, assembly offsets in all flash structures must be updated below if this structure is modified
 typedef struct rt_flash_s {
   rt_flash_dev_t desc;
 } rt_flash_t;
@@ -398,10 +401,14 @@ typedef struct rt_hyperflash_s {
   int channel;
 } rt_hyperflash_t;
 
-typedef struct rt_spiflash_s {
+// BEWARE, assembly offsets must be updated below if this structure is modified
+typedef struct {
   rt_flash_t header;
-  int channel;
-} rt_spiflash_t;
+  int periph_id;
+  unsigned int periph_base;
+  rt_periph_copy_t *first_pending_copy;
+  rt_periph_copy_t *last_pending_copy;
+} rt_mram_t;
 
 typedef struct rt_uart_s {
   int open_count;
@@ -732,6 +739,12 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_PERIPH_SPIM_T_FIRST_WAITING 8
 #define RT_PERIPH_SPIM_T_LAST_WAITING  12
 #endif
+
+
+#define RT_MRAM_T_PERIPH_ID          28
+#define RT_MRAM_T_PERIPH_BASE        32
+#define RT_MRAM_T_FIRST_PENDING_COPY 36
+#define RT_MRAM_T_LAST_PENDING_COPY  40
 
 
 #define RT_CLUSTER_CALL_T_SIZEOF       (8*4)

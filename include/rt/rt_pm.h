@@ -38,6 +38,31 @@
 
 /**@{*/
 
+#if PULP_CHIP != CHIP_VEGA
+
+/** \enum rt_pm_domain_e
+ * \brief Power domains.
+ *
+ * Describes the available power domains (other than the chip itself).
+ */
+typedef enum {
+  RT_PM_DOMAIN_MAIN=0   /*!< Main power domain. */
+} rt_pm_domain_e;
+
+#endif
+
+
+
+/** \enum rt_pm_domain_state_e
+ * \brief Domain power states.
+ *
+ * Describes the power state of a domain.
+ */
+typedef enum {
+  RT_PM_DOMAIN_STATE_OFF=0,   /*!< OFF. The domain is powered-down and is not accessible */
+  RT_PM_DOMAIN_STATE_ON=1     /*!< ON. The domain is powered-up and is accessible */
+} rt_pm_domain_state_e;
+
 
 
 /** \enum rt_pm_state_e
@@ -123,6 +148,19 @@ void rt_pm_wakeup_gpio_conf(int active, int gpio, rt_pm_wakeup_gpio_mode_e mode)
  * \return          0 if the operation is successful, -1 otherwise.
  */
 int rt_pm_state_switch(rt_pm_state_e state, rt_pm_state_flags_e flags);
+
+
+
+/** \brief Switch domain power state.
+ *
+ * Switch the specified domain to the specified power state. This cannot
+ * be applied to the chip.
+ * 
+ * \param     domain The power domain on which the power state must be changed.
+ * \param     state New power state.
+ * \return          0 if the operation is successful, -1 otherwise.
+ */
+int rt_pm_domain_state_switch(rt_pm_domain_e domain, rt_pm_domain_state_e state, rt_event_t *event);
 
 
 

@@ -120,6 +120,10 @@ __rt_master_loop:
     ebreak
 #endif
 
+#ifdef __RT_USE_ASSERT
+    csrwi   0x7D0, 0
+#endif
+
     // Reads entry point information
     lw      a0, RT_CLUSTER_CALL_T_ARG(s0)
     lw      t0, RT_CLUSTER_CALL_T_ENTRY(s0)
@@ -139,16 +143,11 @@ __rt_master_loop:
 
 #ifdef __RT_USE_ASSERT
     // Update stack checking information
-    la      t4, __rt_platform
-    lw      t4, 0(t4)
-    li      t5, 3
-    bne     t4, t5, __rt_no_stack_check
     beqz    t1, __rt_no_stack_check
     sub     t4, sp, t1
-    csrwi   0x7B0, 0
-    csrw    0x7B1, t4
-    csrw    0x7B2, sp
-    csrwi   0x7B0, 1
+    csrw    0x7D1, t4
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
 #endif
 
 __rt_no_stack_check:
@@ -303,6 +302,10 @@ __rt_other_entry:
   .global __rt_set_slave_stack
 __rt_set_slave_stack:
 
+#ifdef __RT_USE_ASSERT
+    csrwi   0x7D0, 0
+#endif
+
     // Multiply the stack size by the core ID and add the stack base to get our stack
     p.elw   t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
 #ifdef ARCHI_HAS_CC
@@ -314,22 +317,11 @@ __rt_set_slave_stack:
     add     sp, t4, t0
 
 #ifdef __RT_USE_ASSERT
-    // Update stack checking information
-    la      t4, __rt_platform
-    lw      t4, 0(t4)
-    li      t5, 3
-    beq     t4, t5, __rt_slave_stack_check
-#endif
-    ret
-
-#ifdef __RT_USE_ASSERT
-__rt_slave_stack_check:
     beqz    a0, __rt_no_stack_check_end
     sub     t4, sp, a0
-    csrwi   0x7B0, 0
-    csrw    0x7B1, t4
-    csrw    0x7B2, sp
-    csrwi   0x7B0, 1
+    csrw    0x7D1, t4
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
 __rt_no_stack_check_end:
     ret
 #endif
