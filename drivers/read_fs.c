@@ -128,24 +128,26 @@ static int __rt_fs_mount_step(void *arg)
 
       case 1:
         // Read the offset telling where is the file-system header
-        rt_flash_read(fs->flash, &fs->fs_l2->fs_offset, 0, 4, fs->step_event);
+        rt_flash_read(fs->flash, &fs->fs_l2->fs_offset, 0, 8, fs->step_event);
         break;
 
       case 2:
+        printf("READ FS OFFSET %x\n", (int)fs->fs_l2->fs_offset);
         // Read the header size at the first header word
-        rt_flash_read(fs->flash, &fs->fs_l2->fs_size, (void *)fs->fs_l2->fs_offset, 4, fs->step_event);
+        rt_flash_read(fs->flash, &fs->fs_l2->fs_size, (void *)(int)fs->fs_l2->fs_offset, 8, fs->step_event);
         break;
 
       case 3: {
         // Allocate roon for the file-system header and read it
-        int fs_size = ((fs->fs_l2->fs_size + 3) & ~3);
+        int fs_size = ((fs->fs_l2->fs_size + 7) & ~7);
         int fs_offset = fs->fs_l2->fs_offset;
+        printf("READ FS SIZE %x\n", (int)fs->fs_l2->fs_size);
         fs->fs_info = rt_alloc(RT_ALLOC_PERIPH, fs_size);
         if (fs->fs_info == NULL) {
           __rt_fs_abort(fs->pending_event, RT_FS_MOUNT_MEM_ERROR, (void *)fs);
           goto error;
         }
-        rt_flash_read(fs->flash, (void *)fs->fs_info, (void *)(fs_offset + 4), fs_size, fs->step_event);
+        rt_flash_read(fs->flash, (void *)fs->fs_info, (void *)(fs_offset + 8), fs_size, fs->step_event);
         break;
       }
     }
@@ -250,14 +252,29 @@ rt_file_t *rt_fs_open(rt_fs_t *fs, const char *file_name, int flags, rt_event_t 
   unsigned int *fs_info = fs->fs_info;
   int nb_comps = *fs_info++;
 
+  printf("OPENING %s\n", file_name);
+
+  printf("NB COMP %d\n", nb_comps);
+
+  for (int i=0; i<fs->fs_size/4; i++)
+  {
+    printf("%p: %x\n", &fs_info[i], fs_info[i]);
+  }
+
   // Find the file in the file-system
   rt_fs_desc_t *desc = NULL;
   int i;
   for (i=0; i<nb_comps; i++) {
     desc = (rt_fs_desc_t *)fs_info;
+
+
+    printf("CMP %p @%p %p\n", desc, &desc->name, desc->name);
+    printf("CMP %s\n", desc->name);
     if (strcmp(desc->name, file_name) == 0) break;
     fs_info = (unsigned int *)((unsigned int)fs_info + sizeof(rt_fs_desc_t) + desc->path_size);
   }
+
+  printf("FOUND FILE\n");
 
   // Leave if the file is not found
   if (i == nb_comps) goto error;

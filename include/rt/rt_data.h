@@ -475,8 +475,8 @@ typedef struct rt_i2s_s {
 } rt_i2s_t;
 
 typedef struct rt_fs_l2_s {
-  int fs_offset;
-  int fs_size;
+  uint64_t fs_offset;
+  uint64_t fs_size;
 } rt_fs_l2_t;
 
 
