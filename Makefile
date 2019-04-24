@@ -69,6 +69,8 @@ install_rt_vega: install_headers
 #------------------------------------------
 GAP8: install_headers install_rt_gap8
 
+GAP8_V2: install_headers install_rt_gap8
+
 VEGA: install_headers install_rt_vega
 
 #all: install_headers $(TARGET_CHIP)
