@@ -83,6 +83,11 @@ static unsigned int __rt_fll_get_freq_from_mult_div(unsigned int mult, unsigned 
 
 unsigned int __rt_fll_set_freq(int fll, unsigned int frequency)
 {
+  // Synchronize with bridge so that it does not try to access the chip
+  // while we are changing the frequency
+  if (fll == __RT_FLL_FC)
+    __rt_bridge_req_shutdown();
+
   unsigned int real_freq, mult, div;
   real_freq = __rt_fll_get_mult_div_from_freq(frequency, &mult, &div);
   rt_trace(RT_TRACE_FREQ, "Setting FLL frequency (fll: %d, freq: %d, mult: %d, div: %d, real_freq: %d)\n", fll, frequency, mult, div, real_freq);

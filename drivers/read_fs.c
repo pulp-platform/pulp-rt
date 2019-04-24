@@ -128,24 +128,24 @@ static int __rt_fs_mount_step(void *arg)
 
       case 1:
         // Read the offset telling where is the file-system header
-        rt_flash_read(fs->flash, &fs->fs_l2->fs_offset, 0, 4, fs->step_event);
+        rt_flash_read(fs->flash, &fs->fs_l2->fs_offset, 0, 8, fs->step_event);
         break;
 
       case 2:
         // Read the header size at the first header word
-        rt_flash_read(fs->flash, &fs->fs_l2->fs_size, (void *)fs->fs_l2->fs_offset, 4, fs->step_event);
+        rt_flash_read(fs->flash, &fs->fs_l2->fs_size, (void *)(int)fs->fs_l2->fs_offset, 8, fs->step_event);
         break;
 
       case 3: {
         // Allocate roon for the file-system header and read it
-        int fs_size = ((fs->fs_l2->fs_size + 3) & ~3);
+        int fs_size = ((fs->fs_l2->fs_size + 7) & ~7);
         int fs_offset = fs->fs_l2->fs_offset;
         fs->fs_info = rt_alloc(RT_ALLOC_PERIPH, fs_size);
         if (fs->fs_info == NULL) {
           __rt_fs_abort(fs->pending_event, RT_FS_MOUNT_MEM_ERROR, (void *)fs);
           goto error;
         }
-        rt_flash_read(fs->flash, (void *)fs->fs_info, (void *)(fs_offset + 4), fs_size, fs->step_event);
+        rt_flash_read(fs->flash, (void *)fs->fs_info, (void *)(fs_offset + 8), fs_size, fs->step_event);
         break;
       }
     }

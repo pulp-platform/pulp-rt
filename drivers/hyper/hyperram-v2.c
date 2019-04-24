@@ -155,17 +155,19 @@ void __rt_hyperram_cluster_req_done(void *_req)
 
 void __rt_hyperram_cluster_req(void *_req)
 {
-  rt_hyperram_req_t *req = (rt_hyperram_req_t *)_req;
-  rt_event_t *event = &req->event;
-  __rt_init_event(event, event->sched, __rt_hyperram_cluster_req_done, (void *)req);
-  __rt_event_set_pending(event);
-  __rt_hyper_copy(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, event, REG_MBR0);
+  rt_hyperram_req_t *req = (rt_hyperram_req_t* )_req;
+  rt_event_t *event = rt_event_get(req->event.sched, __rt_hyperram_cluster_req_done, (void* )req);
+   if(req->is_2d)
+     __rt_hyper_copy_2d(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, req->stride, req->length, event, REG_MBR0);
+   else
+     __rt_hyper_copy(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, event, REG_MBR0);
+
 }
 
 
 
 void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
-  void *addr, void *hyper_addr, int size, rt_hyperram_req_t *req, int is_write)
+  void *hyper_addr, void *addr, int size, rt_hyperram_req_t *req, int ext2loc)
 {
   req->dev = dev;
   req->addr = addr;
@@ -173,7 +175,9 @@ void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
   req->size = size;
   req->cid = rt_cluster_id();
   req->done = 0;
-  req->is_write = is_write;
+  req->is_write = (ext2loc)? 0:1;
+  req->is_2d = 0;
+
   __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_cluster_req, (void *)req);
   // Mark it as pending event so that it is not added to the list of free events
   // as it stands inside the event request
@@ -181,6 +185,27 @@ void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
   __rt_cluster_push_fc_event(&req->event);
 }
 
+
+
+void __rt_hyperram_cluster_copy_2d(rt_hyperram_t *dev,
+  void *hyper_addr, void *addr, int size, int stride, int length, rt_hyperram_req_t *req, int ext2loc)
+{
+  req->dev = dev;
+  req->addr = addr;
+  req->hyper_addr = hyper_addr;
+  req->size = size;
+  req->stride = stride;
+  req->length = length;
+  req->cid = rt_cluster_id();
+  req->done = 0;
+  req->is_write = (ext2loc)? 0:1;
+  req->is_2d = 1;
+  __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_cluster_req, (void *)req);
+  // Mark it as pending event so that it is not added to the list of free events
+  // as it stands inside the event request
+  __rt_event_set_pending(&req->event);
+  __rt_cluster_push_fc_event(&req->event);
+}
 
 
 void __rt_hyperram_alloc_cluster_req(void *_req)

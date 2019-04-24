@@ -278,6 +278,11 @@ static void __rt_bridge_handle_req(void *arg)
   {
     req->header.flash_erase_sector.retval = __rt_bridge_flash_erase_sector(req->header.flash_erase_sector.type, req->header.flash_erase_sector.itf, req->header.flash_erase_sector.cs, (void *)req->header.flash_erase_sector.addr);
   }
+  else if (req->header.type == HAL_BRIDGE_TARGET_REQ_FLASH_ERASE)
+  {
+    req->header.flash_erase_sector.retval = __rt_bridge_flash_erase(req->header.flash_erase.type, req->header.flash_erase.itf, req->header.flash_erase.cs, (void *)req->header.flash_erase.addr, req->header.flash_erase.size);
+  }
+
 
   hal_bridge_reply(&req->header);
   __rt_bridge_post_reply(req, event);

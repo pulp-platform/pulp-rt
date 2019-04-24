@@ -392,6 +392,15 @@ static inline void rt_hyperflash_copy(rt_hyperflash_t *dev, int channel,
   rt_periph_copy_init_ctrl(copy, RT_PERIPH_COPY_HYPER);
   copy->u.hyper.hyper_addr = REG_MBR1 | (unsigned int)hyper_addr;
 
+  if (size > 1024) {
+    copy->addr = (unsigned int)addr;
+    copy->repeat = 1024;
+    copy->repeat_size = size;
+    size = 1024;
+  } else {
+    copy->repeat = 0;
+  }
+
   rt_periph_copy(copy, UDMA_CHANNEL_ID(dev->channel) + channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_16, event);
 }
 
