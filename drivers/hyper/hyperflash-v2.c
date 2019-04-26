@@ -175,6 +175,10 @@ static void __rt_hyperflash_erase_chip(rt_flash_t *_dev, rt_event_t *event)
   }
 }
 
+static void __rt_hyperflash_erase(rt_flash_t *_dev, void *data, int size, rt_event_t *event)
+{
+}
+
 static void __rt_hyperflash_erase_sector(rt_flash_t *_dev, void *data, rt_event_t *event)
 {
 }
@@ -185,5 +189,6 @@ rt_flash_dev_t hyperflash_desc = {
   .read         = &__rt_hyperflash_read,
   .program      = &__rt_hyperflash_program,
   .erase_chip   = &__rt_hyperflash_erase_chip,
-  .erase_sector = &__rt_hyperflash_erase_sector
+  .erase_sector = &__rt_hyperflash_erase_sector,
+  .erase        = &__rt_hyperflash_erase
 };
