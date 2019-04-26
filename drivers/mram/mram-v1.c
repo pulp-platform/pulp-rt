@@ -258,10 +258,6 @@ static void __rt_mram_init(rt_mram_t *mram, void *trim_cfg_buff)
 
   // Perform Setup sequence : POR-RET-RST
   udma_mram_mram_mode_set(periph_base,
-    UDMA_MRAM_MRAM_MODE_POR_B(1)
-  );
-
-  udma_mram_mram_mode_set(periph_base,
     UDMA_MRAM_MRAM_MODE_POR_B(1) |
     UDMA_MRAM_MRAM_MODE_RET_B(1)
   );

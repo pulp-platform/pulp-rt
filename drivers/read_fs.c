@@ -312,12 +312,12 @@ static int __rt_fs_read_cached(rt_file_t *file, unsigned int buffer, unsigned in
 {
   rt_trace(RT_TRACE_FS, "[FS] Read cached (buffer: 0x%x, addr: 0x%x, size: 0x%x)\n", buffer, addr, size);
 
-  if (size > FS_READ_THRESHOLD_BLOCK_FULL - (addr & 0x3)) size = FS_READ_THRESHOLD_BLOCK_FULL - (addr & 0x3);
+  if (size > FS_READ_THRESHOLD_BLOCK_FULL - (addr & 0x7)) size = FS_READ_THRESHOLD_BLOCK_FULL - (addr & 0x7);
 
   rt_fs_t *fs = file->fs;
 
   if (addr < fs->cache_addr || addr + size > fs->cache_addr + FS_READ_THRESHOLD_BLOCK_FULL) {
-    fs->cache_addr = addr & ~0x3;
+    fs->cache_addr = addr & ~0x7;
     __rt_fs_read_block(fs, fs->cache_addr, (int)fs->cache, FS_READ_THRESHOLD_BLOCK_FULL, event);
     *pending = 1;
     return 0;
@@ -336,7 +336,7 @@ int __rt_fs_read(rt_file_t *file, unsigned int buffer, unsigned int addr, int si
   //   - Small accesses
   //   - FS address alignment is different from L2 alignment,
   //     there is now way to transfer it directly, it must go through the cache
-  int use_cache = size <= FS_READ_THRESHOLD || (addr & 0x3) != (buffer & 0x3);
+  int use_cache = size <= FS_READ_THRESHOLD || (addr & 0x7) != (buffer & 0x7);
   if (use_cache) return __rt_fs_read_cached(file, buffer, addr, size, pending, event);
 
   // Cache hit
@@ -348,7 +348,7 @@ int __rt_fs_read(rt_file_t *file, unsigned int buffer, unsigned int addr, int si
 
   // Now this is the case where we can transfer part of the buffer directly from the FS to the L2
   // First handle beginning of buffer in case it is not aligned
-  int prefix_size = addr & 0x3;
+  int prefix_size = addr & 0x7;
   if (prefix_size) {
     prefix_size = 4 - prefix_size;
     rt_trace(RT_TRACE_FS, "[FS] Reading block prefix (buffer: 0x%x, addr: 0x%x, size: 0x%x)\n", buffer, addr, prefix_size);
@@ -361,7 +361,7 @@ int __rt_fs_read(rt_file_t *file, unsigned int buffer, unsigned int addr, int si
 
   // Then the block in the middle, drop the end to get an aligned size, the end will be
   // retrieved through the cache during the next call
-  int block_size = size & ~0x3;
+  int block_size = size & ~0x7;
   __rt_fs_read_block(file->fs, addr, buffer, block_size, event);
   *pending = 1;
 
