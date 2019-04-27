@@ -43,8 +43,10 @@ static void __rt_hyperflash_read(rt_flash_t *_dev, void *data, void *addr, size_
 
 static void __rt_hyperflash_set_reg(rt_hyperflash_t *dev, unsigned int addr, unsigned short value)
 {
+  rt_event_t *event = rt_event_get_blocking(NULL);
   __rt_hyperflash_set_reg_buffer[0] = value;
-  __rt_hyper_copy_aligned(UDMA_CHANNEL_ID(dev->channel) + 1, (void *)__rt_hyperflash_set_reg_buffer, (void *)(addr<<1), 2, NULL, REG_MBR1);
+  __rt_hyper_copy_aligned(UDMA_CHANNEL_ID(dev->channel) + 1, (void *)__rt_hyperflash_set_reg_buffer, (void *)(addr<<1), 2, event, REG_MBR1);
+  rt_event_wait(event);
 }
 
 static unsigned int __rt_hyperflash_get_status_reg(rt_hyperflash_t *dev)
