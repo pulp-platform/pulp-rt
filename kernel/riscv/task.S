@@ -122,6 +122,12 @@ __rt_task_handle_from_fc:
     lw      t2, RT_TASK_T_ENTRY(a0)
     sw      t1, 0(t6)
 
+    // Check again next pointer in case it was updated by the FC.
+    // If so, do it it again as this will ensure that either we see the new
+    // value or the FC sees our write
+    lw      t3, RT_TASK_T_NEXT(a0)
+    bne     t1, t3, __rt_task_handle_from_fc
+
     sw      x0, EU_MUTEX_DEMUX_OFFSET(s2)
 
     lw      t3, RT_TASK_T_STACKS(a0)
@@ -216,8 +222,15 @@ __rt_task_handle_from_fc_mc:
     lw      t2, RT_TASK_T_ENTRY(a0)
 
     bnez    a1, __rt_task_fc_mc_no_dequeue
+  
+__rt_task_handle_from_fc_mc_retry:
     lw      t1, RT_TASK_T_NEXT(a0)
     sw      t1, 0(t6)
+    // Check again next pointer in case it was updated by the FC.
+    // If so, do it it again as this will ensure that either we see the new
+    // value or the FC sees our write
+    lw      t3, RT_TASK_T_NEXT(a0)
+    bne     t1, t3, __rt_task_handle_from_fc
 
 __rt_task_fc_mc_no_dequeue:
     addi    t3, a1, -1
