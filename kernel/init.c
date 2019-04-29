@@ -167,6 +167,11 @@ error:
 
 void __rt_deinit()
 {
+  if (rt_platform() == ARCHI_PLATFORM_GVSOC)
+  {
+    cpu_stack_check_disable();
+  }
+
 #ifndef __ariane__
 
   // Stop all modules
