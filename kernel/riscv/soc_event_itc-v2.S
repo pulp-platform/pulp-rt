@@ -118,6 +118,7 @@ __rt_fc_socevents_handler_exit:
 #ifdef RTC_VERSION
 rtc_event_handler:
   lw    x11, __rtc_handler
+  beq   x11, x0, __rt_fc_socevents_handler_exit
   la    x9, __rt_fc_socevents_handler_exit
   j   __rt_event_enqueue
 #endif
