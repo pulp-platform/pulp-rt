@@ -56,11 +56,17 @@ void __rt_pmu_cluster_power_down()
 #endif
 }
 
+static inline void hal_pmu_state_set_1(unsigned int state) {
+  unsigned int picl_reg = PMU_PICL_PACK(ARCHI_PMU_CS_WIU, ARCHI_PMU_WIU_IFR_1);
+  unsigned int dlc_reg = PMU_DLC_PACK(state, picl_reg);
+  PMU_WRITE(ARCHI_PCTRL_OFFSET, dlc_reg);
+}
+
 void __rt_pmu_cluster_power_up()
 {
   //plp_trace(RT_TRACE_PMU, "Cluster power up\n");
 
-  hal_pmu_state_set(ARCHI_PMU_STATE_SOC_NV_CLU_NV);
+  hal_pmu_state_set_1(1<<(13 - 8));
 
   // Tell external loader (such as gdb) that the cluster is on so that it can take it
   // into account
