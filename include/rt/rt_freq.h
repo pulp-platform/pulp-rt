@@ -40,9 +40,10 @@
 #elif PULP_CHIP == CHIP_PULPISSIMO || PULP_CHIP == CHIP_PULPISSIMO_V1
 
 #define __RT_FREQ_DOMAIN_FC 0
+// TODO it is just defined here to avoid compilation issue
 #define __RT_FREQ_DOMAIN_CL 2
 #define __RT_FREQ_DOMAIN_PERIPH 1
-#define RT_FREQ_NB_DOMAIN 3
+#define RT_FREQ_NB_DOMAIN 2
 
 #elif PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
 
