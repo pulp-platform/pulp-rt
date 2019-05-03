@@ -126,7 +126,6 @@ static int __rt_cluster_setup(rt_fc_cluster_data_t *cluster)
   #else 
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
-#if __RT_FREQ_DOMAIN_CL >= RT_FREQ_NB_DOMAIN
       // Setup FLL
       int init_freq = __rt_fll_init(__RT_FLL_CL);
 
@@ -142,7 +141,6 @@ static int __rt_cluster_setup(rt_fc_cluster_data_t *cluster)
       {
         __rt_freq_set_value(RT_FREQ_DOMAIN_CL, init_freq);
       }
-#endif
     }
   #endif  
 #endif

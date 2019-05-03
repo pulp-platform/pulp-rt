@@ -33,9 +33,37 @@
  * Describes the available power domains (other than the chip itself).
  */
 typedef enum {
-  RT_PM_DOMAIN_MRAM=0,  /*!< Embedded MRAM. */
-  RT_PM_DOMAIN_CSI =1   /*!< CSI2 interface. */
+  RT_PM_DOMAIN_SWU =0,   /*!< Smart wakeup. */
+  RT_PM_DOMAIN_MRAM=1,  /*!< Embedded MRAM. */
+  RT_PM_DOMAIN_CSI =2   /*!< CSI2 interface. */
 } rt_pm_domain_e;
+
+
+
+/** \enum rt_voltage_domain_e
+ * \brief Voltage domains.
+ *
+ * Describes the available voltage domains.
+ */
+typedef enum {
+  RT_VOLTAGE_DOMAIN_LOGIC      = 0,
+  RT_VOLTAGE_DOMAIN_MEMORY     = 1,
+  RT_VOLTAGE_DOMAIN_RETENTION  = 2,
+} rt_voltage_domain_e;
+
+
+/** \enum rt_pm_state_e
+ * \brief Power states.
+ *
+ * Describes the power state of the chip.
+ */
+typedef enum {
+  RT_PM_STATE_SLEEP       = 0,     /*!< Sleep state. Everything is shut down, except few memories which can still be in retentive mode to keep some data. Pads are on OFF. */
+  RT_PM_STATE_SLEEP_PADS_ON = 2,     /*!< Sleep state. Everything is shut down, except few memories which can still be in retentive mode to keep some data. Low-speed pads are ON, others are OFF. */
+  RT_PM_STATE_DEEP_SLEEP  = 1,     /*!< Deep sleep state. Everything is shut down, inluding memories, and all data is lost.  Pads are on OFF. */
+  RT_PM_STATE_DEEP_SLEEP_PADS_ON  = 3,     /*!< Deep sleep state. Everything is shut down, inluding memories, and all data is lost. Low-speed pads are ON, others are OFF. */
+} rt_pm_state_e;
+
 
 
 

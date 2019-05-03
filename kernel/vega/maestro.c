@@ -23,6 +23,16 @@
 #include "maestro.h"
 
 
+
+#define ARCHI_PMU_DMU_FUCR 0
+#define ARCHI_PMU_DMU_NVCR 1
+#define ARCHI_PMU_DMU_RVCR 4
+
+#define ARCHI_PMU_CS_DMU0 33
+#define ARCHI_PMU_CS_DMU1 34
+
+
+
 // 1 if a sequence is pending, 0 otherwise
 RT_FC_DATA uint32_t __rt_pmu_pending_sequence;
 
@@ -46,7 +56,7 @@ RT_FC_TINY_DATA rt_event_t *__rt_pmu_scu_event;
 
 
 
-static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int domain, int state, int retentive)
+static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int domain, int state, int flags)
 {
   int wait_end_of_sequence = domain != RT_PMU_CLUSTER_ID && domain != RT_PMU_CHIP_ID;
 
@@ -58,8 +68,7 @@ static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int do
 
     // Note that this is asynchronous but we can notify the caller that it's done
     // as any access will be put on hold.
-    // TODO this is probably not true for MRAM and CSI.
-    __rt_pmu_apply_state(domain, state, retentive);
+    __rt_pmu_apply_state(domain, state, flags);
   }
   else
   {
@@ -67,7 +76,7 @@ static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int do
     // that the operation is pending.
     event->data[0] = domain;
     event->data[1] = state;
-    event->data[2] = retentive;
+    event->data[2] = flags;
     event->data[3] = wait_end_of_sequence;
 
     if (__rt_pmu_pending_requests == NULL)
@@ -87,14 +96,14 @@ static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int do
 
 void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 {
-  __rt_pmu_change_domain_power(event, pending, RT_PMU_CLUSTER_ID, RT_PMU_STATE_OFF, RT_PMU_RETENTION_OFF);
+  __rt_pmu_change_domain_power(event, pending, RT_PMU_CLUSTER_ID, RT_PMU_STATE_OFF, 0);
 }
 
 
 
 int __rt_pmu_cluster_power_up(rt_event_t *event, int *pending)
 {
-  __rt_pmu_change_domain_power(event, pending, RT_PMU_CLUSTER_ID, RT_PMU_STATE_ON, RT_PMU_RETENTION_OFF);
+  __rt_pmu_change_domain_power(event, pending, RT_PMU_CLUSTER_ID, RT_PMU_STATE_ON, 0);
 
   return 1;
 }
@@ -129,11 +138,11 @@ void rt_pm_wakeup_gpio_conf(int active, int gpio, rt_pm_wakeup_gpio_mode_e mode)
 
 
 
-static void __rt_pmu_shutdown(int retentive)
+static void __rt_pmu_shutdown(int flags)
 {
   int irq = rt_irq_disable();
 
-  unsigned int boot_mode = retentive ? RETENTIVE_BOOT : DEEP_SLEEP_BOOT;
+  unsigned int boot_mode = flags & RT_PMU_FLAGS_RET ? RETENTIVE_BOOT : DEEP_SLEEP_BOOT;
 
   // For now we just go to sleep and activate RTC wakeup with all
   // cuts retentive
@@ -147,7 +156,7 @@ static void __rt_pmu_shutdown(int retentive)
 
   // Change power state
   rt_event_t *event = __rt_wait_event_prepare_blocking();
-  __rt_pmu_change_domain_power(event, NULL, RT_PMU_CHIP_ID, RT_PMU_STATE_OFF, retentive);
+  __rt_pmu_change_domain_power(event, NULL, RT_PMU_CHIP_ID, RT_PMU_STATE_OFF, flags);
 
   // And wait for ever as we are supposed to go to sleep and start from main
   // after wakeup.
@@ -181,26 +190,20 @@ int rt_pm_domain_state_switch(rt_pm_domain_e domain, rt_pm_domain_state_e state,
 
 int rt_pm_state_switch(rt_pm_state_e state, rt_pm_state_flags_e flags)
 {
-  if (state == RT_PM_STATE_DEEP_SLEEP)
-  {
-    if ((flags & RT_PM_STATE_FAST) == 0)
-      return -1;
+  if ((flags & RT_PM_STATE_FAST) == 0)
+    return -1;
 
-    __rt_pmu_shutdown(0);
+  unsigned int shutdown_flags = 0;
 
-    return 0;
-  }
-  else if (state == RT_PM_STATE_SLEEP)
-  {
-    if ((flags & RT_PM_STATE_FAST) == 0)
-      return -1;
-    
-    __rt_pmu_shutdown(1);
+  if (state == RT_PM_STATE_SLEEP || state == RT_PM_STATE_SLEEP_PADS_ON)
+    shutdown_flags |= RT_PMU_FLAGS_RET;
 
-    return 0;
-  }
+  if (state == RT_PM_STATE_SLEEP_PADS_ON || state == RT_PM_STATE_DEEP_SLEEP_PADS_ON)
+    shutdown_flags |= RT_PMU_FLAGS_PADS_ON;
 
-  return -1;
+  __rt_pmu_shutdown(shutdown_flags);
+
+  return 0;
 }
 
 
@@ -223,11 +226,45 @@ rt_pm_wakeup_e rt_pm_wakeup_state()
 
 
 
-#if 0
-static void __rt_pmu_set_dcdc(unsigned int voltage)
+static void __rt_pmu_picl_write(int island, int reg, unsigned int value)
+{
+  // If a previous PICL access is still on-ongoing, wait for its termination
+  if (PMU_READ(MAESTRO_DLC_PCTRL_OFFSET) & 1)
+  {
+    PMU_WRITE(MAESTRO_DLC_IFR_OFFSET, MAESTRO_EVENT_PICL_OK);
+
+    while(PMU_READ(MAESTRO_DLC_PCTRL_OFFSET) & 1)
+    {
+      __rt_wait_for_event(1<<ARCHI_FC_EVT_PICL_OK);
+    }
+  }
+
+  maestro_picl_write(island, reg, value);
+}
+
+
+
+static void __rt_pmu_set_dcdc(rt_voltage_domain_e domain, unsigned int voltage)
 {
   int dcdc_value = (voltage - 550) / 50;
-  
+
+  if (domain == RT_VOLTAGE_DOMAIN_RETENTION)
+  {
+    // Write new voltage to DMU NVCR register
+    __rt_pmu_picl_write(ARCHI_PMU_CS_DMU1, ARCHI_PMU_DMU_RVCR, dcdc_value);
+
+    // Will be commited at next transition (including shutdown)
+  }
+  else
+  {
+    int cs = domain == RT_VOLTAGE_DOMAIN_LOGIC ? ARCHI_PMU_CS_DMU0 : ARCHI_PMU_CS_DMU1;
+      
+    // Write new voltage to DMU NVCR register
+    __rt_pmu_picl_write(cs, ARCHI_PMU_DMU_NVCR, dcdc_value);
+
+    // Force Maestro to commit this new voltage now
+    __rt_pmu_picl_write(cs, ARCHI_PMU_DMU_FUCR, 1);
+  }
 }
 
 
@@ -236,7 +273,7 @@ int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_ev
 {
   int irq = rt_irq_disable();
 
-  __rt_pmu_set_dcdc(new_state, new_voltage);
+  __rt_pmu_set_dcdc(domain, new_voltage);
 
   if (event) __rt_event_enqueue(event);
 
@@ -244,7 +281,6 @@ int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_ev
 
   return 0;
 }
-#endif
 
 
 

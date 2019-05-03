@@ -65,6 +65,8 @@ typedef enum {
 
 
 
+#if PULP_CHIP != CHIP_VEGA
+
 /** \enum rt_pm_state_e
  * \brief Power states.
  *
@@ -75,6 +77,7 @@ typedef enum {
   RT_PM_STATE_DEEP_SLEEP  = 1,     /*!< Deep sleep state. Everything is shut down, inluding memories, and all data is lost. */
 } rt_pm_state_e;
 
+#endif
 
 
 /** \enum rt_pm_state_flags_e
