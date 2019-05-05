@@ -83,6 +83,8 @@ __rt_soc_evt_no_udma_channel:
 
   jr   x11
 
+
+
   .global __rt_soc_evt_no_udma
 __rt_soc_evt_no_udma:
 #ifdef RT_CONFIG_GPIO_ENABLED

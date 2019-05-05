@@ -87,7 +87,7 @@ endif
 # RTC
 
 ifeq '$(CONFIG_RTC_ENABLED)' '1'
-PULP_LIB_FC_CFLAGS += -DRT_CONFIG_RTC_ENABLED
+PULP_FC_CFLAGS += -DRT_CONFIG_RTC_ENABLED
 ifneq '$(rtc/version)' ''
 ifneq '$(rtc/version)' '1'
 PULP_LIB_FC_SRCS_rt += drivers/rtc/rtc_v$(rtc/version).c
@@ -102,12 +102,10 @@ endif
 # GPIO
 
 ifeq '$(CONFIG_GPIO_ENABLED)' '1'
-PULP_LIB_FC_CFLAGS += -DRT_CONFIG_GPIO_ENABLED
+PULP_FC_CFLAGS += -DRT_CONFIG_GPIO_ENABLED
 ifneq '$(gpio/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/gpio/gpio-v$(gpio/version).c
-ifeq '$(gpio/version)' '2'
 PULP_LIB_FC_ASM_SRCS_rt += kernel/riscv/gpio.S
-endif
 endif
 
 ifeq '$(pulp_chip_family)' 'usoc_v1'
