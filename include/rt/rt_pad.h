@@ -101,6 +101,7 @@ void rt_pad_control(rt_pad_cmd_e cmd, void *arg);
  * Describes the available pad state when the chip is sleeping.
  */
 typedef enum {
+  RT_PAD_SLEEP_STATE_DEFAULT     = 0, /*!< Default state. */
 } rt_pad_sleep_state_e;
 
 #endif

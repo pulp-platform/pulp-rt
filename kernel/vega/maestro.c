@@ -142,6 +142,11 @@ static void __rt_pmu_shutdown(int flags)
 {
   int irq = rt_irq_disable();
 
+  // Notify the bridge that the chip is going to be inaccessible.
+  // We don't do anything until we know that the bridge received the
+  // notification to avoid any race condition.
+  __rt_bridge_req_shutdown();
+
   unsigned int boot_mode = flags & RT_PMU_FLAGS_RET ? RETENTIVE_BOOT : DEEP_SLEEP_BOOT;
 
   // For now we just go to sleep and activate RTC wakeup with all
