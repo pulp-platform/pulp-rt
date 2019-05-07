@@ -93,10 +93,25 @@ void rt_pad_control(rt_pad_cmd_e cmd, void *arg);
 #endif
 
 
+#if PULP_CHIP != CHIP_VEGA
+
+/** \enum rt_pad_sleep_state_e
+ * \brief Pad state when the chip is sleeping.
+ *
+ * Describes the available pad state when the chip is sleeping.
+ */
+typedef enum {
+} rt_pad_sleep_state_e;
+
+#endif
+
+
+
 void __rt_padframe_init();
 rt_padframe_profile_t *rt_pad_profile_get(char *profile_string) ;
 void rt_padframe_set(rt_padframe_profile_t *profile) ;
 
+void rt_pad_sleep_state(rt_pad_e pad, rt_pad_sleep_state_e state);
 
 /// @endcond
 
