@@ -36,7 +36,7 @@ __rt_event_enqueue:
   bne     x10, x0, __rt_handle_special_event
 
   // Enqueue normal event
-  lw      x10, RT_EVENT_T_SCHED(x11)
+  la      x10, __rt_sched
   sw      x0, RT_EVENT_T_NEXT(x11)
   lw      x12, RT_SCHED_T_FIRST(x10)
   beqz    x12, __rt_no_first

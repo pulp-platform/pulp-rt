@@ -39,7 +39,7 @@ void __attribute__((interrupt)) __rt_timer_handler()
   while (event && (current_time - event->time) < 0x7fffffff)
   {
     rt_event_t *next = event->next;
-    __rt_push_event(event->sched, event);
+    __rt_push_event(rt_event_internal_sched(), event);
     event = next;
   }
 

@@ -37,7 +37,6 @@ void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched)
   event->copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
 #endif
   event->saved_pending = 0;
-  event->sched = sched;
   event->callback = NULL;
 }
 
@@ -47,7 +46,6 @@ rt_event_t *__rt_wait_event_prepare_blocking()
   __rt_first_free = event->next;
   __rt_event_min_init(event);
   event->pending = 1;
-  event->sched = __rt_event_get_current_sched();
   event->callback = NULL;
   return event;
 }
@@ -110,7 +108,6 @@ rt_event_t *rt_event_get(rt_event_sched_t *sched, void (*callback)(void *), void
   int irq = rt_irq_disable();
   sched = __rt_event_get_current_sched();
   rt_event_t *event = __rt_get_event(sched, callback, arg);
-  if (event) event->sched = sched;
   rt_irq_restore(irq);
   return event;
 }
@@ -122,7 +119,6 @@ rt_event_t *rt_event_get_permanent(rt_event_sched_t *sched, void (*callback)(voi
   rt_event_t *event = __rt_get_event(sched, callback, arg);
   if (event)
   {
-    event->sched = sched;
     __rt_event_set_keep(event);
   }
   rt_irq_restore(irq);
@@ -135,7 +131,6 @@ rt_event_t *rt_event_get_blocking(rt_event_sched_t *sched)
   sched = __rt_event_get_current_sched();
   rt_event_t *event = __rt_get_event(sched, NULL, NULL);
   if (event) {
-    event->sched = sched;
     event->pending = 1;
   }
   rt_irq_restore(irq);
@@ -145,7 +140,7 @@ rt_event_t *rt_event_get_blocking(rt_event_sched_t *sched)
 void rt_event_push(rt_event_t *event)
 {
   int irq = rt_irq_disable();
-  __rt_push_event(event->sched, event);
+  __rt_push_event(rt_event_internal_sched(), event);
   rt_irq_restore(irq);
 }
 
@@ -171,7 +166,7 @@ void __rt_event_unblock(rt_event_t *event)
 
 void __rt_sched_event_cancel(rt_event_t *event)
 {
-  rt_event_sched_t *sched = event->sched;
+  rt_event_sched_t *sched = rt_event_internal_sched();
   rt_event_t *current = sched->first, *prev = NULL;
   while (current && current != event)
   {
@@ -262,7 +257,7 @@ void __rt_wait_event(rt_event_t *event)
     __rt_event_execute(__rt_event_get_current_sched(), 1);
   }
 
-  rt_event_sched_t *sched = event->sched;
+  rt_event_sched_t *sched = rt_event_internal_sched();
   if (sched) {
     event->next = __rt_first_free;
     __rt_first_free = event;

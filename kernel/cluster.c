@@ -34,7 +34,6 @@ typedef enum
 
 rt_fc_cluster_data_t *__rt_fc_cluster_data;
 RT_L1_TINY_DATA __rt_cluster_call_t __rt_cluster_call[2];
-RT_L1_TINY_DATA rt_event_sched_t *__rt_cluster_sched_current;
 
 #ifdef __RT_USE_PROFILE
 RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
@@ -230,7 +229,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(rt_fc_clust
     cluster->mount_event = event;
 
     __rt_event_save(event);
-    __rt_init_event(event, event->sched, __rt_cluster_mount_step, (void *)cluster);
+    __rt_init_event(event, rt_event_internal_sched(), __rt_cluster_mount_step, (void *)cluster);
     __rt_event_set_pending(event);
 
     __rt_cluster_mount_step((void *)cluster);
@@ -508,7 +507,6 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
   call->master_stack_size = master_stack_size;
   call->slave_stack_size = slave_stack_size;
   call->event = call_event;
-  call->sched = call_event->sched;
 
 
 #ifdef ARCHI_HAS_NO_DISPATCH

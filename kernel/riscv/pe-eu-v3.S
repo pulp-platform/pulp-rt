@@ -131,14 +131,7 @@ __rt_master_loop:
     lw      t1, RT_CLUSTER_CALL_T_M_STACK_SIZE(s0)
     lw      t2, RT_CLUSTER_CALL_T_S_STACK_SIZE(s0)
     lw      s6, RT_CLUSTER_CALL_T_EVENT(s0)
-    lw      t4, RT_CLUSTER_CALL_T_SCHED(s0)
     sw      x0, RT_CLUSTER_CALL_T_NB_PE(s0)
-#ifndef ARCHI_NO_L1_TINY
-    sw      t4, %tiny(__rt_cluster_sched_current)(x0)
-#else
-    la      t5, __rt_cluster_sched_current
-    sw      t4, 0(t5)
-#endif
     mv      ra, s5
 
 #ifdef __RT_USE_ASSERT

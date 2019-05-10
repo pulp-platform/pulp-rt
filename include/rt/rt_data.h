@@ -257,7 +257,6 @@ typedef struct rt_event_s {
   void (*callback)(void *);
   void *arg;
   struct rt_event_s *next;
-  struct rt_event_sched_s *sched;
   struct rt_thread_s *thread;
   int pending;
   int keep;
@@ -303,7 +302,6 @@ typedef struct rt_thread_s {
   int finished;
   void *status;
   rt_event_t event;
-  struct rt_event_sched_s *sched;
   int state;
   int error;
 } rt_thread_t;
@@ -336,7 +334,6 @@ typedef struct {
   int master_stack_size;
   int slave_stack_size;
   rt_event_t *event;
-  rt_event_sched_t *sched;
 } __rt_cluster_call_t;
 
 typedef struct {
@@ -681,7 +678,6 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_EVENT_T_CALLBACK   0
 #define RT_EVENT_T_ARG        4
 #define RT_EVENT_T_NEXT       8
-#define RT_EVENT_T_SCHED      12
 
 #define RT_SCHED_T_FIRST      0
 #define RT_SCHED_T_LAST       4
@@ -749,7 +745,7 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_MRAM_T_LAST_PENDING_COPY  40
 
 
-#define RT_CLUSTER_CALL_T_SIZEOF       (8*4)
+#define RT_CLUSTER_CALL_T_SIZEOF       (7*4)
 #define RT_CLUSTER_CALL_T_NB_PE        0
 #define RT_CLUSTER_CALL_T_ENTRY        4
 #define RT_CLUSTER_CALL_T_ARG          8
@@ -757,7 +753,6 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_CLUSTER_CALL_T_M_STACK_SIZE 16
 #define RT_CLUSTER_CALL_T_S_STACK_SIZE 20
 #define RT_CLUSTER_CALL_T_EVENT        24
-#define RT_CLUSTER_CALL_T_SCHED        28
 
 #define RT_FC_CLUSTER_DATA_T_SIZEOF       (10*4)
 #define RT_FC_CLUSTER_DATA_T_MOUNT_COUNT  0

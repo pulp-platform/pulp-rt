@@ -268,7 +268,7 @@ static void __rt_uart_cluster_req(void *_req)
   int irq = rt_irq_disable();
   rt_uart_req_t *req = _req;
   rt_event_t *event = &req->event;
-  __rt_init_event(event, event->sched, __rt_uart_cluster_req_done, (void *)req);
+  __rt_init_event(event, rt_event_internal_sched(), __rt_uart_cluster_req_done, (void *)req);
   __rt_event_set_pending(event);
   rt_uart_write(req->uart, req->buffer, req->size, event);
   rt_irq_restore(irq);

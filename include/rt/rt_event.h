@@ -279,7 +279,7 @@ extern RT_FC_TINY_DATA rt_event_sched_t   __rt_sched;
 
 static inline rt_event_sched_t *__rt_event_get_current_sched()
 {
-  return __rt_thread_current->sched;
+  return rt_event_internal_sched();
 }
 
 static inline void __rt_event_release(rt_event_t *event)
@@ -389,7 +389,6 @@ static inline void __rt_event_restore(rt_event_t *event)
 static inline rt_event_t *__rt_init_event(rt_event_t *event, rt_event_sched_t *sched, void (*callback)(void *), void *arg)
 {
   __rt_event_min_init(event);
-  event->sched = sched;
   event->callback = callback;
   event->arg = arg;
   return event;
@@ -397,7 +396,7 @@ static inline rt_event_t *__rt_init_event(rt_event_t *event, rt_event_sched_t *s
 
 static inline void __rt_event_enqueue(rt_event_t *event)
 {
-  rt_event_sched_t *sched = event->sched;
+  rt_event_sched_t *sched = rt_event_internal_sched();
   event->next = NULL;
   if (sched->first) {
     sched->last->next = event;

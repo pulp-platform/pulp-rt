@@ -586,7 +586,7 @@ static int __rt_io_start(void *arg)
 
   conf.baudrate = rt_iodev_uart_baudrate();
 
-  __rt_event_init(&__rt_io_event, __rt_thread_current->sched);
+  __rt_event_init(&__rt_io_event, rt_event_internal_sched());
 
 #if defined(UDMA_VERSION)
   _rt_io_uart = __rt_uart_open(rt_iodev_uart_channel() + ARCHI_UDMA_UART_ID(0), &conf, NULL, NULL);

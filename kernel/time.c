@@ -175,10 +175,10 @@ static void __rt_timer_handle(void *arg)
 
 int rt_timer_create(rt_timer_t *timer, rt_timer_flags_e flags, rt_event_t *event)
 {
-  if (rt_event_alloc(event->sched, 1))
+  if (rt_event_alloc(rt_event_internal_sched(), 1))
     return -1;
 
-  timer->event = rt_event_get(event->sched, __rt_timer_handle, (void *)timer);
+  timer->event = rt_event_get(rt_event_internal_sched(), __rt_timer_handle, (void *)timer);
   timer->user_event = event;
   timer->flags = flags;
 

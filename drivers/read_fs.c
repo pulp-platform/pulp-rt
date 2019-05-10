@@ -220,7 +220,7 @@ rt_fs_t *rt_fs_mount(const char *dev_name, rt_fs_conf_t *conf, rt_event_t *event
   // asynchronously with another event, otherwise just do everything
   // synchronously with no event
   if (event) {
-    fs->step_event = __rt_init_event(&fs->event, event->sched, (void (*)(void *))__rt_fs_mount_step, (void *)fs);
+    fs->step_event = __rt_init_event(&fs->event, rt_event_internal_sched(), (void (*)(void *))__rt_fs_mount_step, (void *)fs);
   } else {
     fs->step_event = NULL;
   }
@@ -437,7 +437,7 @@ int rt_fs_read(rt_file_t *file, void *buffer, size_t size, rt_event_t *event)
   // synchronously with no event
   if (event) {
     __rt_event_save(event);
-    file->step_event = __rt_init_event(event, event->sched, __rt_fs_try_read, (void *)file);
+    file->step_event = __rt_init_event(event, rt_event_internal_sched(), __rt_fs_try_read, (void *)file);
     __rt_event_set_pending(event);
   } else {
     file->step_event = NULL;
@@ -491,7 +491,7 @@ void __rt_fs_cluster_req(void *_req)
   rt_fs_req_t *req = (rt_fs_req_t *)_req;
   rt_event_t *event = &req->event;
   rt_file_t *file = req->file;
-  __rt_init_event(event, event->sched, __rt_fs_cluster_req_done, (void *)req);
+  __rt_init_event(event, rt_event_internal_sched(), __rt_fs_cluster_req_done, (void *)req);
   if (req->direct) {
     req->result = rt_fs_direct_read(file, req->buffer, req->size, event);
   } else {

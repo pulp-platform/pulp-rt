@@ -206,11 +206,10 @@ static inline void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 
 extern RT_L1_GLOBAL_DATA void (*__rt_cluster_entry)(void *);
 extern RT_L1_GLOBAL_DATA void *__rt_cluster_entry_arg;
-extern RT_L1_TINY_DATA rt_event_sched_t *__rt_cluster_sched_current;
 
 static inline rt_event_sched_t *__rt_cluster_sched_get()
 {
-  return __rt_cluster_sched_current;
+  return rt_event_internal_sched();
 }
 
 
