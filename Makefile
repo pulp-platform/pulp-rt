@@ -26,6 +26,9 @@ endif
 
 include $(PULP_RT_CONFIG)
 
+ifdef USE_PMSIS
+PULP_CFLAGS += -D__RT_USE_PMSIS__=1
+endif
 
 ifdef CONFIG_IO_ENABLED
 PULP_CFLAGS += -D__RT_USE_IO=1

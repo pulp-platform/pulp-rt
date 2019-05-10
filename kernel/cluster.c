@@ -21,6 +21,7 @@
 #include "rt/rt_api.h"
 #include "stdio.h"
 #include "hal/gvsoc/gvsoc.h"
+#include "pmsis.h"
 
 #if defined(ARCHI_HAS_CLUSTER)
 
@@ -322,6 +323,47 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
 
   rt_irq_restore(irq);
 }
+
+
+typedef struct 
+{
+  int id;
+} cluster_data_t;
+
+
+int mc_cluster_open_with_conf(struct pmsis_device *cluster_dev, void *_conf)
+{
+  struct cluster_driver_conf *conf = (struct cluster_driver_conf *)_conf;
+  cluster_data_t *data = (cluster_data_t *)rt_alloc(RT_ALLOC_FC_DATA, sizeof(cluster_data_t));
+  if (data == NULL)
+    return -1;
+
+  cluster_dev->data = (void *)data;
+  data->id = conf->id;
+
+  rt_cluster_mount(1, conf->id, 0, NULL);
+
+  return 0;
+}
+
+
+
+void mc_cluster_send_task_to_cl(struct pmsis_device *device, struct cluster_task *task)
+{
+
+}
+
+
+
+int mc_cluster_close(struct pmsis_device *cluster_dev)
+{
+  cluster_data_t *data = (cluster_data_t *)cluster_dev->data;
+
+  rt_cluster_mount(0, data->id, 0, NULL);
+
+  return 0;
+}
+
 
 
 #ifdef ARCHI_HAS_NO_MUTEX
