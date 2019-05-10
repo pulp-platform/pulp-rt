@@ -38,7 +38,7 @@ void __attribute__((interrupt)) __rt_pmu_scu_handler()
   // In case someone is waiting for the end of sequence, enqueue the event
   if (__rt_pmu_scu_event)
   {
-    __rt_push_event(__rt_pmu_scu_event->sched, __rt_pmu_scu_event);
+    __rt_push_event(rt_event_internal_sched(), __rt_pmu_scu_event);
     __rt_pmu_scu_event = NULL;
   }
 
@@ -55,6 +55,6 @@ void __attribute__((interrupt)) __rt_pmu_scu_handler()
     if (event->data[3])
       __rt_pmu_scu_event = event;
     else
-      __rt_push_event(event->sched, event);
+      __rt_push_event(rt_event_internal_sched(), event);
   }
 }

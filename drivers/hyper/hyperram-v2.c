@@ -156,7 +156,7 @@ void __rt_hyperram_cluster_req_done(void *_req)
 void __rt_hyperram_cluster_req(void *_req)
 {
   rt_hyperram_req_t *req = (rt_hyperram_req_t* )_req;
-  rt_event_t *event = rt_event_get(req->event.sched, __rt_hyperram_cluster_req_done, (void* )req);
+  rt_event_t *event = rt_event_get(rt_event_internal_sched(), __rt_hyperram_cluster_req_done, (void* )req);
    if(req->is_2d)
      __rt_hyper_copy_2d(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, req->stride, req->length, event, REG_MBR0);
    else
@@ -325,7 +325,7 @@ start:
     // we are called again when the next step is over
     if (async)
     {
-      __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_read, event);
+      __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_read, event);
       // Be careful to not free the event, it is reused to finish the transfer
       __rt_event_set_pending(event);
     }
@@ -506,7 +506,7 @@ start:
     // we are called again when the next step is over
     if (async)
     {
-      __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_write, event);
+      __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_write, event);
       // Be careful to not free the event, it is reused to finish the transfer
       __rt_event_set_pending(event);
     }
@@ -694,9 +694,9 @@ static void __attribute__((noinline)) __rt_hyper_copy_misaligned(int channel,
       event->next = __rt_hyper_first_waiting_misaligned;
       __rt_hyper_first_waiting_misaligned = event;
       if (channel & 1)
-        __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_write, event);
+        __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_write, event);
       else
-        __rt_init_event(event, event->sched, __rt_hyper_resume_misaligned_read, event);
+        __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_read, event);
       __rt_event_set_pending(event);
     }
   }
