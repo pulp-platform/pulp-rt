@@ -35,6 +35,9 @@
 
 /// @cond IMPLEM
 
+#define PMSIS_USE_EXTERNAL_TYPES
+
+
 #include "archi/pulp.h"
 
 #ifndef LANGUAGE_ASSEMBLY
@@ -42,7 +45,7 @@
 #define   likely(x) __builtin_expect(x, 1)
 #define unlikely(x) __builtin_expect(x, 0)
 
-typedef struct rt_event_s rt_event_t;
+typedef struct fc_task rt_event_t;
 
 #endif
 
@@ -147,10 +150,19 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 struct rt_thread_s;
 struct rt_event_sched_s;
-struct rt_event_s;
+struct fc_task;
 struct rt_thread_s;
 
+struct cluster_task_implem
+{
+  int pending;
+  int core_mask;
+};
+
+#define CLUSTER_TASK_IMPLEM struct cluster_task_implem implem
+
 #include "rt/data/rt_data_bridge.h"
+#include "pmsis_cluster/cl_pmsis_types.h"
 
 typedef struct rt_alloc_block_s {
   int                      size;
@@ -188,10 +200,9 @@ typedef struct rt_thread_queue_s {
 struct rt_event_sched_s;
 
 typedef struct rt_event_sched_s {
-  struct rt_event_s *first;
-  struct rt_event_s *last;
-  struct rt_event_s *first_free;
-  struct rt_thread_s *waiting;
+  struct fc_task *first;
+  struct fc_task *last;
+  struct fc_task *first_free;
   rt_error_callback_t error_cb;
   void *error_arg;
 } rt_event_sched_t;
@@ -211,7 +222,7 @@ typedef struct rt_periph_copy_s {
   unsigned int end_callback;
 #endif
   struct rt_periph_copy_s *next;
-  struct rt_event_s *event;
+  struct fc_task *event;
   unsigned int repeat;
   unsigned int repeat_size;
   union {
@@ -253,10 +264,10 @@ typedef struct rt_periph_copy_s {
 } rt_periph_copy_t;
 
 
-typedef struct rt_event_s {
+typedef struct fc_task {
   void (*callback)(void *);
   void *arg;
-  struct rt_event_s *next;
+  struct fc_task *next;
   struct rt_thread_s *thread;
   int pending;
   int keep;
@@ -265,6 +276,8 @@ typedef struct rt_event_s {
   int saved_pending;
 
   union {
+    // TODO should disappear as soon as pulpos api is reaplced by pmsis api
+    struct cluster_task task;
     rt_periph_copy_t copy;
     struct {
       unsigned int data[4];
@@ -339,13 +352,20 @@ typedef struct {
 typedef struct {
 } rt_cluster_call_t;
 
-typedef struct {
+typedef struct
+{
+  struct cluster_task *first_call_fc_for_cl;
+  struct cluster_task *first_call_fc;
+  struct cluster_task *last_call_fc;
+} rt_cluster_call_pool_t;
+
+typedef struct cluster_data_t {
   int mount_count;
-  int call_head;
   rt_event_t *events;
-  void *call_stacks;
-  int call_stacks_size;
+  void *stacks;
+  int stacks_size;
   unsigned int trig_addr;
+  rt_cluster_call_pool_t *pool;
   int powered_up;
   int state;
   int cid;
@@ -756,11 +776,11 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 
 #define RT_FC_CLUSTER_DATA_T_SIZEOF       (10*4)
 #define RT_FC_CLUSTER_DATA_T_MOUNT_COUNT  0
-#define RT_FC_CLUSTER_DATA_T_CALL_HEAD    4
-#define RT_FC_CLUSTER_DATA_T_EVENTS       8
-#define RT_FC_CLUSTER_DATA_T_CALL_STACKS       12
-#define RT_FC_CLUSTER_DATA_T_CALL_STACKS_SIZE  16
-#define RT_FC_CLUSTER_DATA_T_TRIG_ADDR         20
+#define RT_FC_CLUSTER_DATA_T_EVENTS       4
+#define RT_FC_CLUSTER_DATA_T_CALL_STACKS       8
+#define RT_FC_CLUSTER_DATA_T_CALL_STACKS_SIZE  12
+#define RT_FC_CLUSTER_DATA_T_TRIG_ADDR         16
+#define RT_FC_CLUSTER_DATA_T_CLUSTER_POOL      20
 
 #define RT_TASK_T_ENTRY       (0*4)
 #define RT_TASK_T_ARGS0       (1*4)
@@ -777,6 +797,23 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_TASK_T_NB_CORES_TO_POP (9*4+4)
 #define RT_TASK_T_NB_CORES_TO_END (9*4+5)
 #define RT_TASK_T_PENDING     (9*4+6)
+
+#define RT_CLUSTER_TASK_ENTRY                 (0*4)
+#define RT_CLUSTER_TASK_ARG                   (1*4)
+#define RT_CLUSTER_TASK_STACKS                (2*4)
+#define RT_CLUSTER_TASK_STACK_SIZE            (3*4)
+#define RT_CLUSTER_TASK_SLAVE_STACK_SIZE      (4*4)
+#define RT_CLUSTER_TASK_NB_CORES              (5*4)
+#define RT_CLUSTER_TASK_COMPLETION_CALLBACK   (6*4)
+#define RT_CLUSTER_TASK_STACK_ALLOCATED       (7*4)
+#define RT_CLUSTER_TASK_NEXT                  (8*4)
+#define RT_CLUSTER_TASK_PENDING               (9*4)
+#define RT_CLUSTER_TASK_CORE_MASK             (10*4)
+
+
+#define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC_FOR_CL    (0*4)
+#define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC           (1*4)
+#define RT_CLUSTER_CALL_POOL_T_FIRST_LAST_FC           (2*4)
 
 /// @endcond
 

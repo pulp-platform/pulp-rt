@@ -27,7 +27,6 @@ RT_FC_TINY_DATA rt_event_t        *__rt_first_free;
 void rt_event_sched_init(rt_event_sched_t *sched)
 {
   sched->first = NULL;
-  sched->waiting = NULL;
 }
 
 void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched)
@@ -158,10 +157,6 @@ int rt_event_push_callback(rt_event_sched_t *sched, void (*callback)(void *), vo
 void __rt_event_unblock(rt_event_t *event)
 {
   event->pending = 0;
-  rt_thread_t *thread = event->thread;
-  if (thread) {
-    __rt_thread_enqueue_ready_check(thread);
-  }
 }
 
 void __rt_sched_event_cancel(rt_event_t *event)
@@ -201,17 +196,9 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
       // Pop first event from the queue. Loop until we pop a null event
       // We must always read again the queue head, as the executed
       // callback can modify the queue 
-
-      sched->waiting = __rt_thread_current;
-
-      if (__rt_ready_queue.first) {
-        __rt_thread_sleep();
-      }
-      else {
-        rt_wait_for_interrupt();
-        rt_irq_enable();
-        rt_irq_disable();
-      }
+      rt_wait_for_interrupt();
+      rt_irq_enable();
+      rt_irq_disable();
       event = *((rt_event_t * volatile *)&sched->first);
       if (event == NULL)
       {
@@ -253,15 +240,11 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
 void __rt_wait_event(rt_event_t *event)
 {
   while (event->pending || event->saved_pending) {
-    event->thread = __rt_thread_current;
-    __rt_event_execute(__rt_event_get_current_sched(), 1);
+    __rt_event_execute(NULL, 1);
   }
 
-  rt_event_sched_t *sched = rt_event_internal_sched();
-  if (sched) {
-    event->next = __rt_first_free;
-    __rt_first_free = event;
-  }
+  event->next = __rt_first_free;
+  __rt_first_free = event;
 }
 
 void rt_event_wait(rt_event_t *event)

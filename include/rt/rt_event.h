@@ -299,7 +299,6 @@ void __rt_sched_event_cancel(rt_event_t *event);
 
 static inline void __rt_event_min_init(rt_event_t *event)
 {
-  event->thread = NULL;
   event->pending = 0;
   event->keep = 0;
 }
@@ -425,22 +424,10 @@ static inline __attribute__((always_inline)) void __rt_enqueue_event_to_sched(rt
   sched->last = event;
 }
 
-static inline __attribute__((always_inline)) void __rt_wakeup_thread(rt_event_sched_t *sched)
-{
-  rt_thread_t *thread = sched->waiting;
-  if (thread) {
-    sched->waiting = NULL;
-    __rt_thread_enqueue_ready_check(thread);
-  }
-}
-
 static inline __attribute__((always_inline)) void __rt_push_event(rt_event_sched_t *sched, rt_event_t *event)
 {
   // Enqueue the event into the scheduler tail
   __rt_enqueue_event_to_sched(sched, event);
-
-  // Then maybe wakeup a waiting thread
-  __rt_wakeup_thread(sched);
 }
 
 void __rt_event_sched_init();

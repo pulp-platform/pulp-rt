@@ -14,24 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS__H__
-#define __PMSIS__H__
+#ifndef __CL_PMSIS_HAL_H__
+#define __CL_PMSIS_HAL_H__
 
-#include <rt/rt_api.h>
-
-#include "pmsis_cluster/cluster_sync/fc_to_cl_delegate.h"
-
-
-static inline struct cluster_task *mc_cluster_task(struct cluster_task *task, void (*entry)(void*), void *arg)
-{
-  task->entry = entry;
-  task->arg = arg;
-  task->stacks = NULL;
-  task->stack_size = 0;
-  task->nb_cores = 0;
-  return task;
-}
-
+//#include "cl_dma.h"
+//#include "cl_dma_decompressor.h"
+//#include "cl_synchronisation.h"
+#include "cl_pmsis_types.h"
 
 #endif
-

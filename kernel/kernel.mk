@@ -131,7 +131,7 @@ PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/freq.c
 endif
 
 
-PULP_LIB_FC_SRCS_rt += kernel/cluster.c
+PULP_LIB_FC_SRCS_rt += kernel/cluster.c kernel/pulpos_emu.c
 
 ifneq '$(perf_counters)' ''
 PULP_LIB_FC_SRCS_rt += kernel/perf.c

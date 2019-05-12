@@ -161,10 +161,6 @@ void rt_task_cluster_deinit(rt_task_cluster_t *cluster, rt_event_t *event)
   }
   rt_irq_disable();
 
-  // Since the cores will just reexecute from scratch, we need to reinitialize
-  // the cluster driver
-  __rt_fc_cluster_data[cluster->cid].call_head = 0;
-
   // Now free all allocated resources
   if (cluster->free_stacks)
   {

@@ -59,9 +59,7 @@ __rt_pe_start:
 #endif
 
     // Prepare few values that will be kept in saved registers to optimize the loop
-    la      s0, __rt_cluster_call
-    addi    s1, s0, RT_CLUSTER_CALL_T_SIZEOF * 2
-    mv      s2, s0
+    la      s0, __rt_cluster_pool
     li      s3, ARCHI_EU_DEMUX_ADDR
     li      s4, 1<<RT_CLUSTER_CALL_EVT
     la      s5, __rt_master_event
@@ -90,6 +88,8 @@ __rt_pe_start:
 #endif
     j       __rt_master_loop
 
+
+
 __rt_master_event:
     beq     s6, x0, __rt_master_loop
 
@@ -107,10 +107,22 @@ __rt_push_event_to_fc_retry:
 
 
 __rt_master_loop:
+    // Check if a task is ready in the pool
+    lw      t3, 0(s0)
     // Check if a call is ready, e.g. if nb_pe is not zero
     // otherwise go to sleep
-    lw      t3, RT_CLUSTER_CALL_T_NB_PE(s0)
     beq     t3, x0, __rt_master_sleep
+
+__rt_master_loop_update_next:
+    lw      t4, RT_CLUSTER_TASK_NEXT(t3)
+    sw      x0, RT_CLUSTER_TASK_PENDING(t3)
+    sw      t4, 0(s0)
+
+    // Check again next pointer in case it was updated by the FC.
+    // If so, do it it again as this will ensure that either we see the new
+    // value or the FC sees our write
+    lw      t5, RT_CLUSTER_TASK_NEXT(t3)
+    bne     t4, t5, __rt_master_loop_update_next
 
 #ifdef __RT_USE_PROFILE
     li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
@@ -125,13 +137,14 @@ __rt_master_loop:
 #endif
 
     // Reads entry point information
-    lw      a0, RT_CLUSTER_CALL_T_ARG(s0)
-    lw      t0, RT_CLUSTER_CALL_T_ENTRY(s0)
-    lw      sp, RT_CLUSTER_CALL_T_STACKS(s0)
-    lw      t1, RT_CLUSTER_CALL_T_M_STACK_SIZE(s0)
-    lw      t2, RT_CLUSTER_CALL_T_S_STACK_SIZE(s0)
-    lw      s6, RT_CLUSTER_CALL_T_EVENT(s0)
-    sw      x0, RT_CLUSTER_CALL_T_NB_PE(s0)
+    lw      a0, RT_CLUSTER_TASK_ARG(t3)
+    lw      t0, RT_CLUSTER_TASK_ENTRY(t3)
+    lw      sp, RT_CLUSTER_TASK_STACKS(t3)
+    lw      t1, RT_CLUSTER_TASK_STACK_SIZE(t3)
+    lw      t2, RT_CLUSTER_TASK_SLAVE_STACK_SIZE(t3)
+    lw      t5, RT_CLUSTER_TASK_CORE_MASK(t3)
+    lw      s6, RT_CLUSTER_TASK_COMPLETION_CALLBACK(t3)
+    #sw      x0, RT_CLUSTER_CALL_T_NB_PE(s0)
     mv      ra, s5
 
 #ifdef __RT_USE_ASSERT
@@ -145,50 +158,30 @@ __rt_master_loop:
 
 __rt_no_stack_check:
     // Whatever the number of cores, we need to setup the barrier as the master code is compiled to use it
-    li      t4, 1
-#ifdef ARCHI_HAS_CC
-    addi    t3, t3, -1
-#endif
-    sll     t3, t4, t3
-    addi    t3, t3, -1
-#ifndef ARCHI_HAS_NO_DISPATCH
-    sw      t3, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
-#endif
-#ifndef ARCHI_HAS_NO_BARRIER
+    sw      t5, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
 #ifdef ARCHI_HAS_CC
     // When we have a cluster controller, don't configure the slave barrier
     // if we don't have have any slave
-    beqz    t3, __rt_master_no_slave_barrier
+    beqz    t5, __rt_master_no_slave_barrier
 #endif
-    sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
-    sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
+    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
+    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
 __rt_master_no_slave_barrier:
 #ifdef ARCHI_HAS_CC
-    ori     t3, t3, 1<<ARCHI_CC_CORE_ID
-    sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK + EU_BARRIER_SIZE(s3)
-    sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK + EU_BARRIER_SIZE(s3)
-#endif
-#else
-    sw      t3, %tiny(__rt_barrier_wait_mask)(x0)
+    ori     t6, t5, 1<<ARCHI_CC_CORE_ID
+    sw      t6, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK + EU_BARRIER_SIZE(s3)
+    sw      t6, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK + EU_BARRIER_SIZE(s3)
 #endif
 
-#ifndef ARCHI_HAS_NO_DISPATCH
     // Set stack on slaves
     // For that we push first the function for setting stack, then the stack size and the base
-    p.beqimm t3, 1, __rt_master_loop_no_slave
+    p.beqimm t5, 0, __rt_master_loop_no_slave
     sw      s10, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
     sw      t2, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
     sw      sp, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
-#endif
 
 __rt_master_loop_no_slave:
 
-    // Update cluster call pointer
-    addi    s0, s0, RT_CLUSTER_CALL_T_SIZEOF
-    bne     s0, s1, __rt_master_no_reset
-    mv      s0, s2
-
-__rt_master_no_reset:
     // Call the entry point, this will directly come back to the master loop
     jr      t0
 

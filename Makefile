@@ -103,6 +103,10 @@ clean_all:
 	make PULP_RT_CONFIG=configs/pulpos_profile.mk fullclean $(MK_OPT)
 
 build_all:
+ifndef USE_PMSIS
+	mkdir -p $(TARGET_INSTALL_DIR)
+	cp -r ext/pmsis_api/* $(TARGET_INSTALL_DIR)
+endif
 	make build_rt install $(MK_OPT)
 	make PULP_RT_CONFIG=configs/pulpos_profile.mk build install $(MK_OPT)
 

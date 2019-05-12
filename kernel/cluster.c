@@ -33,11 +33,22 @@ typedef enum
 } __rt_cluster_mount_step_e;
 
 rt_fc_cluster_data_t *__rt_fc_cluster_data;
-RT_L1_TINY_DATA __rt_cluster_call_t __rt_cluster_call[2];
 
 #ifdef __RT_USE_PROFILE
 RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
 #endif
+
+/*
+ * Cluster tiny data
+ * They are in tiny area for fast access from cluster side. As they local
+ * they will be instantiated once for each cluster and are thus
+ * naturally supporting multi cluster.
+ */
+
+RT_L1_TINY_DATA rt_cluster_call_pool_t __rt_cluster_pool;
+
+
+
 
 void __rt_enqueue_event();
 void __rt_remote_enqueue_event();
@@ -67,10 +78,9 @@ static void __rt_init_cluster_data(int cid)
 
   int nb_cluster = rt_nb_cluster();
 
-  memset(rt_cluster_tiny_addr(cid, __rt_cluster_call), 0, sizeof(__rt_cluster_call));
-
-  __rt_fc_cluster_data[cid].call_stacks = NULL;
+  __rt_fc_cluster_data[cid].stacks = NULL;
   __rt_fc_cluster_data[cid].trig_addr = eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT);
+  __rt_fc_cluster_data[cid].pool = (rt_cluster_call_pool_t *)rt_cluster_tiny_addr(cid, &__rt_cluster_pool);
 
 
 #ifdef __RT_USE_PROFILE
@@ -109,6 +119,15 @@ static int __rt_cluster_setup(rt_fc_cluster_data_t *cluster)
 {
   int cid = cluster->cid;
   rt_event_t *event = cluster->mount_event;
+
+  rt_cluster_call_pool_t *pool = (rt_cluster_call_pool_t *)rt_cluster_tiny_addr(cid, &__rt_cluster_pool);
+
+  pool->first_call_fc = NULL;
+  pool->last_call_fc = NULL;
+  pool->first_call_fc_for_cl = NULL;
+
+
+
 
 #ifdef FLL_VERSION
   #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
@@ -159,7 +178,7 @@ static int __rt_cluster_setup(rt_fc_cluster_data_t *cluster)
     // Initialize FC data for this cluster
     if (cluster->powered_up)
     {
-      __rt_fc_cluster_data[cid].call_head = 0;
+      //__rt_fc_cluster_data[cid].call_head = 0;
     }
 
     // Activate icache
@@ -219,7 +238,7 @@ static void __rt_cluster_mount_step(void *_cluster)
 
 
 
-static inline __attribute__((always_inline)) void __rt_cluster_mount(rt_fc_cluster_data_t *cluster, int cid, int flags, rt_event_t *event)
+static inline __attribute__((always_inline)) int __rt_cluster_mount(rt_fc_cluster_data_t *cluster, int cid, int flags, rt_event_t *event)
 {
   rt_trace(RT_TRACE_CONF, "Mounting cluster (cluster: %d)\n", cid);
 
@@ -262,6 +281,8 @@ static inline __attribute__((always_inline)) void __rt_cluster_mount(rt_fc_clust
     rt_event_push(event);
 
   }
+
+  return 0;
 }
 
 static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, int flags, rt_event_t *event)
@@ -304,230 +325,136 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
 
 
 
-void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
+int mc_cluster_open_with_conf(struct pmsis_device *cluster_dev, void *_conf)
 {
   int irq = rt_irq_disable();
 
-  rt_event_t *call_event = __rt_wait_event_prepare(event);
+  struct cluster_driver_conf *conf = (struct cluster_driver_conf *)_conf;
 
-  rt_fc_cluster_data_t *cluster = &__rt_fc_cluster_data[cid];
+  cluster_dev->data = (void *)&__rt_fc_cluster_data[conf->id];
 
-  if (mount) cluster->mount_count++;
-  else cluster->mount_count--;
+  rt_event_t *event = __rt_wait_event_prepare_blocking();
 
-  if (cluster->mount_count == 0) __rt_cluster_unmount(cid, flags, call_event);
-  else if (cluster->mount_count == 1) __rt_cluster_mount(cluster, cid, flags, call_event);
+  if (__rt_cluster_mount(&__rt_fc_cluster_data[conf->id], conf->id, 0, event))
+  {
+    rt_irq_restore(irq);
+    return -1;
+  }
 
-  __rt_wait_event_check(event, call_event);
+  __rt_wait_event(event);
 
   rt_irq_restore(irq);
-}
-
-
-typedef struct 
-{
-  int id;
-} cluster_data_t;
-
-
-int mc_cluster_open_with_conf(struct pmsis_device *cluster_dev, void *_conf)
-{
-  struct cluster_driver_conf *conf = (struct cluster_driver_conf *)_conf;
-  cluster_data_t *data = (cluster_data_t *)rt_alloc(RT_ALLOC_FC_DATA, sizeof(cluster_data_t));
-  if (data == NULL)
-    return -1;
-
-  cluster_dev->data = (void *)data;
-  data->id = conf->id;
-
-  rt_cluster_mount(1, conf->id, 0, NULL);
 
   return 0;
 }
 
 
 
-void mc_cluster_send_task_to_cl(struct pmsis_device *device, struct cluster_task *task)
+int mc_cluster_send_task_to_cl_async(struct pmsis_device *device, struct cluster_task *task, fc_task_t *async_task)
 {
+  int irq = rt_irq_disable();
 
+  rt_fc_cluster_data_t *data = (rt_fc_cluster_data_t *)device->data;
+  rt_cluster_call_pool_t *pool = data->pool;
+
+  if (task->nb_cores == 0)
+    task->nb_cores = rt_nb_pe();
+
+  if (task->stacks == NULL)
+  {
+    if (task->stack_size == 0)
+    {
+      task->stack_size = 0x400;
+      task->slave_stack_size = 0x400;
+    }
+
+    if (task->slave_stack_size == 0)
+      task->slave_stack_size = task->stack_size;
+
+    int stacks_size = task->stack_size + task->slave_stack_size * (task->nb_cores - 1);
+
+    if (data->stacks == NULL || stacks_size != data->stacks_size)
+    {
+      if (data->stacks)
+        rt_free(RT_ALLOC_CL_DATA, data->stacks, data->stacks_size);
+
+      data->stacks_size = stacks_size;
+      data->stacks = rt_alloc(RT_ALLOC_CL_DATA, stacks_size);
+      if (data->stacks == NULL)
+        return -1;
+    }
+
+    task->stacks = data->stacks;
+  }
+
+  task->completion_callback = async_task;
+  task->implem.pending = 1;
+#ifdef ARCHI_HAS_CC
+  task->implem.core_mask = (1<<(task->nb_cores-1)) - 1;
+#else
+  task->implem.core_mask = (1<<task->nb_cores) - 1;
+#endif
+  task->next = NULL;
+
+  rt_compiler_barrier();
+
+  if (pool->last_call_fc)
+  {
+    pool->last_call_fc->next = task;
+  }
+  else
+  {
+    pool->first_call_fc = task;
+  }
+
+  pool->last_call_fc = task;
+
+  rt_compiler_barrier();
+  
+  if (pool->first_call_fc_for_cl == NULL)
+    pool->first_call_fc_for_cl = task;
+
+  rt_compiler_barrier();
+  eu_evt_trig(eu_evt_trig_cluster_addr(data->cid, RT_CLUSTER_CALL_EVT), 0);
+
+  rt_irq_restore(irq);
+
+  return 0;
 }
 
+
+
+int mc_cluster_send_task_to_cl(struct pmsis_device *device, struct cluster_task *task)
+{
+  int irq = rt_irq_disable();
+
+  rt_event_t *event = __rt_wait_event_prepare_blocking();
+
+  if (mc_cluster_send_task_to_cl_async(device, task, event))
+  {
+    rt_irq_restore(irq);
+    return -1;
+  }
+
+  __rt_wait_event(event);
+
+  rt_irq_restore(irq);
+
+  return 0;
+}
 
 
 int mc_cluster_close(struct pmsis_device *cluster_dev)
 {
-  cluster_data_t *data = (cluster_data_t *)cluster_dev->data;
+  rt_fc_cluster_data_t *data = (rt_fc_cluster_data_t *)cluster_dev->data;
 
-  rt_cluster_mount(0, data->id, 0, NULL);
+  __rt_cluster_unmount(data->cid, 0, NULL);
 
   return 0;
 }
 
 
 
-#ifdef ARCHI_HAS_NO_MUTEX
-RT_L1_DATA unsigned int __rt_team_critical_lock = 0;
-#endif
-
-
-#ifdef ARCHI_HAS_NO_DISPATCH
-
-typedef struct {
-  volatile void *entry;
-  void *arg0;
-  void *arg1;
-  void *arg2;
-  int barrier;
-} rt_slave_call_t;
-
-static RT_L1_TINY_DATA rt_slave_call_t __rt_cluster_slave_calls[ARCHI_CLUSTER_NB_PE-1][2];
-static RT_L1_TINY_DATA int __rt_cluster_slave_index[ARCHI_CLUSTER_NB_PE-1];
-static RT_L1_TINY_DATA int __rt_last_fork_nb_cores = ARCHI_CLUSTER_NB_PE;
-
-void __rt_pe_entry()
-{
-  int core_id = rt_core_id();
-  int index = 0;
-  rt_slave_call_t *call = __rt_cluster_slave_calls[core_id-1];
-  while(1)
-  {
-    volatile void *entry;
-
-    while((entry = call[index].entry) == NULL)
-    {
-      eu_evt_maskWaitAndClr(1<<RT_CL_SYNC_EVENT);
-    }
-
-    call[index].entry = NULL;
-    int barrier = call[index].barrier;
-    index ^= 1;
-    __asm__ __volatile__ ("" : : : "memory");
-    ((void (*)(void *, void *, void *))entry)(call->arg0, call->arg1, call->arg2);
-
-    if (barrier)
-      rt_team_barrier();
-  }
-}
-
-void __rt_cluster_pe_init(void *master_stack, void *slave_stacks, int master_stack_size, int slave_stack_size)
-{
-  __rt_stack_master_base = (unsigned int)master_stack;
-  __rt_stacks_slave_base = (unsigned int)slave_stacks;
-  __rt_stack_master_size = master_stack_size;
-  __rt_stack_slave_size = slave_stack_size;
-  for (int i=0; i<ARCHI_CLUSTER_NB_PE-1; i++)
-  {
-    __rt_cluster_slave_index[i] = 0;
-    __rt_cluster_slave_calls[i][0].entry = NULL;
-    __rt_cluster_slave_calls[i][1].entry = NULL;
-  }
-}
-
-void __rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
-{
-  if (nb_cores) __rt_team_config(nb_cores);
-
-  if (nb_cores == 0)
-    nb_cores = __rt_last_fork_nb_cores;
-
-  if (nb_cores) __rt_team_config(nb_cores);
-  __rt_last_fork_nb_cores = nb_cores;
-  for (int i=0; i<nb_cores-1; i++)
-  {
-    int index = __rt_cluster_slave_index[i];
-    __rt_cluster_slave_index[i] = index ^ 1;
-    __rt_cluster_slave_calls[i][index].arg0 = arg;
-    __rt_cluster_slave_calls[i][index].barrier = 1;
-    __asm__ __volatile__ ("" : : : "memory");
-    __rt_cluster_slave_calls[i][index].entry = entry;
-  }
-  eu_evt_trig(eu_evt_trig_addr(RT_CL_SYNC_EVENT), -1);
-
-  entry(arg);
-
-  rt_team_barrier();
-}
-
-#endif
-
-
-
-int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg), void *arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event)
-{
-  int retval = 0;
-  int irq = rt_irq_disable();
-
-  if (nb_pe == 0)
-    nb_pe = rt_nb_active_pe();
-
-  __rt_cluster_call_t *call;
-  rt_fc_cluster_data_t *cluster = &__rt_fc_cluster_data[cid];
-
-  // Loop until we get a free cluster call structure
-  // It is important to reload the index after a wake-up, as another thread could have pushed something
-  do {
-    // Get the current structure
-    int index = cluster->call_head;
-    call = rt_cluster_tiny_addr(cid, &__rt_cluster_call[index]);
-
-    // Go to sleep if there is noone available
-    if ((*(volatile int *)&call->nb_pe) == 0) break;
-
-    __rt_thread_sleep();
-  } while(1);
-
-  cluster->call_head ^= 1;
-
-  if (cluster->call_stacks != NULL) {
-    rt_free(RT_ALLOC_CL_DATA+cid, cluster->call_stacks, cluster->call_stacks_size);
-    cluster->call_stacks = NULL;
-  }
-
-  // If no stack is specified, choose a default one.
-  if (stacks == NULL)
-  {
-    if (master_stack_size == 0) master_stack_size = 0x400;
-    if (slave_stack_size == 0) slave_stack_size = 0x400;
-    cluster->call_stacks_size = master_stack_size + slave_stack_size*(nb_pe - 1);
-    stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, cluster->call_stacks_size);
-    if (stacks == NULL) {
-      retval = -1;
-      goto end;
-    }
-    cluster->call_stacks = stacks;
-  }
-
-  rt_event_t *call_event = __rt_wait_event_prepare(event);
-
-  // Fill-in the call request
-  call->entry = entry;
-  call->arg = arg;
-  // Compute directly the right stack pointer for master and this will also ease setting stack for slaves
-  call->stacks = (void *)((int)stacks + master_stack_size);
-  call->master_stack_size = master_stack_size;
-  call->slave_stack_size = slave_stack_size;
-  call->event = call_event;
-
-
-#ifdef ARCHI_HAS_NO_DISPATCH
-  __rt_cluster_pe_init(stacks, (void *)((int)stacks + master_stack_size), master_stack_size, slave_stack_size);
-    eoc_fetch_enable_remote(cid, (1<<rt_nb_active_pe()) - 1);
-#endif
-
-
-  // nb_pe must be last written as this is the one triggering the execution on cluster side
-  rt_compiler_barrier();
-  call->nb_pe = nb_pe;
-
-  // And trigger an event on cluster side in case it is sleeping
-  eu_evt_trig(eu_evt_trig_cluster_addr(cid, RT_CLUSTER_CALL_EVT), 0);
-
-  __rt_wait_event_check(event, call_event);
-
-end:
-  rt_irq_restore(irq);
-  return retval;
-}
 
 static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
 {
@@ -595,17 +522,6 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_cluster_new()
   if (err) rt_fatal("Unable to initialize time driver\n");
 }
 
-#else
-
-void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
-{
-}
-
-int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg), void *arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event)
-{
-  return 0;
-}
-
 #endif
 
 
@@ -622,51 +538,8 @@ void rt_cluster_notif_deinit(rt_notif_t *notif)
 
 #endif
 
-#if !defined(RISCV_VERSION) || RISCV_VERSION < 4
-
-void __rt_remote_enqueue_event()
-{
-
-}
-
-void __rt_bridge_enqueue_event()
-{
-
-}
-
-#endif
-
 
 #if defined(ARCHI_HAS_CLUSTER)
-
-#ifdef ARCHI_HAS_NO_BARRIER
-
-static RT_L1_TINY_DATA volatile unsigned int __rt_barrier_status = 0;
-RT_L1_TINY_DATA unsigned int __rt_barrier_wait_mask;
-
-void __rt_team_barrier()
-{
-  int core_id = rt_core_id();
-  unsigned int status;
-  while ((status = rt_tas_lock_32((unsigned int)&__rt_barrier_status)) == -1UL)
-  {
-    eu_evt_maskWaitAndClr(1<<RT_CL_SYNC_EVENT);
-  }
-  status |= 1<<core_id;
-  if (status == __rt_barrier_wait_mask)
-  {
-    status = 0;
-  }
-  rt_tas_unlock_32((unsigned int)&__rt_barrier_status, status);
-  eu_evt_trig(eu_evt_trig_addr(RT_CL_SYNC_EVENT), 0);
-
-  while ((__rt_barrier_status >> core_id) & 1)
-  {
-    eu_evt_maskWaitAndClr(1<<RT_CL_SYNC_EVENT);
-  }
-}
-
-#endif
 
 
 extern int main();
