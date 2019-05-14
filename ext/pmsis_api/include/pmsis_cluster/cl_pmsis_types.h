@@ -37,7 +37,11 @@
 #define CLUSTER_TASK_IMPLEM
 #endif
 
-struct cluster_task{
+#ifndef INLINE
+#define INLINE
+#endif
+
+struct cluster_task {
     // entry function and its argument(s)
     void (*entry)(void*);
     void *arg;
@@ -56,10 +60,17 @@ struct cluster_task{
     CLUSTER_TASK_IMPLEM;
 };
 
+struct cl_team_task {
+    void *stacks;
+    uint32_t stack_size;
+    int core_mask;
+    int nb_cores;
+};
+
 // object for device specific api
 typedef struct cluster_driver_api {
-    void (*send_task)(struct pmsis_device *device, struct cluster_task *cl_task);
-    void (*send_task_async)(struct pmsis_device *device, struct cluster_task *cl_task
+    int (*send_task)(struct pmsis_device *device, struct cluster_task *cl_task);
+    int (*send_task_async)(struct pmsis_device *device, struct cluster_task *cl_task
             , struct fc_task *async_task);
     void (*wait_free)(struct pmsis_device *device);
     void (*wait_free_async)(struct pmsis_device *device, struct fc_task *async_task);
@@ -69,6 +80,7 @@ typedef struct cluster_driver_conf {
     int id;
     void *heap_start;
     uint32_t heap_size;
+    struct pmsis_event_kernel_wrap* event_kernel;
 } cluster_driver_conf_t;
 
 // object for cluster driver specific data

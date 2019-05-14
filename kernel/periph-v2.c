@@ -66,7 +66,7 @@ void rt_periph_copy(rt_periph_copy_t *copy, int channel_id, unsigned int addr, i
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   if (copy == NULL) {
-    copy = &call_event->copy;
+    copy = &call_event->implem.copy;
     rt_periph_copy_init(copy, 0);
   }
 
@@ -110,7 +110,7 @@ void rt_periph_single_copy(rt_periph_copy_t *copy, int channel_id, unsigned int 
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
   if (copy == NULL) {
-    copy = &call_event->copy;
+    copy = &call_event->implem.copy;
     rt_periph_copy_init(copy, 0);
   }
 

@@ -387,7 +387,7 @@ void __rt_hyper_copy_aligned(int channel,
 static inline void rt_hyperflash_copy(rt_hyperflash_t *dev, int channel,
    void *addr, void *hyper_addr, int size, rt_event_t *event)
 {
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
 
   rt_periph_copy_init_ctrl(copy, RT_PERIPH_COPY_HYPER);
   copy->u.hyper.hyper_addr = REG_MBR1 | (unsigned int)hyper_addr;

@@ -211,7 +211,7 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
 
   int irq = rt_irq_disable();
 
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
 
   // First enqueue the header with SPI config, cs, and send command.
   // The rest will be sent by the assembly code.
@@ -296,7 +296,7 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
 
   int irq = rt_irq_disable();
 
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
 
   copy->event = event;
 
@@ -362,7 +362,7 @@ void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, siz
 
   int irq = rt_irq_disable();
 
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
 
   // First enqueue the header with SPI config, cs, and send command.
   // The rest will be sent by the assembly code.

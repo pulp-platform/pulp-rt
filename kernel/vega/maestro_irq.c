@@ -46,13 +46,13 @@ void __attribute__((interrupt)) __rt_pmu_scu_handler()
   rt_event_t *event = __rt_pmu_pending_requests;
   if (event)
   {
-    __rt_pmu_pending_requests = event->next;
+    __rt_pmu_pending_requests = event->implem.next;
 
-    __rt_pmu_apply_state(event->data[0], event->data[1], event->data[2]);
+    __rt_pmu_apply_state(event->implem.data[0], event->implem.data[1], event->implem.data[2]);
 
     // Push the event now or when the sequence is done, depending on what is indicated
     // in the evnt
-    if (event->data[3])
+    if (event->implem.data[3])
       __rt_pmu_scu_event = event;
     else
       __rt_push_event(rt_event_internal_sched(), event);

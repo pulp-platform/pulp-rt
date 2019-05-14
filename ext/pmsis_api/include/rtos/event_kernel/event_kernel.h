@@ -3,6 +3,9 @@
 
 #include "pmsis_types.h"
 
+/** Typical event kernel main function **/
+void pmsis_event_kernel_main(void *arg);
+
 /** Allocate the structure and create a task if need be **/
 int pmsis_event_kernel_init(struct pmsis_event_kernel_wrap **event_kernel,
         void (*event_kernel_entry)(void*));
@@ -33,5 +36,9 @@ int pmsis_event_push(struct pmsis_event_kernel_wrap *event_kernel, fc_task_t *ta
  * Task must already have been pushed
  **/
 void pmsis_event_wait(fc_task_t *task);
+
+void pmsis_event_kernel_mutex_release(struct pmsis_event_kernel_wrap *wrap);
+
+void pmsis_event_lock_cl_to_fc_init(struct pmsis_event_kernel_wrap *wrap);
 
 #endif

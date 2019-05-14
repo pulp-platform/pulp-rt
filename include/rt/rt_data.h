@@ -35,6 +35,7 @@
 
 /// @cond IMPLEM
 
+#define INLINE static inline
 #define PMSIS_USE_EXTERNAL_TYPES
 
 
@@ -122,7 +123,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 #define RT_FC_GLOBAL_DATA __attribute__((section(".data_fc")))
 
-#define RT_FC_SHARED_DATA __attribute__((section(".data_fc_shared")))
+#define RT_FC_SHARED_DATA __attribute__((section(".data_fc")))
 
 #define RT_L2_DATA __attribute__((section(".l2_data")))
 
@@ -159,10 +160,7 @@ struct cluster_task_implem
   int core_mask;
 };
 
-#define CLUSTER_TASK_IMPLEM struct cluster_task_implem implem
-
 #include "rt/data/rt_data_bridge.h"
-#include "pmsis_cluster/cl_pmsis_types.h"
 
 typedef struct rt_alloc_block_s {
   int                      size;
@@ -264,9 +262,8 @@ typedef struct rt_periph_copy_s {
 } rt_periph_copy_t;
 
 
-typedef struct fc_task {
-  void (*callback)(void *);
-  void *arg;
+struct fc_task_implem
+{
   struct fc_task *next;
   struct rt_thread_s *thread;
   int pending;
@@ -276,8 +273,6 @@ typedef struct fc_task {
   int saved_pending;
 
   union {
-    // TODO should disappear as soon as pulpos api is reaplced by pmsis api
-    struct cluster_task task;
     rt_periph_copy_t copy;
     struct {
       unsigned int data[4];
@@ -287,7 +282,15 @@ typedef struct fc_task {
     };
     rt_bridge_req_t bridge_req;
   };
-} rt_event_t;
+};
+
+#define CLUSTER_TASK_IMPLEM struct cluster_task_implem implem
+#define FC_TASK_IMPLEM struct fc_task_implem implem
+
+#include "pmsis_types.h"
+#include "pmsis_cluster/cl_pmsis_types.h"
+
+typedef struct fc_task rt_event_t;
 
 
 typedef struct rt_thread_s {
@@ -697,7 +700,7 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 
 #define RT_EVENT_T_CALLBACK   0
 #define RT_EVENT_T_ARG        4
-#define RT_EVENT_T_NEXT       8
+#define RT_EVENT_T_NEXT       40
 
 #define RT_SCHED_T_FIRST      0
 #define RT_SCHED_T_LAST       4

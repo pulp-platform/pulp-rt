@@ -174,4 +174,11 @@ void *cl_delegate_malloc_async(malloc_t *allocator, uint32_t size, void *req);
  */
 void cl_delegate_free_async(malloc_t *allocator, void *ptr, uint32_t size, void *req);
 
+/**
+ * \brief delegate init
+ * Initialize delegate facilities
+ * \param arg config arg (os dependant)
+ */
+void mc_fc_delegate_init(void *arg);
+
 #endif

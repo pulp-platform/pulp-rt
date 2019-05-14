@@ -69,4 +69,6 @@
 #include "rt/rt_eeprom.h"
 #include "rt/rt_task.h"
 
+#include "rt/implem/implem.h"
+
 #endif

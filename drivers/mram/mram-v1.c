@@ -161,7 +161,7 @@ static void __rt_mram_do_trim(rt_mram_t *mram, void *_trim_cfg_buff)
 
   rt_event_t *event = rt_event_get_blocking(NULL);
 
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
   mram->first_pending_copy = copy;
   mram->last_pending_copy = copy;
   copy->next = NULL;
@@ -179,7 +179,7 @@ static void __rt_mram_do_ref_line(rt_mram_t *mram)
   unsigned int periph_base = mram->periph_base;
   rt_event_t *event = rt_event_get_blocking(NULL);
 
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
   mram->first_pending_copy = copy;
   mram->last_pending_copy = copy;
   copy->next = NULL;
@@ -202,7 +202,7 @@ static void __rt_mram_do_ref_line(rt_mram_t *mram)
 
 
   event = rt_event_get_blocking(NULL);
-  copy = &event->copy;
+  copy = &event->implem.copy;
   mram->first_pending_copy = copy;
   mram->last_pending_copy = copy;
   copy->next = NULL;
@@ -257,6 +257,10 @@ static void __rt_mram_init(rt_mram_t *mram, void *trim_cfg_buff)
   udma_mram_mram_mode_set(periph_base, 0x0);
 
   // Perform Setup sequence : POR-RET-RST
+  udma_mram_mram_mode_set(periph_base,
+    UDMA_MRAM_MRAM_MODE_POR_B(1)
+  );
+
   udma_mram_mram_mode_set(periph_base,
     UDMA_MRAM_MRAM_MODE_POR_B(1) |
     UDMA_MRAM_MRAM_MODE_RET_B(1)
@@ -334,7 +338,7 @@ static void __rt_mram_read(rt_flash_t *flash, void *data, void *addr, size_t siz
   int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
-  rt_periph_copy_t *copy = &call_event->copy;
+  rt_periph_copy_t *copy = &call_event->implem.copy;
 
   if (mram->first_pending_copy == NULL)
   {
@@ -363,7 +367,7 @@ static void __rt_mram_program(rt_flash_t *flash, void *data, void *addr, size_t 
   int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
-  rt_periph_copy_t *copy = &call_event->copy;
+  rt_periph_copy_t *copy = &call_event->implem.copy;
 
   if (mram->first_pending_copy == NULL)
   {
@@ -392,7 +396,7 @@ static void __rt_mram_erase_chip(rt_flash_t *flash, rt_event_t *event)
   int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
-  rt_periph_copy_t *copy = &call_event->copy;
+  rt_periph_copy_t *copy = &call_event->implem.copy;
 
   if (mram->first_pending_copy == NULL)
   {
@@ -421,7 +425,7 @@ static void __rt_mram_erase_sector(rt_flash_t *flash, void *addr, rt_event_t *ev
   int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
-  rt_periph_copy_t *copy = &call_event->copy;
+  rt_periph_copy_t *copy = &call_event->implem.copy;
 
   if (mram->first_pending_copy == NULL)
   {
@@ -450,7 +454,7 @@ static void __rt_mram_erase(rt_flash_t *flash, void *addr, int size, rt_event_t 
   int irq = rt_irq_disable();
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
-  rt_periph_copy_t *copy = &call_event->copy;
+  rt_periph_copy_t *copy = &call_event->implem.copy;
 
   if (mram->first_pending_copy == NULL)
   {

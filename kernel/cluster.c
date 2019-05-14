@@ -46,6 +46,7 @@ RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
  */
 
 RT_L1_TINY_DATA rt_cluster_call_pool_t __rt_cluster_pool;
+RT_L1_TINY_DATA int __rt_cluster_nb_active_pe;
 
 
 
@@ -386,6 +387,9 @@ int mc_cluster_send_task_to_cl_async(struct pmsis_device *device, struct cluster
 
     task->stacks = data->stacks;
   }
+
+  async_task->implem.keep = 1;
+  async_task->done = 0;
 
   task->completion_callback = async_task;
   task->implem.pending = 1;

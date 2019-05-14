@@ -74,26 +74,26 @@ void rt_event_push_delayed(rt_event_t *event, int us)
   // In order to simplify time comparison, we sacrify the MSB to avoid overflow
   // as the given amount of time must be short
   uint32_t time = (current_time & 0x7fffffff) + ticks;
-  event->time = current_time + ticks;
+  event->implem.time = current_time + ticks;
 
 
   // Enqueue the event in the wait list.
-  while (current && (current->time & 0x7fffffff) < time)
+  while (current && (current->implem.time & 0x7fffffff) < time)
   {
     prev = current;
-    current = current->next;
+    current = current->implem.next;
   }
 
   if (prev)
   {
-    prev->next = event;
+    prev->implem.next = event;
   }
   else
   {
     set_irq = 1;
     first_delayed = event;
   }
-  event->next = current;
+  event->implem.next = current;
 
   // And finally update the timer trigger time in case we enqueued the event
   // at the head of the wait list.
@@ -156,8 +156,8 @@ static void __rt_timer_handle(void *arg)
   rt_timer_t *timer = (rt_timer_t *)arg;
   rt_event_t *event = timer->user_event;
 
-  void (*callback)(void *) = event->callback;
-  void *cb_arg = event->arg;
+  void (*callback)(void *) = (void (*)(void *))event->arg[0];
+  void *cb_arg = (void *)event->arg[1];
 
   if (callback) {
     callback(cb_arg);
@@ -206,15 +206,15 @@ void rt_timer_stop(rt_timer_t *timer)
   while (current && current != event)
   {
     prev = current;
-    current = current->next;
+    current = current->implem.next;
   }
 
   if (current)
   {
     if (prev)
-      prev->next = current->next;
+      prev->implem.next = current->implem.next;
     else
-      first_delayed = current->next;
+      first_delayed = current->implem.next;
   }
   else
   {

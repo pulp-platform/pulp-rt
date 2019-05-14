@@ -218,7 +218,7 @@ void __rt_spim_send_async(rt_spim_t *handle, void *data, size_t len, int qspi, r
   int cmd_base = periph_base + ARCHI_SPIM_CMD_OFFSET;
   int channel_base = periph_base + UDMA_CHANNEL_TX_OFFSET;
   int buffer_size = len/8;
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
   rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
   rt_periph_spim_t *periph = &__rt_spim_periph[spim_id];
 
@@ -273,7 +273,7 @@ void __rt_spim_receive_async(rt_spim_t *handle, void *data, size_t len, int qspi
   int cmd_base = periph_base + ARCHI_SPIM_CMD_OFFSET;
   int channel_base = periph_base + UDMA_CHANNEL_RX_OFFSET;
   int buffer_size = len/8;
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
   rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
   rt_periph_spim_t *periph = &__rt_spim_periph[spim_id];
 
@@ -329,7 +329,7 @@ void rt_spim_transfer_async(rt_spim_t *handle, void *tx_data, void *rx_data, siz
   int rx_channel_base = periph_base + UDMA_CHANNEL_RX_OFFSET;
   int tx_channel_base = periph_base + UDMA_CHANNEL_TX_OFFSET;
   int buffer_size = len/8;
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
   rt_spim_cmd_t *cmd = (rt_spim_cmd_t *)copy->periph_data;
   rt_periph_spim_t *periph = &__rt_spim_periph[spim_id];
 

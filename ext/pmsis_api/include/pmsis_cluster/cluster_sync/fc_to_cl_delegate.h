@@ -19,19 +19,12 @@
 
 #include "pmsis_cluster/cl_pmsis_types.h"
 #include "pmsis_types.h"
-
 /**
- * @defgroup groupDrivers Drivers
- */
-
-
-
-/**
- * @ingroup groupDrivers
+ * @ingroup groupCluster
  */
 
 /**
- * @defgroup clusterDriver Cluster
+ * @defgroup clusterDriver
  *
  * Primitives to pilot the cluster
  * Can only be use from mcu side
@@ -40,42 +33,12 @@
 
 
 /**
- * @addtogroup clusterDriver
+ * @addtogroup groupCluster
  * @{
  */
 
 /**@{*/
 
-/** \brief poweron the cluster (deactivate clock gating)
- * Calling this function will poweron the cluster
- * At the end of the call, cluster is ready to execute a task
- * Function is thread safe and reentrant
- * \param device initialized device structure
- * \param conf configuration struct for cluster driver
- * \return 0 if it succeeded, -1 if it failed
- */
-int mc_cluster_open_with_conf(struct pmsis_device *device,
-        void *conf);
-
-
-
-/** \brief poweroff the cluster (activate clock gating)
- * Stops the cluster and activate clock gating
- * will wait until cluster has finished executing all its tasks
- * If multiple threads are using the cluster, will only decrement a semaphore
- * \param device device structure of the device to power off.
- * \return 0 if it succeeded, -1 if it failed
- */
-int mc_cluster_close(struct pmsis_device *device);
-
-//!@}
-
-/**
- * @} end of Team group
- */
-
-
-/// @cond IMPLEM
 
 /**
  * Defines for IOCTL
@@ -88,6 +51,15 @@ int mc_cluster_close(struct pmsis_device *device);
 #define WAIT_FREE_ASYNC_ID 5
 #define OPEN_ASYNC_ID 6
 #define CLOSE_ASYNC_ID 7
+/** \brief poweron the cluster (deactivate clock gating)
+ * Calling this function will poweron the cluster
+ * At the end of the call, cluster is ready to execute a task
+ * Function is thread safe and reentrant
+ * \param device initialized device structure
+ * \param conf configuration struct for cluster driver
+ */
+int mc_cluster_open_with_conf(struct pmsis_device *device,
+        void *conf);
 
 /** \brief poweron the cluster (deactivate clock gating) - async version
  * Calling this function will poweron the cluster
@@ -133,6 +105,14 @@ void mc_cluster_wait_free(struct pmsis_device *device);
  */
 void mc_cluster_wait_free_async(struct pmsis_device *device, fc_task_t *async_task);
 
+/** \brief poweroff the cluster (activate clock gating)
+ * Stops the cluster and activate clock gating
+ * will wait until cluster has finished executing all its tasks
+ * If multiple threads are using the cluster, will only decrement a semaphore
+ * \param cluster_id ID of the cluster to poweroff
+ */
+int mc_cluster_close(struct pmsis_device *device);
+
 /** \brief poweroff the cluster (activate clock gating) - async version
  * Stops the cluster and activate clock gating
  * will wait until cluster has finished executing all its tasks
@@ -157,8 +137,9 @@ uint8_t mc_cluster_is_on(void);
 #define  GAP_CLUSTER_CORE0_MASK 0x00000001
 #define  GAP_CLUSTER_WITHOUT_CORE0_MASK           0xFFFFFFFE
 
+//!@}
 
-/// @endcond
-
-
+/**
+ * @} end of Team group
+ */
 #endif

@@ -177,6 +177,8 @@ SECTIONS
     *(.fcTcdm.*)
     *(.fcTcdm_g)
     *(.fcTcdm_g.*)
+    *(.l2_data)
+    *(.l2_data.*)
     . = ALIGN(4);
     edata  =  .;
     _edata  =  .;

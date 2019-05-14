@@ -174,6 +174,15 @@ void rt_cluster_notif_deinit(rt_notif_t *notif);
 
 /// @cond IMPLEM
 
+extern RT_L1_TINY_DATA rt_cluster_call_pool_t __rt_cluster_pool;
+extern RT_L1_TINY_DATA int __rt_cluster_nb_active_pe;
+
+
+static inline int rt_cluster_nb_pe()
+{
+  return __rt_cluster_nb_active_pe;
+}
+
 int rt_cluster_fetch_all(int cid);
 
 #if defined(ARCHI_HAS_CLUSTER)

@@ -144,8 +144,10 @@ __rt_master_loop_update_next:
     lw      t2, RT_CLUSTER_TASK_SLAVE_STACK_SIZE(t3)
     lw      t5, RT_CLUSTER_TASK_CORE_MASK(t3)
     lw      s6, RT_CLUSTER_TASK_COMPLETION_CALLBACK(t3)
-    #sw      x0, RT_CLUSTER_CALL_T_NB_PE(s0)
+    lw      t6, RT_CLUSTER_TASK_NB_CORES(t3)
     mv      ra, s5
+
+    sw      t6, %tiny(__rt_cluster_nb_active_pe)(x0)
 
 #ifdef __RT_USE_ASSERT
     // Update stack checking information

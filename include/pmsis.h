@@ -32,6 +32,21 @@ static inline struct cluster_task *mc_cluster_task(struct cluster_task *task, vo
   return task;
 }
 
+static inline struct fc_task *mc_task_callback(struct fc_task *task, void (*callback)(void*), void *arg)
+{
+  task->id = FC_TASK_CALLBACK_ID;
+  task->arg[0] = (uint32_t)callback;
+  task->arg[1] = (uint32_t)arg;
+  return task;
+}
+
+static inline struct fc_task *mc_task(struct fc_task *task)
+{
+  task->id = FC_TASK_NONE_ID;
+  task->arg[0] = (uint32_t)0;
+  return task;
+}
+
 
 #endif
 

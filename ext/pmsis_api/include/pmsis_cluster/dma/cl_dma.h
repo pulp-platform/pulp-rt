@@ -17,7 +17,7 @@
 #ifndef __CL_DMA_H__
 #define __CL_DMA_H__
 
-#include "include/pmsis_cluster/cl_pmsis_types.h"
+#include "cl_pmsis_types.h"
 /**
  * @ingroup groupCluster
  */

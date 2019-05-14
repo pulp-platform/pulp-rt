@@ -133,4 +133,9 @@ static inline void *pmsis_task_create(void (*entry)(void*),
     return __os_native_api_create_task(entry, arg, name, priority);
 }
 
+static inline void pmsis_task_suspend(__os_native_task_t *task)
+{
+    __os_native_task_suspend(task);
+}
+
 #endif  /* __PMSIS_TASK_H__ */

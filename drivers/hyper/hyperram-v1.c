@@ -240,7 +240,7 @@ void rt_hyperram_free_cluster(rt_hyperram_t *dev, void *chunk, int size, rt_hype
 void __attribute__((noinline)) __rt_hyper_copy_aligned(int channel,
   void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr)
 {
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
 
   copy->ctrl = RT_PERIPH_COPY_HYPER << RT_PERIPH_COPY_CTRL_TYPE_BIT;
   copy->u.hyper.hyper_addr = mbr | (unsigned int)hyper_addr;
@@ -274,7 +274,7 @@ static void __rt_hyper_resume_misaligned_read(void *arg)
 start:
   {
     rt_event_t *event = (rt_event_t *)arg;
-    rt_periph_copy_t *copy = &event->copy;
+    rt_periph_copy_t *copy = &event->implem.copy;
 
     // Extract the current state of the transfer to see how to continue it
     int addr = copy->u.hyper.pending_addr;
@@ -424,7 +424,7 @@ start:
           event = __rt_hyper_first_waiting_misaligned;
           if (event)
           {
-            __rt_hyper_first_waiting_misaligned = event->next;
+            __rt_hyper_first_waiting_misaligned = event->implem.next;
             __rt_event_enqueue(event);
           }
         }
@@ -455,7 +455,7 @@ static void __rt_hyper_resume_misaligned_write(void *arg)
 start:
   {
     rt_event_t *event = (rt_event_t *)arg;
-    rt_periph_copy_t *copy = &event->copy;
+    rt_periph_copy_t *copy = &event->implem.copy;
 
     // Extract the current state of the transfer to see how to continue it
     int addr = copy->u.hyper.pending_addr;
@@ -612,7 +612,7 @@ start:
           event = __rt_hyper_first_waiting_misaligned;
           if (event)
           {
-            __rt_hyper_first_waiting_misaligned = event->next;
+            __rt_hyper_first_waiting_misaligned = event->implem.next;
             __rt_event_enqueue(event);
           }
         }
@@ -636,7 +636,7 @@ static void __attribute__((noinline)) __rt_hyper_copy_misaligned(int channel,
   // Misaligned copies are always handled as asynchronous copies to simplify.
   // Pack all information into the copy structure so that we can follow
   // the progress of the transfer
-  rt_periph_copy_t *copy = &event->copy;
+  rt_periph_copy_t *copy = &event->implem.copy;
   copy->u.hyper.pending_addr = (int)addr;
   copy->u.hyper.pending_size = size;
   copy->u.hyper.pending_hyper_addr = (int)hyper_addr;
@@ -664,7 +664,7 @@ static void __attribute__((noinline)) __rt_hyper_copy_misaligned(int channel,
     }
     else
     {
-      event->next = __rt_hyper_first_waiting_misaligned;
+      event->implem.next = __rt_hyper_first_waiting_misaligned;
       __rt_hyper_first_waiting_misaligned = event;
       if (channel & 1)
         __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_write, event);
@@ -708,7 +708,7 @@ void __rt_hyper_copy(int channel,
   else
   {
     // Otherwise go through the slow misaligned case.
-    rt_periph_copy_t *copy = &call_event->copy;
+    rt_periph_copy_t *copy = &call_event->implem.copy;
     copy->u.hyper.size_2d = 0;
     __rt_hyper_copy_misaligned(channel, addr, hyper_addr, size, call_event, mbr, event != NULL);
   }
@@ -724,7 +724,7 @@ void __rt_hyper_copy_2d(int channel,
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_periph_copy_t *copy = &call_event->copy;
+  rt_periph_copy_t *copy = &call_event->implem.copy;
   copy->u.hyper.stride = stride;
   copy->u.hyper.length = length;
   copy->u.hyper.size_2d = size;

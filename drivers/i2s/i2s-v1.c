@@ -256,9 +256,9 @@ static void __rt_i2s_capture(rt_i2s_t *dev, void *buffer, size_t size, rt_event_
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_periph_copy_init(&call_event->copy, 0);
+  rt_periph_copy_init(&call_event->implem.copy, 0);
 
-  rt_periph_copy(&call_event->copy, dev->udma_channel + dev->clk, (unsigned int) buffer, size, UDMA_CHANNEL_CFG_SIZE_16, call_event);
+  rt_periph_copy(&call_event->implem.copy, dev->udma_channel + dev->clk, (unsigned int) buffer, size, UDMA_CHANNEL_CFG_SIZE_16, call_event);
 
   __rt_wait_event_check(event, call_event);
 

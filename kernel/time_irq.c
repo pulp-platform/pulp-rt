@@ -36,9 +36,9 @@ void __attribute__((interrupt)) __rt_timer_handler()
 
   // First dequeue and push to their scheduler all events with the same number of
   // ticks as they were waiting for the same time.
-  while (event && (current_time - event->time) < 0x7fffffff)
+  while (event && (current_time - event->implem.time) < 0x7fffffff)
   {
-    rt_event_t *next = event->next;
+    rt_event_t *next = event->implem.next;
     __rt_push_event(rt_event_internal_sched(), event);
     event = next;
   }
@@ -56,7 +56,7 @@ void __attribute__((interrupt)) __rt_timer_handler()
     // duration is a minimum.
     timer_cmp_set(timer_base_fc(0, 1),
       timer_count_get(timer_base_fc(0, 1)) + 
-      first_delayed->time - current_time
+      first_delayed->implem.time - current_time
     );
 
     timer_conf_set(timer_base_fc(0, 1),

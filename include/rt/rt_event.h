@@ -277,6 +277,13 @@ void rt_event_push_delayed(rt_event_t *event, int time_us);
 extern RT_FC_TINY_DATA rt_event_t        *__rt_first_free;
 extern RT_FC_TINY_DATA rt_event_sched_t   __rt_sched;
 
+static inline void mc_task_wait(struct fc_task *task)
+{
+  while(!task->done)
+    rt_event_yield(NULL);
+}
+
+
 static inline rt_event_sched_t *__rt_event_get_current_sched()
 {
   return rt_event_internal_sched();
@@ -284,7 +291,7 @@ static inline rt_event_sched_t *__rt_event_get_current_sched()
 
 static inline void __rt_event_release(rt_event_t *event)
 {
-  event->next = __rt_first_free;
+  event->implem.next = __rt_first_free;
   __rt_first_free = event;  
 }
 
@@ -299,20 +306,20 @@ void __rt_sched_event_cancel(rt_event_t *event);
 
 static inline void __rt_event_min_init(rt_event_t *event)
 {
-  event->pending = 0;
-  event->keep = 0;
+  event->implem.pending = 0;
+  event->implem.keep = 0;
 }
 
 void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched);
 
 static inline void __rt_event_set_pending(rt_event_t *event)
 {
-  event->pending = 1;  
+  event->implem.pending = 1;  
 }
 
 static inline void __rt_event_set_keep(rt_event_t *event)
 {
-  event->keep = 1;  
+  event->implem.keep = 1;  
 }
 
 void __rt_event_execute(rt_event_sched_t *sched, int wait);
@@ -367,38 +374,38 @@ static inline rt_event_t *__rt_wait_event_prepare(rt_event_t *event)
 
 static inline void __rt_event_save(rt_event_t *event)
 {
-  event->saved_pending = event->pending;
+  event->implem.saved_pending = event->implem.pending;
   // The user can still check the event while it is being
   // reused. It will also check saved_pending to avoid
   // checking the wrong status.
   rt_compiler_barrier();
-  event->saved_callback = event->callback;
-  event->saved_arg = event->arg;
+  event->implem.saved_callback = (void (*)(void *))event->arg[0];
+  event->implem.saved_arg = (void *)event->arg[1];
 }
 
 static inline void __rt_event_restore(rt_event_t *event)
 {
-  event->pending = event->saved_pending;
-  event->callback = event->saved_callback;
-  event->arg = event->saved_arg;
+  event->implem.pending = event->implem.saved_pending;
+  event->arg[0] = (uintptr_t)event->implem.saved_callback;
+  event->arg[1] = (uintptr_t)event->implem.saved_arg;
   rt_compiler_barrier();
-  event->saved_pending = 0;
+  event->implem.saved_pending = 0;
 }
 
 static inline rt_event_t *__rt_init_event(rt_event_t *event, rt_event_sched_t *sched, void (*callback)(void *), void *arg)
 {
   __rt_event_min_init(event);
-  event->callback = callback;
-  event->arg = arg;
+  event->arg[0] = (uintptr_t)callback;
+  event->arg[1] = (uintptr_t)arg;
   return event;
 }
 
 static inline void __rt_event_enqueue(rt_event_t *event)
 {
   rt_event_sched_t *sched = rt_event_internal_sched();
-  event->next = NULL;
+  event->implem.next = NULL;
   if (sched->first) {
-    sched->last->next = event;
+    sched->last->implem.next = event;
   } else {
     sched->first = event;
   }
@@ -415,11 +422,11 @@ static inline void rt_event_enqueue(rt_event_t *event) {
 
 static inline __attribute__((always_inline)) void __rt_enqueue_event_to_sched(rt_event_sched_t *sched, rt_event_t *event)
 {
-  event->next = NULL;
+  event->implem.next = NULL;
   if (sched->first == NULL) {
     sched->first = event;
   } else {
-    sched->last->next = event;
+    sched->last->implem.next = event;
   }
   sched->last = event;
 }

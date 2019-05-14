@@ -74,18 +74,18 @@ static void __rt_pmu_change_domain_power(rt_event_t *event, int *pending, int do
   {
     // Otherwise enqueue in the list of pending sequences and notify the caller
     // that the operation is pending.
-    event->data[0] = domain;
-    event->data[1] = state;
-    event->data[2] = flags;
-    event->data[3] = wait_end_of_sequence;
+    event->implem.data[0] = domain;
+    event->implem.data[1] = state;
+    event->implem.data[2] = flags;
+    event->implem.data[3] = wait_end_of_sequence;
 
     if (__rt_pmu_pending_requests == NULL)
       __rt_pmu_pending_requests = event;
     else
-      __rt_pmu_pending_requests_tail->next = event;
+      __rt_pmu_pending_requests_tail->implem.next = event;
 
     __rt_pmu_pending_requests_tail = event;
-    event->next = NULL;
+    event->implem.next = NULL;
 
     if (pending)
       *pending = 1;
