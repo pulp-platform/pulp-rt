@@ -16,28 +16,57 @@
 
 /*
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
- *          Jie Chen, GreenWaves Technologies (jie.chen@greenwaves-technologies.com)
  */
 
-#include "rt/rt_api.h"
+#include "pmsis.h"
 
-#define __RT_HYPER_TEMP_BUFFER_SIZE 128
 
-// Temporary buffer of size __RT_HYPER_TEMP_BUFFER_SIZE used for misaligned
+RT_FC_TINY_DATA struct fc_task *__rt_hyper_end_task;
+RT_FC_TINY_DATA unsigned int __rt_hyper_pending_base;
+RT_FC_TINY_DATA unsigned int __rt_hyper_pending_hyper_addr;
+RT_FC_TINY_DATA unsigned int __rt_hyper_pending_addr;
+RT_FC_TINY_DATA unsigned int __rt_hyper_pending_repeat;
+RT_FC_TINY_DATA unsigned int __rt_hyper_pending_repeat_size;
+
+RT_FC_TINY_DATA struct fc_task *__rt_hyper_pending_tasks;
+RT_FC_TINY_DATA struct fc_task *__rt_hyper_pending_tasks_last;
+
+RT_FC_TINY_DATA int __rt_hyper_pending_emu_channel;
+RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_hyper_addr;
+RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_addr;
+RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_size;
+RT_FC_TINY_DATA unsigned char __rt_hyper_pending_emu_do_memcpy;
+
+static struct fc_task __mc_hyper_cluster_task;
+
+
+typedef struct {
+  rt_extern_alloc_t *alloc;
+  int channel;
+} mc_hyperram_t;
+
+
+extern void __rt_hyper_handle_copy();
+
+
+
+#define __MC_HYPER_TEMP_BUFFER_SIZE 128
+
+// Temporary buffer of size __MC_HYPER_TEMP_BUFFER_SIZE used for misaligned
 // transfers between hyperram and L2
-static char *__rt_hyper_temp_buffer;
-
-// Set to 1 if there is already a pending misaligned transfer, as they are
-// sharing __rt_hyper_temp_buffer
-static int __rt_hyper_pending_misaligned;
-
-// First misaligned pending copy waiting until __rt_hyper_temp_buffer is
-// available
-static rt_event_t *__rt_hyper_first_waiting_misaligned;
+static char *__mc_hyper_temp_buffer;
 
 
 
-int __rt_hyperram_init(rt_hyperram_t *hyper, int ramsize)
+void __mc_hyper_copy_2d(int channel,
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, int stride, int length, rt_event_t *event, int mbr);
+
+
+void __mc_hyper_copy(int channel,
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, rt_event_t *event, int mbr);
+
+
+int __mc_hyperram_init(mc_hyperram_t *hyper, int ramsize)
 {
   rt_extern_alloc_t *alloc = (rt_extern_alloc_t *)rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_extern_alloc_t));
   if (alloc == NULL) return -1;
@@ -50,7 +79,7 @@ int __rt_hyperram_init(rt_hyperram_t *hyper, int ramsize)
 
 
 
-void rt_hyperram_conf_init(rt_hyperram_conf_t *conf)
+void mc_hyperram_conf_init(struct mc_hyperram_conf *conf)
 {
   conf->id = -1;
   conf->ram_size = 0;
@@ -58,93 +87,93 @@ void rt_hyperram_conf_init(rt_hyperram_conf_t *conf)
 
 
 
-static void __rt_hyperram_free(rt_hyperram_t *hyper)
+static void __mc_hyperram_free(mc_hyperram_t *hyper)
 {
   if (hyper != NULL) {
     if (hyper->alloc != NULL) rt_free(RT_ALLOC_FC_DATA, (void *)hyper, sizeof(rt_extern_alloc_t));
-    rt_free(RT_ALLOC_FC_DATA, (void *)hyper, sizeof(rt_hyperram_t));
+    rt_free(RT_ALLOC_FC_DATA, (void *)hyper, sizeof(mc_hyperram_t));
   }
 }
 
 
 
-rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_event_t *event)
+int mc_hyperram_open(struct pmsis_device *device, struct mc_hyperram_conf *conf)
 {
-  rt_hyperram_t *hyper = NULL;
+  mc_hyperram_t *hyper = NULL;
+  int periph_id;
   int channel;
   int ramsize;
 
-  if (dev_name)
+  periph_id = ARCHI_UDMA_HYPER_ID(conf->id);
+  channel = UDMA_EVENT_ID(periph_id);
+  ramsize = conf->ram_size;
+
+  if (__mc_hyper_temp_buffer == NULL)
   {
-    rt_dev_t *dev = rt_dev_get(dev_name);
-    if (dev == NULL) goto error;
-    channel = dev->channel;
-    ramsize = dev->u.hyperram.size;
-  }
-  else
-  {
-    channel = ARCHI_UDMA_HYPER_ID(conf->id);
-    ramsize = conf->ram_size;
+    __mc_hyper_temp_buffer = rt_alloc(RT_ALLOC_PERIPH, __MC_HYPER_TEMP_BUFFER_SIZE);
+    if (__mc_hyper_temp_buffer == NULL) goto error;
   }
 
-
-  if (__rt_hyper_temp_buffer == NULL)
-  {
-    __rt_hyper_temp_buffer = rt_alloc(RT_ALLOC_PERIPH, __RT_HYPER_TEMP_BUFFER_SIZE);
-    if (__rt_hyper_temp_buffer == NULL) goto error;
-  }
-
-  hyper = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_hyperram_t));
+  hyper = rt_alloc(RT_ALLOC_FC_DATA, sizeof(mc_hyperram_t));
   if (hyper == NULL) goto error;
 
   hyper->alloc = NULL;
-  hyper->channel = channel;
+  hyper->channel = periph_id;
 
-  if (__rt_hyperram_init(hyper, ramsize)) goto error;
+  if (__mc_hyperram_init(hyper, ramsize)) goto error;
 
-  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(channel));
-  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(channel)+1);
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<channel));
+  soc_eu_fcEventMask_setEvent(channel);
+  soc_eu_fcEventMask_setEvent(channel+1);
+  plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
 
-  return hyper;
+  __rt_periph_channel(channel+1)->callback = __rt_hyper_handle_copy;
+  __rt_periph_channel(channel)->callback = __rt_hyper_handle_copy;
+
+  device->data = (void *)hyper;
+
+  return 0;
 
 error:
-  __rt_hyperram_free(hyper);
-  return NULL;
+  __mc_hyperram_free(hyper);
+  return -1;
 }
 
 
 
-void rt_hyperram_close(rt_hyperram_t *handle, rt_event_t *event)
+void mc_hyperram_close(struct pmsis_device *device)
 {
-  __rt_hyperram_free(handle);
+  mc_hyperram_t *hyper = (mc_hyperram_t *)device->data;
+  __mc_hyperram_free(hyper);
 }
 
 
 
 #if defined(ARCHI_HAS_CLUSTER)
 
-void __rt_hyperram_cluster_req_done(void *_req)
+void __mc_hyperram_cluster_req_done(void *_req)
 {
-  rt_hyperram_req_t *req = (rt_hyperram_req_t *)_req;
+  cl_hyperram_req_t *req = (cl_hyperram_req_t *)_req;
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
 }
 
-void __rt_hyperram_cluster_req(void *_req)
+void __mc_hyperram_cluster_req(void *_req)
 {
- rt_hyperram_req_t *req = (rt_hyperram_req_t* )_req;
- rt_event_t *event = rt_event_get(rt_event_internal_sched(), __rt_hyperram_cluster_req_done, (void* )req);
+ cl_hyperram_req_t *req = (cl_hyperram_req_t* )_req;
+ mc_hyperram_t *hyper = (mc_hyperram_t *)req->device->data;
+ // TODO to support several requests, we should check if the global task is available
+ rt_event_t *event = &__mc_hyper_cluster_task;
+ mc_task_callback(event, __mc_hyperram_cluster_req_done, (void* )req);
  if(req->is_2d)
-     __rt_hyper_copy_2d(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, req->stride, req->length, event, REG_MBR0);
+     __mc_hyper_copy_2d(UDMA_CHANNEL_ID(hyper->channel) + req->is_write, (uint32_t)req->addr, req->hyper_addr, req->size, req->stride, req->length, event, REG_MBR0);
  else
-     __rt_hyper_copy(UDMA_CHANNEL_ID(req->dev->channel) + req->is_write, req->addr, req->hyper_addr, req->size, event, REG_MBR0);
+     __mc_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + req->is_write, (uint32_t)req->addr, req->hyper_addr, req->size, event, REG_MBR0);
 }
 
-void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
-  void *hyper_addr, void *addr, int size, rt_hyperram_req_t *req, int ext2loc)
+void __mc_hyperram_cluster_copy(struct pmsis_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, cl_hyperram_req_t *req, int ext2loc)
 {
-  req->dev = dev;
+  req->device = device;
   req->addr = addr;
   req->hyper_addr = hyper_addr;
   req->size = size;
@@ -152,18 +181,15 @@ void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
   req->done = 0;
   req->is_write = (ext2loc)? 0:1;
   req->is_2d = 0;
-  __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_cluster_req, (void *)req);
-  // Mark it as pending event so that it is not added to the list of free events
-  // as it stands inside the event request
-  __rt_event_set_pending(&req->event);
+  mc_task_callback(&req->event, __mc_hyperram_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
 }
 
 
-void __rt_hyperram_cluster_copy_2d(rt_hyperram_t *dev,
-  void *hyper_addr, void *addr, int size, int stride, int length, rt_hyperram_req_t *req, int ext2loc)
+void __mc_hyperram_cluster_copy_2d(struct pmsis_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, int stride, int length, cl_hyperram_req_t *req, int ext2loc)
 {
-  req->dev = dev;
+  req->device = device;
   req->addr = addr;
   req->hyper_addr = hyper_addr;
   req->size = size;
@@ -173,60 +199,51 @@ void __rt_hyperram_cluster_copy_2d(rt_hyperram_t *dev,
   req->done = 0;
   req->is_write = (ext2loc)? 0:1;
   req->is_2d = 1;
-  __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_cluster_req, (void *)req);
-  // Mark it as pending event so that it is not added to the list of free events
-  // as it stands inside the event request
-  __rt_event_set_pending(&req->event);
+  mc_task_callback(&req->event, __mc_hyperram_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
 }
 
 
-void __rt_hyperram_alloc_cluster_req(void *_req)
+void __mc_hyperram_alloc_cluster_req(void *_req)
 {
-  rt_hyperram_alloc_req_t *req = (rt_hyperram_alloc_req_t *)_req;
-  req->result = rt_hyperram_alloc(req->dev, req->size);
+  cl_hyperram_alloc_req_t *req = (cl_hyperram_alloc_req_t *)_req;
+  req->result = mc_hyperram_alloc(req->device, req->size);
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
 }
 
 
 
-void __rt_hyperram_free_cluster_req(void *_req)
+void __mc_hyperram_free_cluster_req(void *_req)
 {
-  rt_hyperram_free_req_t *req = (rt_hyperram_free_req_t *)_req;
-  rt_hyperram_free(req->dev, req->chunk, req->size);
+  cl_hyperram_free_req_t *req = (cl_hyperram_free_req_t *)_req;
+  mc_hyperram_free(req->device, req->chunk, req->size);
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
 }
 
 
 
-void rt_hyperram_alloc_cluster(rt_hyperram_t *dev, int size, rt_hyperram_alloc_req_t *req)
+void cl_hyperram_alloc_cluster(struct pmsis_device *device, uint32_t size, cl_hyperram_alloc_req_t *req)
 {
-  req->dev = dev;
+  req->device = device;
   req->size = size;
   req->cid = rt_cluster_id();
   req->done = 0;
-  __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_alloc_cluster_req, (void *)req);
-  // Mark it as pending event so that it is not added to the list of free events
-  // as it stands inside the event request
-  __rt_event_set_pending(&req->event);
+  mc_task_callback(&req->event, __mc_hyperram_alloc_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
 }
 
 
 
-void rt_hyperram_free_cluster(rt_hyperram_t *dev, void *chunk, int size, rt_hyperram_free_req_t *req)
+void cl_hyperram_free_cluster(struct pmsis_device *device, uint32_t chunk, uint32_t size, cl_hyperram_free_req_t *req)
 {
-  req->dev = dev;
+  req->device = device;
   req->size = size;
   req->chunk = chunk;
   req->cid = rt_cluster_id();
   req->done = 0;
-  __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_free_cluster_req, (void *)req);
-  // Mark it as pending event so that it is not added to the list of free events
-  // as it stands inside the event request
-  __rt_event_set_pending(&req->event);
+  mc_task_callback(&req->event, __mc_hyperram_free_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
 }
 
@@ -237,25 +254,33 @@ void rt_hyperram_free_cluster(rt_hyperram_t *dev, void *chunk, int size, rt_hype
 //  - hyper addr is multiple of 2
 //  - l2 addr is multiple of 4
 //  - size is multiple of 4
-void __attribute__((noinline)) __rt_hyper_copy_aligned(int channel,
-  void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr)
+void __attribute__((noinline)) __mc_hyper_copy_aligned(int channel,
+  uint32_t addr, uint32_t _hyper_addr, uint32_t size, rt_event_t *event, int mbr)
 {
-  rt_periph_copy_t *copy = &event->implem.copy;
+  unsigned int hyper_addr = mbr | _hyper_addr;
+  unsigned int base = hal_udma_channel_base(channel);
 
-  copy->ctrl = RT_PERIPH_COPY_HYPER << RT_PERIPH_COPY_CTRL_TYPE_BIT;
-  copy->u.hyper.hyper_addr = mbr | (unsigned int)hyper_addr;
+
+  //printf("Copy aligned (channel: %d, addr: 0x%lx, hyper_addr: 0x%x, size: 0x%lx, event: %p)\n", channel, addr, hyper_addr, size, event);
+
   // In case the size is bigger than the maximum burst size
   // split the transfer into smaller transfers using the repeat count
+
   if (size > 512) {
-    copy->addr = (unsigned int)addr;
-    copy->repeat = 512;
-    copy->repeat_size = size;
+    __rt_hyper_pending_base = base;
+    __rt_hyper_pending_hyper_addr = hyper_addr;
+    __rt_hyper_pending_addr = (unsigned int)addr;
+    __rt_hyper_pending_repeat = 512;
+    __rt_hyper_pending_repeat_size = size;
     size = 512;
   } else {
-    copy->repeat = 0;
+    __rt_hyper_pending_repeat = 0;
   }
 
-  rt_periph_copy(copy, channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_16, event);
+  __rt_hyper_end_task = event;
+  if (event)
+    event->implem.next = NULL;
+  hal_hyper_enqueue(base, (unsigned int)addr, hyper_addr, size, UDMA_CHANNEL_CFG_EN);
 }
 
 
@@ -267,132 +292,133 @@ void __attribute__((noinline)) __rt_hyper_copy_aligned(int channel,
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
-static void __rt_hyper_resume_misaligned_read(void *arg)
+static void __mc_hyper_resume_misaligned_read(struct fc_task *task)
 {
-  int irq = rt_irq_disable();
-
-start:
+  while (1)
   {
-    rt_event_t *event = (rt_event_t *)arg;
-    rt_periph_copy_t *copy = &event->implem.copy;
-
-    // Extract the current state of the transfer to see how to continue it
-    int addr = copy->u.hyper.pending_addr;
-    int hyper_addr = copy->u.hyper.pending_hyper_addr;
-    int channel = copy->u.hyper.channel;
-    int mbr = copy->u.hyper.mbr;
-    int size = copy->u.hyper.pending_size;
-    int async = copy->u.hyper.async;
-    int do_memcpy = copy->u.hyper.memcpy;
-    copy->u.hyper.memcpy = 0;
-
     // Compute information to see how to do one more step
-    int addr_aligned = (addr + 3) & ~0x3;
-    int prologue_size = addr_aligned - (int)addr;
-    int hyper_addr_aligned = hyper_addr + prologue_size;
+    int addr_aligned = (__rt_hyper_pending_emu_addr + 3) & ~0x3;
+    int prologue_size = addr_aligned - (int)__rt_hyper_pending_emu_addr;
+    int hyper_addr_aligned = __rt_hyper_pending_emu_hyper_addr + prologue_size;
 
-    if (size < 4)
-      prologue_size = size;
+    //printf("Resuming misaligned read (channel: %d, addr: 0x%x, hyper_addr: 0x%x, size: 0x%x@%p)\n", __rt_hyper_pending_emu_channel, __rt_hyper_pending_emu_addr, __rt_hyper_pending_emu_hyper_addr, __rt_hyper_pending_emu_size, &__rt_hyper_pending_emu_size);
 
-    // In case the transfer is asynchronous, prepare the callback so that
-    // we are called again when the next step is over
-    if (async)
-    {
-      __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_read, event);
-      // Be careful to not free the event, it is reused to finish the transfer
-      __rt_event_set_pending(event);
-    }
+    if (__rt_hyper_pending_emu_size < 4)
+      prologue_size = __rt_hyper_pending_emu_size;
 
     if (prologue_size)
     {
+      //printf("Handling prologue\n");
       // Case where we have a partial copy to do
-      if (!do_memcpy)
+      if (!__rt_hyper_pending_emu_do_memcpy)
       {
         // A partial transfer must first transfer to the temporary area
         // and finish the transfer by hands using a memcpy.
         // This part is first called to trigger the transfer while the part after
         // is called to do the memcpy as a second step.
-        __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), 4, event, mbr);
+        __mc_hyper_copy_aligned(
+          __rt_hyper_pending_emu_channel,
+          (uint32_t)__mc_hyper_temp_buffer,
+          (__rt_hyper_pending_emu_hyper_addr & ~1),
+          4,
+          NULL, 0
+        );
 
-        // In case it is asynchronous, just remember we have to do
+        // It is asynchronous, just remember we have to do
         // a memcpy when the transfer is done and leave
-        if (async) {
-          copy->u.hyper.memcpy = 1;
-          goto end;
-        }
-
-        // Otherwise finish the transfer now
-        __rt_wait_event(event);
+        __rt_hyper_pending_emu_do_memcpy = 1;
+        return;
       }
 
-      memcpy((void *)addr, &__rt_hyper_temp_buffer[hyper_addr & 1], prologue_size);
+      __rt_hyper_pending_emu_do_memcpy = 0;
+      memcpy((void *)__rt_hyper_pending_emu_addr, &__mc_hyper_temp_buffer[__rt_hyper_pending_emu_hyper_addr & 1], prologue_size);
 
-      copy->u.hyper.pending_hyper_addr += prologue_size;
-      copy->u.hyper.pending_addr += prologue_size;
-      copy->u.hyper.pending_size -= prologue_size;
+      __rt_hyper_pending_emu_hyper_addr += prologue_size;
+      __rt_hyper_pending_emu_addr += prologue_size;
+      __rt_hyper_pending_emu_size -= prologue_size;
 
-      // In case the transfer is asynchronous, we get there to do the memcpy
+      // The transfer is asynchronous, we get there to do the memcpy
       // without triggering any transfer, so we can start again to trigger one.
-      if (async && copy->u.hyper.pending_size) goto start;
+      if (__rt_hyper_pending_emu_size)
+        continue;
 
     }
-    else if (size > 0)
+    else if (__rt_hyper_pending_emu_size > 0)
     {
       // Case where we have the body to transfer
-      int size_aligned = size & ~0x3;
+      uint32_t size_aligned = __rt_hyper_pending_emu_size & ~0x3;
 
       if ((hyper_addr_aligned & 0x1) == 0)
       {
+      //printf("Handling body\n");
         // Good case where the body is aligned on both sides and we can do
         // a direct copy.
-        __rt_hyper_copy_aligned(channel, (void *)addr, (void *)hyper_addr, size_aligned, event, mbr);
+        __mc_hyper_copy_aligned(
+          __rt_hyper_pending_emu_channel,
+          __rt_hyper_pending_emu_addr,
+          __rt_hyper_pending_emu_hyper_addr,
+          size_aligned,
+          NULL, 0
+        );
 
-        copy->u.hyper.pending_hyper_addr += size_aligned;
-        copy->u.hyper.pending_addr += size_aligned;
-        copy->u.hyper.pending_size -= size_aligned;
+        __rt_hyper_pending_emu_hyper_addr += size_aligned;
+        __rt_hyper_pending_emu_addr += size_aligned;
+        __rt_hyper_pending_emu_size -= size_aligned;
 
-        // In case it is asynchronous, just leave, we'll continue the transfer
+        // It is asynchronous, just leave, we'll continue the transfer
         // when this one is over
-        if (async) goto end;
-
-        __rt_wait_event(event);
-
+        return;
       }
       else
       {
+      //printf("Handling epilogue\n");
         // Bad case where we have to transfer the body using a temporary
         // buffer as the aligments on both sides are not compatible.
         // This part is very similar to the prologue.
         // Just be careful to split into small transfers to fit the temporary buffer.
 
-        if (size_aligned > __RT_HYPER_TEMP_BUFFER_SIZE - 4)
-          size_aligned = __RT_HYPER_TEMP_BUFFER_SIZE - 4;
+        if (size_aligned > __MC_HYPER_TEMP_BUFFER_SIZE - 4)
+          size_aligned = __MC_HYPER_TEMP_BUFFER_SIZE - 4;
 
-        if (!do_memcpy)
+        if (!__rt_hyper_pending_emu_do_memcpy)
         {
-          __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), size_aligned+4, event, mbr);
+      //printf("Trigger transfer\n");
+          __mc_hyper_copy_aligned(
+            __rt_hyper_pending_emu_channel,
+            (uint32_t)__mc_hyper_temp_buffer,
+            (__rt_hyper_pending_emu_hyper_addr & ~1),
+            size_aligned+4,
+            NULL, 0
+          );
 
-          if (async) {
-            copy->u.hyper.memcpy = 1;
-            goto end;
-          }
-
-          __rt_wait_event(event);
+          __rt_hyper_pending_emu_do_memcpy = 1;
+          return;
         }
 
-        memcpy((void *)addr, &__rt_hyper_temp_buffer[1], size_aligned);
+      //printf("Do memcpy\n");
+        __rt_hyper_pending_emu_do_memcpy = 0;
+        memcpy((void *)__rt_hyper_pending_emu_addr, &__mc_hyper_temp_buffer[1], size_aligned);
 
-        copy->u.hyper.pending_hyper_addr += size_aligned;
-        copy->u.hyper.pending_addr += size_aligned;
-        copy->u.hyper.pending_size -= size_aligned;
+        __rt_hyper_pending_emu_hyper_addr += size_aligned;
+        __rt_hyper_pending_emu_addr += size_aligned;
+        __rt_hyper_pending_emu_size -= size_aligned;
 
-        if (async && copy->u.hyper.pending_size) goto start;
+        if (__rt_hyper_pending_emu_size)
+          continue;
       }
     }
 
     // Now check if we are done
-    if (copy->u.hyper.pending_size == 0)
+    if (__rt_hyper_pending_emu_size == 0)
     {
+      struct fc_task *task = __rt_hyper_pending_tasks;
+      __rt_hyper_pending_tasks = task->implem.next;
+
+      rt_event_enqueue(task);
+
+
+
+      #if 0
       // Check if we are doing a 2D transfer
       if (copy->u.hyper.size_2d > 0)
       {
@@ -408,36 +434,10 @@ start:
           goto start;
         }
       }
-
-      // Special case where it is asynchronous
-      if (async)
-      {
-        // First enqueue the user event.
-        // We need to restore it as we reused the user event for the internal copies.
-        __rt_event_restore(event);
-        __rt_event_enqueue(event);
-
-        // In case there are other misaligned copies waiting for the temporary
-        // buffer, wakeup one of them.
-        if (__rt_hyper_first_waiting_misaligned)
-        {
-          event = __rt_hyper_first_waiting_misaligned;
-          if (event)
-          {
-            __rt_hyper_first_waiting_misaligned = event->implem.next;
-            __rt_event_enqueue(event);
-          }
-        }
-       else
-        {
-          __rt_hyper_pending_misaligned = 0;
-        }
-      }
+      #endif
     }
+    break;
   }
-
-end:
-  rt_irq_restore(irq);
 }
 
 
@@ -448,98 +448,85 @@ end:
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
-static void __rt_hyper_resume_misaligned_write(void *arg)
+static void __mc_hyper_resume_misaligned_write(struct fc_task *task)
 {
-  int irq = rt_irq_disable();
 
-start:
+  while(1)
   {
-    rt_event_t *event = (rt_event_t *)arg;
-    rt_periph_copy_t *copy = &event->implem.copy;
-
-    // Extract the current state of the transfer to see how to continue it
-    int addr = copy->u.hyper.pending_addr;
-    int hyper_addr = copy->u.hyper.pending_hyper_addr;
-    int channel = copy->u.hyper.channel;
-    int mbr = copy->u.hyper.mbr;
-    int size = copy->u.hyper.pending_size;
-    int async = copy->u.hyper.async;
-    int do_memcpy = copy->u.hyper.memcpy;
-    copy->u.hyper.memcpy = 0;
-
     // Compute information to see how to do one more step
-    int addr_aligned = (addr + 3) & ~0x3;
-    int prologue_size = addr_aligned - (int)addr;
-    int hyper_addr_aligned = hyper_addr + prologue_size;
+    int addr_aligned = (__rt_hyper_pending_emu_addr + 3) & ~0x3;
+    int prologue_size = addr_aligned - __rt_hyper_pending_emu_addr;
+    int hyper_addr_aligned = __rt_hyper_pending_emu_hyper_addr + prologue_size;
 
-    if (size < 4)
-      prologue_size = size;
+    //printf("Resuming misaligned write (channel: %d, addr: 0x%x, hyper_addr: 0x%x)\n", __rt_hyper_pending_emu_channel, __rt_hyper_pending_emu_addr, __rt_hyper_pending_emu_hyper_addr);
 
-    // In case the transfer is asynchronous, prepare the callback so that
-    // we are called again when the next step is over
-    if (async)
-    {
-      __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_write, event);
-      // Be careful to not free the event, it is reused to finish the transfer
-      __rt_event_set_pending(event);
-    }
+    if (__rt_hyper_pending_emu_size < 4)
+      prologue_size = __rt_hyper_pending_emu_size;
 
     if (prologue_size)
     {
       // Case where we have a partial copy to do
-      if (!do_memcpy)
+      if (!__rt_hyper_pending_emu_do_memcpy)
       {
         // A partial transfer must first transfer the content of the hyperram
         // to the temporary area and partially overwrite it with a memcpy.
         // This part is first called to trigger the transfer while the part after
         // is called to do the memcpy and the final transfer as a second step.
-        __rt_hyper_copy_aligned(channel-1, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), 4, event, mbr);
+        __mc_hyper_copy_aligned(
+          __rt_hyper_pending_emu_channel-1,
+          (uint32_t)__mc_hyper_temp_buffer,
+          (__rt_hyper_pending_emu_hyper_addr & ~1),
+          4,
+          NULL, 0
+        );
 
-        // In case it is asynchronous, just remember we have to do
+        // It is asynchronous, just remember we have to do
         // a memcpy when the transfer is done and leave
-        if (async) {
-          copy->u.hyper.memcpy = 1;
-          goto end;
-        }
-
-        // Otherwise finish the transfer now
-        __rt_wait_event(event);
-        event = __rt_wait_event_prepare_blocking();
+        __rt_hyper_pending_emu_do_memcpy = 1;
+        return;
       }
 
-      memcpy(&__rt_hyper_temp_buffer[hyper_addr & 1], (void *)addr, prologue_size);
+      __rt_hyper_pending_emu_do_memcpy = 0;
+      memcpy(&__mc_hyper_temp_buffer[__rt_hyper_pending_emu_hyper_addr & 1], (void *)__rt_hyper_pending_emu_addr, prologue_size);
 
-      __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), 4, event, mbr);
+      __mc_hyper_copy_aligned(
+        __rt_hyper_pending_emu_channel,
+        (uint32_t)__mc_hyper_temp_buffer,
+        (__rt_hyper_pending_emu_hyper_addr & ~1),
+        4,
+        NULL, 0
+      );
 
-      copy->u.hyper.pending_hyper_addr += prologue_size;
-      copy->u.hyper.pending_addr += prologue_size;
-      copy->u.hyper.pending_size -= prologue_size;
+      __rt_hyper_pending_emu_hyper_addr += prologue_size;
+      __rt_hyper_pending_emu_addr += prologue_size;
+      __rt_hyper_pending_emu_size -= prologue_size;
 
-      if (async) goto end;
-
-      // Otherwise finish the transfer now
-      __rt_wait_event(event);
+      return;
     }
-    else if (size > 0)
+    else if (__rt_hyper_pending_emu_size > 0)
     {
       // Case where we have the body to transfer
-      int size_aligned = size & ~0x3;
+      uint32_t size_aligned = __rt_hyper_pending_emu_size & ~0x3;
 
       if ((hyper_addr_aligned & 0x1) == 0)
       {
         // Good case where the body is aligned on both sides and we can do
         // a direct copy.
-        __rt_hyper_copy_aligned(channel, (void *)addr, (void *)hyper_addr, size_aligned, event, mbr);
+        __mc_hyper_copy_aligned(
+          __rt_hyper_pending_emu_channel,
+          __rt_hyper_pending_emu_addr,
+          __rt_hyper_pending_emu_hyper_addr,
+          size_aligned,
+          NULL, 0
+        );
 
-        copy->u.hyper.pending_hyper_addr += size_aligned;
-        copy->u.hyper.pending_addr += size_aligned;
-        copy->u.hyper.pending_size -= size_aligned;
+        __rt_hyper_pending_emu_hyper_addr += size_aligned;
+        __rt_hyper_pending_emu_addr += size_aligned;
+        __rt_hyper_pending_emu_size -= size_aligned;
 
-        // In case it is asynchronous, just leave, we'll continue the transfer
+        // It is asynchronous, just leave, we'll continue the transfer
         // when this one is over
-        if (async) goto end;
-
-        __rt_wait_event(event);
+        return;
       }
       else
       {
@@ -548,39 +535,47 @@ start:
         // This part is very similar to the prologue.
         // Just be careful to split into small transfers to fit the temporary buffer.
 
-        if (size_aligned > __RT_HYPER_TEMP_BUFFER_SIZE - 4)
-          size_aligned = __RT_HYPER_TEMP_BUFFER_SIZE - 4;
+        if (size_aligned > __MC_HYPER_TEMP_BUFFER_SIZE - 4)
+          size_aligned = __MC_HYPER_TEMP_BUFFER_SIZE - 4;
 
-        if (!do_memcpy)
+        if (!__rt_hyper_pending_emu_do_memcpy)
         {
-          __rt_hyper_copy_aligned(channel-1, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), 4, event, mbr);
+          __mc_hyper_copy_aligned(
+            __rt_hyper_pending_emu_channel-1,
+            (uint32_t)__mc_hyper_temp_buffer,
+            (__rt_hyper_pending_emu_hyper_addr & ~1),
+            4,
+            NULL, 0
+          );
 
-          if (async) {
-            copy->u.hyper.memcpy = 1;
-            goto end;
-          }
-
-          __rt_wait_event(event);
-          event = __rt_wait_event_prepare_blocking();
+          __rt_hyper_pending_emu_do_memcpy = 1;
+          return;
         }
 
-        memcpy(&__rt_hyper_temp_buffer[1], (void *)addr, size_aligned-1);
+        __rt_hyper_pending_emu_do_memcpy = 0;
+        memcpy(&__mc_hyper_temp_buffer[1], (void *)__rt_hyper_pending_emu_addr, size_aligned-1);
 
-        __rt_hyper_copy_aligned(channel, (void *)__rt_hyper_temp_buffer, (void *)(hyper_addr & ~1), size_aligned, event, mbr);
+        __mc_hyper_copy_aligned(
+          __rt_hyper_pending_emu_channel,
+          (uint32_t)__mc_hyper_temp_buffer,
+          (__rt_hyper_pending_emu_hyper_addr & ~1),
+          size_aligned,
+          NULL, 0
+        );
 
-        copy->u.hyper.pending_hyper_addr += size_aligned-1;
-        copy->u.hyper.pending_addr += size_aligned-1;
-        copy->u.hyper.pending_size -= size_aligned-1;
+        __rt_hyper_pending_emu_hyper_addr += size_aligned-1;
+        __rt_hyper_pending_emu_addr += size_aligned-1;
+        __rt_hyper_pending_emu_size -= size_aligned-1;
 
-        if (async) goto end;
-
-        __rt_wait_event(event);
+        return;
       }
     }
 
     // Now check if we are done
-    if (copy->u.hyper.pending_size == 0)
+    if (__rt_hyper_pending_emu_size == 0)
     {
+
+      #if 0
       // Check if we are doing a 2D transfer
       if (copy->u.hyper.size_2d > 0)
       {
@@ -593,155 +588,192 @@ start:
           copy->u.hyper.pending_hyper_addr = copy->u.hyper.pending_hyper_addr - copy->u.hyper.length + copy->u.hyper.stride;
           copy->u.hyper.pending_size = copy->u.hyper.size_2d > copy->u.hyper.length ? copy->u.hyper.length : copy->u.hyper.size_2d;
           if (!async) event = __rt_wait_event_prepare_blocking();
-          goto start;
+          continue;
         }
       }
-
-      // Special case where it is asynchronous
-      if (async)
-      {
-        // First enqueue the user event.
-        // We need to restore it as we reused the user event for the internal copies.
-        __rt_event_restore(event);
-        __rt_event_enqueue(event);
-
-        // In case there are other misaligned copies waiting for the temporary
-        // buffer, wakeup one of them.
-        if (__rt_hyper_first_waiting_misaligned)
-        {
-          event = __rt_hyper_first_waiting_misaligned;
-          if (event)
-          {
-            __rt_hyper_first_waiting_misaligned = event->implem.next;
-            __rt_event_enqueue(event);
-          }
-        }
-       else
-        {
-          __rt_hyper_pending_misaligned = 0;
-        }
-      }
+      #endif
     }
+    break;
   }
-
-end:
-  rt_irq_restore(irq);
 }
 
 
 
-static void __attribute__((noinline)) __rt_hyper_copy_misaligned(int channel,
-  void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr, int async)
+static void __attribute__((noinline)) __mc_hyper_copy_misaligned(struct fc_task *task)
 {
-  // Misaligned copies are always handled as asynchronous copies to simplify.
-  // Pack all information into the copy structure so that we can follow
-  // the progress of the transfer
-  rt_periph_copy_t *copy = &event->implem.copy;
-  copy->u.hyper.pending_addr = (int)addr;
-  copy->u.hyper.pending_size = size;
-  copy->u.hyper.pending_hyper_addr = (int)hyper_addr;
-  copy->u.hyper.mbr = mbr;
-  copy->u.hyper.channel = channel;
-  copy->u.hyper.async = async;
-  copy->u.hyper.memcpy = 0;
-
-  if (async)
-  {
-    // If the call is asynchronous we will need to use the event to handle
-    // the various steps of the transfer and so we need to save the user information
-    __rt_event_save(event);
-
-    // Be careful that only one misaligned copy can be done at the same time
-    // as they share the temporary buffer.
-    // If another is pushed, just enqueue it to a SW queue.
-    if (!__rt_hyper_pending_misaligned)
-    {
-      __rt_hyper_pending_misaligned = 1;
-      if (channel & 1)
-        __rt_hyper_resume_misaligned_write((void *)event);
-      else
-        __rt_hyper_resume_misaligned_read((void *)event);
-    }
-    else
-    {
-      event->implem.next = __rt_hyper_first_waiting_misaligned;
-      __rt_hyper_first_waiting_misaligned = event;
-      if (channel & 1)
-        __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_write, event);
-      else
-        __rt_init_event(event, rt_event_internal_sched(), __rt_hyper_resume_misaligned_read, event);
-      __rt_event_set_pending(event);
-    }
-  }
+  if (__rt_hyper_pending_emu_channel & 1)
+    __mc_hyper_resume_misaligned_write(task);
   else
-  {
-    // In case it is synchronous, just loop until the transfer is finished
-    while (1)
-    {
-      if (channel & 1)
-        __rt_hyper_resume_misaligned_write((void *)event);
-      else
-        __rt_hyper_resume_misaligned_read((void *)event);
-      if (copy->u.hyper.pending_size <= 0) break;
-
-      event = __rt_wait_event_prepare_blocking();
-    }
-  }
-
+    __mc_hyper_resume_misaligned_read(task);
 }
 
 
 
-void __rt_hyper_copy(int channel,
-  void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr)
+void __mc_hyper_copy_exec(int channel,
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, rt_event_t *event, int mbr)
 {
-  int irq = rt_irq_disable();
-
-  rt_event_t *call_event = __rt_wait_event_prepare(event);
-
   // Check if we are in the fast case where everything is correctly aligned.
   if (likely((((int)addr & 0x3) == 0) && (((int)hyper_addr) & 0x1) == 0 && (((int)size & 0x3) == 0)))
   {
-    __rt_hyper_copy_aligned(channel, addr, hyper_addr, size, call_event, mbr);
-    __rt_wait_event_check(event, call_event);
+    __mc_hyper_copy_aligned(channel, addr, hyper_addr, size, event, mbr);
   }
   else
   {
     // Otherwise go through the slow misaligned case.
-    rt_periph_copy_t *copy = &call_event->implem.copy;
-    copy->u.hyper.size_2d = 0;
-    __rt_hyper_copy_misaligned(channel, addr, hyper_addr, size, call_event, mbr, event != NULL);
+    __rt_hyper_pending_emu_channel = channel;
+    __rt_hyper_pending_emu_hyper_addr = (unsigned int)hyper_addr | mbr;
+    __rt_hyper_pending_emu_addr = (unsigned int)addr;
+    __rt_hyper_pending_emu_size = size;
+    __rt_hyper_pending_emu_do_memcpy = 0;
+
+    if (__rt_hyper_pending_tasks != NULL)
+    __rt_hyper_pending_tasks_last->implem.next = event;
+    else
+      __rt_hyper_pending_tasks = event;
+    __rt_hyper_pending_tasks_last = event;
+    event->implem.next = NULL;
+
+    __mc_hyper_copy_misaligned(event);
+  }
+}
+
+
+
+void __mc_hyper_copy(int channel,
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, rt_event_t *event, int mbr)
+{
+  int irq = rt_irq_disable();
+
+    //printf("Hyper copy (channel: %d, addr: %lx, hyper_addr: 0x%lx)\n", channel, addr, hyper_addr);
+
+  if (__rt_hyper_end_task != NULL || __rt_hyper_pending_tasks != NULL)
+  {
+    if (__rt_hyper_pending_tasks != NULL)
+    __rt_hyper_pending_tasks_last->implem.next = event;
+    else
+      __rt_hyper_pending_tasks = event;
+    __rt_hyper_pending_tasks_last = event;
+    event->implem.next = NULL;
+
+    event->implem.data[0] = channel | (mbr << 16);
+    event->implem.data[1] = (unsigned int)addr;
+    event->implem.data[2] = (unsigned int)hyper_addr;
+    event->implem.data[3] = size;
+  }
+  else
+  {
+    __mc_hyper_copy_exec(channel, addr, hyper_addr, size, event, mbr);
   }
 
   rt_irq_restore(irq);
 }
 
+void __rt_hyper_resume_copy(struct fc_task *task)
+{
+  if (__rt_hyper_pending_emu_channel != -1)
+  {
+    // The pending copy is an emulated misaligned request, just continue it
+    __mc_hyper_copy_misaligned(task);
+  }
+  else
+  {
+    unsigned int channel = task->implem.data[0] & 0xff;
+    unsigned int mbr = (task->implem.data[0] >> 16) << 16;
+    uint32_t addr = task->implem.data[1];
+    uint32_t hyper_addr = task->implem.data[2];
+    uint32_t size = task->implem.data[3];
 
-void __rt_hyper_copy_2d(int channel,
-  void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event, int mbr)
+    __mc_hyper_copy_exec(channel, addr, hyper_addr, size, task, mbr);
+
+    // We must keep the pending request in the list only if it is an emulated misaligned request,
+    // otherwise removed it
+    if (__rt_hyper_pending_emu_channel == -1)
+      __rt_hyper_pending_tasks = __rt_hyper_pending_tasks->implem.next;
+
+  }
+}
+
+
+void __mc_hyper_copy_2d(int channel,
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, int stride, int length, rt_event_t *event, int mbr)
 {
   int irq = rt_irq_disable();
 
-  rt_event_t *call_event = __rt_wait_event_prepare(event);
+  if (__rt_hyper_pending_tasks != NULL)
+  __rt_hyper_pending_tasks_last->implem.next = event;
+  else
+    __rt_hyper_pending_tasks = event;
+  __rt_hyper_pending_tasks_last = event;
+  event->implem.next = NULL;
 
-  rt_periph_copy_t *copy = &call_event->implem.copy;
-  copy->u.hyper.stride = stride;
-  copy->u.hyper.length = length;
-  copy->u.hyper.size_2d = size;
+  event->implem.data[0] = channel | (mbr << 16);
+  event->implem.data[1] = (unsigned int)addr;
+  event->implem.data[2] = (unsigned int)hyper_addr;
+  event->implem.data[3] = size;
+  event->implem.data[4] = stride;
+  event->implem.data[5] = length;
 
-  __rt_hyper_copy_misaligned(channel, addr, hyper_addr, length, call_event, mbr, event != NULL);
+  __mc_hyper_copy_misaligned(event);
 
   rt_irq_restore(irq);
 }
 
 
 
-void rt_hyperram_read(rt_hyperram_t *dev,
-  void *addr, void *hyper_addr, int size, rt_event_t *event);
-
-RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_hyper_init()
+RT_FC_BOOT_CODE void __attribute__((constructor)) __mc_hyper_init()
 {
-  __rt_hyper_temp_buffer = NULL;
-  __rt_hyper_pending_misaligned = 0;
-  __rt_hyper_first_waiting_misaligned = NULL;
+  __mc_hyper_temp_buffer = NULL;
+}
+
+
+
+uint32_t mc_hyperram_alloc(struct pmsis_device *device, uint32_t size)
+{
+  mc_hyperram_t *hyper = (mc_hyperram_t *)device->data;
+  return (uint32_t)rt_extern_alloc(hyper->alloc, size);
+}
+
+int mc_hyperram_free(struct pmsis_device *device, uint32_t chunk, uint32_t size)
+{
+  mc_hyperram_t *hyper = (mc_hyperram_t *)device->data;
+  return rt_extern_free(hyper->alloc, (void *)chunk, size);
+}
+
+void mc_hyperram_read_async(struct pmsis_device *device,
+  void *addr, uint32_t hyper_addr, uint32_t size, struct fc_task *task)
+{
+  rt_hyperram_t *hyper = (rt_hyperram_t *)device->data;
+  task->done = 0;
+  __mc_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + 0, (uint32_t)addr, hyper_addr, size, task, REG_MBR0);
+}
+
+void mc_hyperram_read(struct pmsis_device *device,
+  void *addr, uint32_t hyper_addr, uint32_t size)
+{
+  struct fc_task task;
+  mc_hyperram_read_async(device, addr, hyper_addr, size, mc_task(&task));
+  mc_task_wait(&task);
+}
+
+void mc_hyperram_write_async(struct pmsis_device *device,
+  void *addr, uint32_t hyper_addr, uint32_t size, struct fc_task *task)
+{
+  rt_hyperram_t *hyper = (rt_hyperram_t *)device->data;
+  task->done = 0;
+  __mc_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + 1, (uint32_t)addr, hyper_addr, size, task, REG_MBR0);
+}
+
+void mc_hyperram_write(struct pmsis_device *device,
+  void *addr, uint32_t hyper_addr, uint32_t size)
+{
+  struct fc_task task;
+  mc_hyperram_write_async(device, addr, hyper_addr, size, mc_task(&task));
+  mc_task_wait(&task);
+}
+
+static RT_BOOT_CODE void __attribute__((constructor)) __rt_hyper_init()
+{
+  __rt_hyper_end_task = NULL;
+  __rt_hyper_pending_tasks = NULL;
+  __rt_hyper_pending_emu_channel = -1;
 }

@@ -35,6 +35,7 @@
 #include "rt/rt_periph.h"
 #include "rt/rt_cluster.h"
 #include "rt/rt_hyper.h"
+#include "rt/rt_hyper_pmsis.h"
 #include "rt/rt_alloc.h"
 #include "rt/rt_debug.h"
 #include "rt/rt_config.h"

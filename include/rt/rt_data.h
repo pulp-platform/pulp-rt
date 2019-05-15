@@ -275,7 +275,7 @@ struct fc_task_implem
   union {
     rt_periph_copy_t copy;
     struct {
-      unsigned int data[4];
+      unsigned int data[6];
     };
     struct {
       unsigned int time;

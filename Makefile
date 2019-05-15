@@ -71,6 +71,7 @@ endif
 
 include kernel/kernel.mk
 include drivers/drivers.mk
+include drivers_deprecated/drivers.mk
 include libs/libs.mk
 
 
