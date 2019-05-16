@@ -18,6 +18,11 @@
 #ifndef __RT_IMPLEM_IMPLEM_H__
 #define __RT_IMPLEM_IMPLEM_H__
 
+/// @cond IMPLEM
+
 #include "rt/implem/utils.h"
+#include "rt/implem/hyperram.h"
+
+/// @endcond
 
 #endif

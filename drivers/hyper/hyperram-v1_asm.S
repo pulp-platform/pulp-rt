@@ -78,9 +78,18 @@ __rt_hyper_repeat_copy_not_last:
 __rt_hyper_handle_copy_end:
   lw        x11, %tiny(__rt_hyper_end_task)(x0)
   sw        x0, %tiny(__rt_hyper_end_task)(x0)
-  beqz      x11, __rt_hyper_handle_pending_tasks
+  beqz      x11, __rt_hyper_handle_emu_task
   jal       x9, __rt_event_enqueue
 	
+__rt_hyper_handle_emu_task:
+  lw        x10, %tiny(__rt_hyper_pending_emu_task)(x0)
+  beqz      x10, __rt_hyper_handle_pending_tasks
+
+  la      x12, __rt_hyper_resume_emu_task
+  la        x9, udma_event_handler_end
+  j         __rt_call_external_c_function
+
+
 __rt_hyper_handle_pending_tasks:
   lw        x10, %tiny(__rt_hyper_pending_tasks)(x0)
   beqz      x10, udma_event_handler_end

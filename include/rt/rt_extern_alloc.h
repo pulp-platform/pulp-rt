@@ -40,6 +40,8 @@
 
 int rt_extern_alloc_init(rt_extern_alloc_t *a, void *_chunk, int size);
 
+void rt_extern_alloc_deinit(rt_extern_alloc_t *a);
+
 void *rt_extern_alloc(rt_extern_alloc_t *a, int size);
 
 int rt_extern_free(rt_extern_alloc_t *a, void *_chunk, int size);
