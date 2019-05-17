@@ -264,3 +264,15 @@ void __rt_event_sched_init()
   // one event.
   rt_event_alloc(&__rt_sched, 1);
 }
+
+
+void mc_wait_on_task(struct pi_fc_task *task)
+{
+  while(!task->done)
+    rt_event_yield(NULL);
+}
+
+void pi_yield()
+{
+  rt_event_yield(NULL);
+}

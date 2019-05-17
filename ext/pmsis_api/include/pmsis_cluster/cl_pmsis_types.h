@@ -52,7 +52,7 @@ struct cluster_task {
     // Number of cores to be activated
     int nb_cores;
     // callback called at task completion
-    fc_task_t *completion_callback;
+    pi_fc_task_t *completion_callback;
     int stack_allocated;
     // to implement a fifo
     struct cluster_task *next;
@@ -69,11 +69,11 @@ struct cl_team_task {
 
 // object for device specific api
 typedef struct cluster_driver_api {
-    int (*send_task)(struct pmsis_device *device, struct cluster_task *cl_task);
-    int (*send_task_async)(struct pmsis_device *device, struct cluster_task *cl_task
-            , struct fc_task *async_task);
-    void (*wait_free)(struct pmsis_device *device);
-    void (*wait_free_async)(struct pmsis_device *device, struct fc_task *async_task);
+    int (*send_task)(struct pi_device *device, struct cluster_task *cl_task);
+    int (*send_task_async)(struct pi_device *device, struct cluster_task *cl_task
+            , struct pi_fc_task *async_task);
+    void (*wait_free)(struct pi_device *device);
+    void (*wait_free_async)(struct pi_device *device, struct pi_fc_task *async_task);
 } cluster_driver_api_t;
 
 typedef struct cluster_driver_conf {

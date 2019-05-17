@@ -29,13 +29,13 @@ int pmsis_event_free(struct pmsis_event_kernel_wrap *wrap, int nb_events);
  * Affect task to an allocated event
  * May be called from either cluster or fc
  **/
-int pmsis_event_push(struct pmsis_event_kernel_wrap *event_kernel, fc_task_t *task);
+int pmsis_event_push(struct pmsis_event_kernel_wrap *event_kernel, pi_fc_task_t *task);
 
 /**
- * Wait on the execution of the task associated to fc_task_t
- * Task must already have been pushed
+ * Wait on the execution of the task associated to pi_fc_task_t
+ * Task must already have been initialized
  **/
-void pmsis_event_wait(fc_task_t *task);
+void mc_wait_on_task(pi_fc_task_t *task);
 
 void pmsis_event_kernel_mutex_release(struct pmsis_event_kernel_wrap *wrap);
 

@@ -40,9 +40,9 @@
 /** \brief Create an opaque task structure for FC
  * create a task ready to launch on the fc (os dependant implementation)
  *
- * \param task fc_task_t generic form argument (optional)
+ * \param task pi_fc_task_t generic form argument (optional)
  */
-void *cl_create_fc_task(fc_task_t *task);
+void *cl_create_pi_fc_task(pi_fc_task_t *task);
 
 /** \brief Create an opaque synchronisation object for cl to wait on
  *
@@ -57,7 +57,7 @@ void cl_create_fc_cl_sync_object(void *sync_object);
  * (callback, driver access...)
  * \param        opaque argument for the fc
  */
-void cl_send_task_to_fc(fc_task_t *task);
+void cl_send_task_to_fc(pi_fc_task_t *task);
 
 /** \brief send an opaque task structure for FC with async call
  *
@@ -91,7 +91,7 @@ void cl_fc_synchronized_pointer_assign(void *pointer, void *value);
  * \brief obtain device object pointer from FC to execute deported read/write
  * \param device device object pointer pointer
  */
-int cl_delegate_device_get(struct pmsis_device **device);
+int cl_delegate_device_get(struct pi_device **device);
 
 /**
  * \brief  deported read to a device (read itself is executed by FC)
@@ -100,7 +100,7 @@ int cl_delegate_device_get(struct pmsis_device **device);
  * \param loc_address local l1 tcdm address
  * \param device_address address in device if significant, NULL otherwise
  */
-int cl_delegate_device_read(struct pmsis_device *device, uint32_t size, void *loc_address, uint32_t device_address);
+int cl_delegate_device_read(struct pi_device *device, uint32_t size, void *loc_address, uint32_t device_address);
 
 /**
  * \brief  deported write to a device (write itself is executed by FC)
@@ -109,7 +109,7 @@ int cl_delegate_device_read(struct pmsis_device *device, uint32_t size, void *lo
  * \param loc_address local l1 tcdm address
  * \param device_address address in device if significant, NULL otherwise
  */
-int cl_delegate_device_write(struct pmsis_device *device, uint32_t size, void *loc_address, uint32_t device_address);
+int cl_delegate_device_write(struct pi_device *device, uint32_t size, void *loc_address, uint32_t device_address);
 
 /**
  * \brief deported malloc
@@ -143,7 +143,7 @@ void cl_delegate_free(malloc_t *allocator, void *ptr, uint32_t size);
  * \param device_address address in device if significant, NULL otherwise
  * \param req opaque sync object to wait on for request completion
  */
-int cl_delegate_device_read_async(struct pmsis_device *device, uint32_t size, void *loc_address, uint32_t device_address, void *req);
+int cl_delegate_device_read_async(struct pi_device *device, uint32_t size, void *loc_address, uint32_t device_address, void *req);
 
 /**
  * \brief  deported write to a device (write itself is executed by FC)
@@ -153,7 +153,7 @@ int cl_delegate_device_read_async(struct pmsis_device *device, uint32_t size, vo
  * \param device_address address in device if significant, NULL otherwise
  * \param req opaque sync object to wait on for request completion
  */
-int cl_delegate_device_write_async(struct pmsis_device *device, uint32_t size, void *loc_address, uint32_t device_address, void *req);
+int cl_delegate_device_write_async(struct pi_device *device, uint32_t size, void *loc_address, uint32_t device_address, void *req);
 
 /**
  * \brief deported malloc

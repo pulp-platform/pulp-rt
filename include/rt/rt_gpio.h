@@ -18,8 +18,6 @@
 #ifndef __RT__RT_GPIO_H__
 #define __RT__RT_GPIO_H__
 
-#include "rt/rt_api.h"
-
 
 
 /**

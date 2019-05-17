@@ -37,6 +37,8 @@
 
 #define INLINE static inline
 #define PMSIS_USE_EXTERNAL_TYPES
+#define PMSIS_NO_INLINE_INCLUDE
+
 
 
 #include "archi/pulp.h"
@@ -46,7 +48,7 @@
 #define   likely(x) __builtin_expect(x, 1)
 #define unlikely(x) __builtin_expect(x, 0)
 
-typedef struct fc_task rt_event_t;
+typedef struct pi_fc_task rt_event_t;
 
 #endif
 
@@ -114,6 +116,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #endif
 
 #define RT_L1_DATA RT_L1_GLOBAL_DATA
+#define L1_DATA RT_L1_DATA
 
 #if (defined(ARCHI_HAS_FC_TCDM) || defined(ARCHI_HAS_L2_ALIAS)) && !defined(__LLVM__)
 #define RT_FC_TINY_DATA __attribute__((section(".data_tiny_fc"))) __attribute__ ((tiny))
@@ -151,7 +154,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 struct rt_thread_s;
 struct rt_event_sched_s;
-struct fc_task;
+struct pi_fc_task;
 struct rt_thread_s;
 
 struct cluster_task_implem
@@ -198,9 +201,9 @@ typedef struct rt_thread_queue_s {
 struct rt_event_sched_s;
 
 typedef struct rt_event_sched_s {
-  struct fc_task *first;
-  struct fc_task *last;
-  struct fc_task *first_free;
+  struct pi_fc_task *first;
+  struct pi_fc_task *last;
+  struct pi_fc_task *first_free;
   rt_error_callback_t error_cb;
   void *error_arg;
 } rt_event_sched_t;
@@ -220,7 +223,7 @@ typedef struct rt_periph_copy_s {
   unsigned int end_callback;
 #endif
   struct rt_periph_copy_s *next;
-  struct fc_task *event;
+  struct pi_fc_task *event;
   unsigned int repeat;
   unsigned int repeat_size;
   union {
@@ -262,9 +265,9 @@ typedef struct rt_periph_copy_s {
 } rt_periph_copy_t;
 
 
-struct fc_task_implem
+struct pi_fc_task_implem
 {
-  struct fc_task *next;
+  struct pi_fc_task *next;
   struct rt_thread_s *thread;
   int pending;
   int keep;
@@ -285,12 +288,12 @@ struct fc_task_implem
 };
 
 #define CLUSTER_TASK_IMPLEM struct cluster_task_implem implem
-#define FC_TASK_IMPLEM struct fc_task_implem implem
+#define PI_FC_TASK_IMPLEM struct pi_fc_task_implem implem
 
 #include "pmsis_types.h"
 #include "pmsis_cluster/cl_pmsis_types.h"
 
-typedef struct fc_task rt_event_t;
+typedef struct pi_fc_task rt_event_t;
 
 
 typedef struct rt_thread_s {
@@ -553,7 +556,7 @@ typedef struct rt_io_wait_req_s {
   char cid;
 } rt_io_wait_req_t ;
 
-typedef struct rt_alloc_req_s {
+typedef struct pi_cl_alloc_req_s {
   void *result;
   int flags;
   int size;
@@ -563,7 +566,7 @@ typedef struct rt_alloc_req_s {
 } rt_alloc_req_t ;
 
 
-typedef struct rt_free_req_s {
+typedef struct pi_cl_free_req_s {
   void *result;
   int flags;
   int size;

@@ -1,7 +1,6 @@
 #ifndef __PMSIS_L1_MALLOC_H__
 #define __PMSIS_L1_MALLOC_H__
 
-#include "pmsis_hal.h"
 #include "malloc_internal.h"
 
 void *pmsis_l1_malloc(uint32_t size);

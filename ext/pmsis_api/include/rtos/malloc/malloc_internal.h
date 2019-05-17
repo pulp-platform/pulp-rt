@@ -31,7 +31,7 @@
 #ifndef _PMSIS_MALLOC_H_
 #define _PMSIS_MALLOC_H_
 
-#include "pmsis_hal.h"
+#include <stdint.h>
 
 /*!
  * @addtogroup malloc

@@ -6,12 +6,53 @@
 
 #include "pmsis_types.h"
 #include "pmsis_backend_native_task_api.h"
-#include "pmsis_hal.h"
 
 // define task priorities
 #define PMSIS_TASK_MAX_PRIORITY 2
 #define PMSIS_TASK_OS_PRIORITY 1
 #define PMSIS_TASK_USER_PRIORITY 0
+
+static inline int disable_irq(void);
+
+static inline void restore_irq(int irq_enable);
+
+static inline void pmsis_mutex_take(pmsis_mutex_t *mutex);
+
+static inline void pmsis_mutex_release(pmsis_mutex_t *mutex);
+
+static inline int pmsis_mutex_init(pmsis_mutex_t *mutex);
+
+static inline int pmsis_mutex_deinit(pmsis_mutex_t *mutex);
+
+static inline void pmsis_spinlock_init(pmsis_spinlock_t *spinlock);
+
+static inline void pmsis_spinlock_take(pmsis_spinlock_t *spinlock);
+
+static inline void pmsis_spinlock_release(pmsis_spinlock_t *spinlock);
+
+static inline void *pmsis_task_create(void (*entry)(void*),
+        void *arg,
+        char *name,
+        int priority);
+
+static inline void pmsis_task_suspend(__os_native_task_t *task);
+
+pi_fc_task_t *mc_task_callback(pi_fc_task_t *callback_task, void (*callback)(void*), void *arg);
+
+static inline struct pi_fc_task *mc_task(struct pi_fc_task *task)
+{
+  task->id = FC_TASK_NONE_ID;
+  task->arg[0] = (uint32_t)0;
+  return task;
+}
+
+static inline void pmsis_exit(int err);
+
+void pi_yield();
+
+#ifndef PMSIS_NO_INLINE_INCLUDE
+
+#include "pmsis_hal.h"
 
 /*
  * Disable IRQs while saving previous irq state
@@ -138,4 +179,11 @@ static inline void pmsis_task_suspend(__os_native_task_t *task)
     __os_native_task_suspend(task);
 }
 
+static inline void pmsis_exit(int err)
+{
+    exit(err);
+}
+
 #endif  /* __PMSIS_TASK_H__ */
+
+#endif

@@ -33,8 +33,6 @@
 #ifndef __CAMERA_V2_H__
 #define __CAMERA_V2_H__
 
-#include "rt/rt_api.h"
-
 /**
 * @ingroup groupDrivers
 */

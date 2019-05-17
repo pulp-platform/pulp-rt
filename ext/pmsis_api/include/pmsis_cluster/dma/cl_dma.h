@@ -17,7 +17,7 @@
 #ifndef __CL_DMA_H__
 #define __CL_DMA_H__
 
-#include "cl_pmsis_types.h"
+#include "pmsis_cluster/cl_pmsis_types.h"
 /**
  * @ingroup groupCluster
  */
@@ -110,6 +110,41 @@ typedef struct cl_dma_copy_2d_s
  * \param   copy    The structure for the copy. This can be used with cl_dma_wait
  * to wait for the completion of this transfer.
  */
+static inline void cl_dma_memcpy(cl_dma_copy_t *copy);
+
+/** \brief 2D DMA memory transfer.
+ *
+ * This enqueues a 2D DMA memory transfer (rectangle area) with simple completion
+ * based on transfer identifier.
+ *
+ * This can only be called on a cluster.
+ * \param   copy    The structure for the copy. This can be used with
+ * cl_dma_wait to wait for the completion of this transfer.
+ */
+static inline void cl_dma_memcpy_2d(cl_dma_copy_2d_t *copy);
+
+/** \brief Simple DMA transfer completion flush.
+ *
+ * This blocks the core until the DMA does not have any pending transfers.
+ *
+ * This can only be called on a cluster.
+ */
+static inline void cl_dma_flush();
+
+/** \brief Simple DMA transfer completion wait.
+ *
+ * This blocks the core until the specified transfer is finished. The transfer
+ * must be described trough the identifier returned by the copy function.
+ *
+ * This can only be called on a cluster.
+ *
+ * \param   copy  The copy structure (1d or 2d).
+ */
+static inline void cl_dma_wait(void *copy);
+
+
+#ifndef PMSIS_NO_INLINE_INCLUDE
+
 static inline void cl_dma_memcpy(cl_dma_copy_t *copy)
 {
     if(!copy->merge)
@@ -123,15 +158,6 @@ static inline void cl_dma_memcpy(cl_dma_copy_t *copy)
     hal_write32(&DMAMCHAN->CMD,copy->ext);
 }
 
-/** \brief 2D DMA memory transfer.
- *
- * This enqueues a 2D DMA memory transfer (rectangle area) with simple completion
- * based on transfer identifier.
- *
- * This can only be called on a cluster.
- * \param   copy    The structure for the copy. This can be used with
- * cl_dma_wait to wait for the completion of this transfer.
- */
 static inline void cl_dma_memcpy_2d(cl_dma_copy_2d_t *copy)
 {
     cl_dma_copy_t *_copy = (cl_dma_copy_t *) copy;
@@ -150,29 +176,18 @@ static inline void cl_dma_memcpy_2d(cl_dma_copy_2d_t *copy)
             | (copy->stride << DMAMCHAN_CMD_2D_STRIDE_Pos));
 }
 
-/** \brief Simple DMA transfer completion flush.
- *
- * This blocks the core until the DMA does not have any pending transfers.
- *
- * This can only be called on a cluster.
- */
 static inline void cl_dma_flush()
 {
     while(hal_read32(&DMAMCHAN->STATUS));
 }
 
-/** \brief Simple DMA transfer completion wait.
- *
- * This blocks the core until the specified transfer is finished. The transfer
- * must be described trough the identifier returned by the copy function.
- *
- * This can only be called on a cluster.
- *
- * \param   copy  The copy structure (1d or 2d).
- */
 static inline void cl_dma_wait(void *copy)
 {
     cl_dma_copy_t *_copy = (cl_dma_copy_t *) copy;
     while((hal_read32(&DMAMCHAN->STATUS) >> _copy->id ) & 0x1 );
 }
+
+#endif
+
+
 #endif

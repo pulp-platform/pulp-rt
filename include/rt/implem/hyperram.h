@@ -17,23 +17,23 @@
 #ifndef __RT_IMPLEM_HYPERRAM_H__
 #define __RT_IMPLEM_HYPERRAM_H__
 
-struct cl_hyperram_req_s {
-  struct pmsis_device *device;
+struct pi_cl_hyperram_req_s {
+  struct pi_device *device;
   void *addr;
   uint32_t hyper_addr;
   uint32_t size;
   int32_t stride;
   uint32_t length;
   rt_event_t event;
-  struct cl_hyperram_req_s *next;
+  struct pi_cl_hyperram_req_s *next;
   int done;
   unsigned char cid;
   unsigned char is_write;
   unsigned char is_2d;
 };
 
-struct cl_hyperram_alloc_req_s {
-  struct pmsis_device *device;
+struct pi_cl_hyperram_alloc_req_s {
+  struct pi_device *device;
   uint32_t result;
   uint32_t  size;
   rt_event_t event;
@@ -41,8 +41,8 @@ struct cl_hyperram_alloc_req_s {
   char cid;
 };
 
-struct cl_hyperram_free_req_s {
-  struct pmsis_device *device;
+struct pi_cl_hyperram_free_req_s {
+  struct pi_device *device;
   uint32_t result;
   uint32_t size;
   uint32_t chunk;
@@ -54,25 +54,25 @@ struct cl_hyperram_free_req_s {
 #if defined(ARCHI_HAS_CLUSTER)
 
 
-extern void __cl_hyperram_cluster_copy(struct pmsis_device *device,
-uint32_t hyper_addr, void *addr, uint32_t size, cl_hyperram_req_t *req, int ext2loc);
+extern void __cl_hyperram_cluster_copy(struct pi_device *device,
+uint32_t hyper_addr, void *addr, uint32_t size, pi_cl_hyperram_req_t *req, int ext2loc);
 
 
 
-extern void __cl_hyperram_cluster_copy_2d(struct pmsis_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, cl_hyperram_req_t *req, int ext2loc);
+extern void __cl_hyperram_cluster_copy_2d(struct pi_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, pi_cl_hyperram_req_t *req, int ext2loc);
 
 
 
-static inline void cl_hyperram_read(struct pmsis_device *device,
-  void *addr, uint32_t hyper_addr, uint32_t size, cl_hyperram_req_t *req)
+static inline void pi_cl_hyperram_read(struct pi_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, pi_cl_hyperram_req_t *req)
 {
   __cl_hyperram_cluster_copy(device, hyper_addr, addr, size, req, 1);
 }
 
 
 
-static inline __attribute__((always_inline)) void cl_hyperram_read_wait(cl_hyperram_req_t *req)
+static inline __attribute__((always_inline)) void pi_cl_hyperram_read_wait(pi_cl_hyperram_req_t *req)
 {
   while((*(volatile int *)&req->done) == 0)
   {
@@ -82,31 +82,31 @@ static inline __attribute__((always_inline)) void cl_hyperram_read_wait(cl_hyper
 
 
 
-static inline void cl_hyperram_write(struct pmsis_device *device,
-  void *addr, uint32_t hyper_addr, uint32_t size, cl_hyperram_req_t *req)
+static inline void pi_cl_hyperram_write(struct pi_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, pi_cl_hyperram_req_t *req)
 {
   __cl_hyperram_cluster_copy(device, hyper_addr, addr, size, req, 0);
 }
 
 
 
-static inline void cl_hyperram_read_2d(struct pmsis_device *device,
-  void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length, cl_hyperram_req_t *req)
+static inline void pi_cl_hyperram_read_2d(struct pi_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, pi_cl_hyperram_req_t *req)
 {
   __cl_hyperram_cluster_copy_2d(device, hyper_addr, addr, size, stride, length, req, 1);
 }
 
 
 
-static inline void cl_hyperram_write_2d(struct pmsis_device *device,
-  void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length, cl_hyperram_req_t *req)
+static inline void pi_cl_hyperram_write_2d(struct pi_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, pi_cl_hyperram_req_t *req)
 {
   __cl_hyperram_cluster_copy_2d(device, hyper_addr, addr, size, stride, length, req, 0);
 }
 
 
 
-static inline __attribute__((always_inline)) void cl_hyperram_write_wait(cl_hyperram_req_t *req)
+static inline __attribute__((always_inline)) void pi_cl_hyperram_write_wait(pi_cl_hyperram_req_t *req)
 {
   while((*(volatile int *)&req->done) == 0)
   {
@@ -116,7 +116,7 @@ static inline __attribute__((always_inline)) void cl_hyperram_write_wait(cl_hype
 
 
 
-static inline uint32_t cl_hyperram_alloc_wait(cl_hyperram_alloc_req_t *req)
+static inline uint32_t pi_cl_hyperram_alloc_wait(pi_cl_hyperram_alloc_req_t *req)
 {
   while((*(volatile char *)&req->done) == 0)
   {
@@ -127,7 +127,7 @@ static inline uint32_t cl_hyperram_alloc_wait(cl_hyperram_alloc_req_t *req)
 
 
 
-static inline void cl_hyperram_free_wait(cl_hyperram_free_req_t *req)
+static inline void pi_cl_hyperram_free_wait(pi_cl_hyperram_free_req_t *req)
 {
   while((*(volatile char *)&req->done) == 0)
   {
@@ -135,7 +135,17 @@ static inline void cl_hyperram_free_wait(cl_hyperram_free_req_t *req)
   }
 }
 
+static inline void pi_cl_hyperram_copy(struct pi_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, int ext2loc, pi_cl_hyperram_req_t *req)
+{
+  __cl_hyperram_cluster_copy(device, hyper_addr, addr, size, req, ext2loc);
+}
 
+static inline void pi_cl_hyperram_copy_2d(struct pi_device *device,
+  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, int ext2loc, pi_cl_hyperram_req_t *req)
+{
+  __cl_hyperram_cluster_copy_2d(device, hyper_addr, addr, size, stride, length, req, ext2loc);
+}
 
 #endif
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __MC_MC_HYPERRAM_H__
-#define __MC_MC_HYPERRAM_H__
+#ifndef __PMSIS_PMSIS_HYPERRAM_H__
+#define __PMSIS_PMSIS_HYPERRAM_H__
 
 
 
@@ -44,12 +44,12 @@
 
 /**@{*/
 
-/** \struct mc_hyperram_conf_t
+/** \struct pmsis_hyperram_conf_t
  * \brief HyperRAM configuration structure.
  *
  * This structure is used to pass the desired HyperRAM configuration to the runtime when opening the device.
  */
-struct mc_hyperram_conf 
+struct pmsis_hyperram_conf 
 {
   signed char id;         /*!< If it is different from -1, this specifies on which hyperbus interface the device is connected. */
   signed int ram_size;   /*!< Size of the ram. */
@@ -63,11 +63,33 @@ struct mc_hyperram_conf
  * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
  * or through a memory allocator.
  */
-typedef struct cl_hyperram_req_s cl_hyperram_req_t;
+typedef struct pmsis_cl_hyperram_req_s pmsis_cl_hyperram_req_t;
 
-typedef struct cl_hyperram_alloc_req_s cl_hyperram_alloc_req_t;
 
-typedef struct cl_hyperram_free_req_s cl_hyperram_free_req_t;
+
+/** \brief HyperRAM memory allocation request structure.
+ *
+ * This structure is used by the runtime to manage a cluster remote memory allocation
+ * from the HyperRAM.
+ * It must be instantiated once for each on-going allocation and must be kept alive
+ * until the allocation is finished.
+ * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
+ * or through a memory allocator.
+ */
+typedef struct pmsis_cl_hyperram_alloc_req_s pmsis_cl_hyperram_alloc_req_t;
+
+
+
+/** \brief HyperRAM memory free request structure.
+ *
+ * This structure is used by the runtime to manage a cluster remote memory free
+ * from the HyperRAM.
+ * It must be instantiated once for each on-going free and must be kept alive
+ * until the free is finished.
+ * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
+ * or through a memory allocator.
+ */
+typedef struct pmsis_cl_hyperram_free_req_s pmsis_cl_hyperram_free_req_t;
 
 
 
@@ -78,7 +100,7 @@ typedef struct cl_hyperram_free_req_s cl_hyperram_free_req_t;
  *
  * \param conf A pointer to the HyperRAM configuration.
  */
-void mc_hyperram_conf_init(struct mc_hyperram_conf *conf);
+void pmsis_hyperram_conf_init(struct pmsis_hyperram_conf *conf);
 
 
 
@@ -89,12 +111,12 @@ void mc_hyperram_conf_init(struct mc_hyperram_conf *conf);
  * This operation is asynchronous and its termination can be managed through an event.
  * Can only be called from fabric-controller side.
  *
- * \param dev_name  The device name. This name should correspond to the one used to configure the devices managed by the runtime.
+ * \param device    The device name. This name should correspond to the one used to configure the devices managed by the runtime.
  * \param conf      A pointer to the HyperRAM configuration. Can be NULL to take default configuration.
  * \param event     The event used for managing termination.
- * \return          NULL if the device is not found, or a handle identifying the device and which can be used with other functions
+ * \return          0 if the operation is successfull, -1 if there was an error
  */
-int mc_hyperram_open_with_conf(struct pmsis_device *device, void *conf);
+int pmsis_hyperram_open(struct pmsis_device *device);
 
 
 
@@ -109,7 +131,7 @@ int mc_hyperram_open_with_conf(struct pmsis_device *device, void *conf);
  * \param handle    The handler of the device which was returned when the device was opened.
  * \param event     The event used for managing termination.
  */
-void mc_hyperram_close(struct pmsis_device *device);
+void pmsis_hyperram_close(struct pmsis_device *device);
 
 
 
@@ -125,12 +147,12 @@ void mc_hyperram_close(struct pmsis_device *device);
  * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the HyperRAM.
  * \param size        The size in bytes of the copy
- * \param event       The event used to notify the end of transfer. See the documentation of mc_event_t for more details.
+ * \param event       The event used to notify the end of transfer. See the documentation of pmsis_event_t for more details.
  */
-void mc_hyperram_read(struct pmsis_device *device,
+void pmsis_hyperram_read(struct pmsis_device *device,
   void *addr, uint32_t hyper_addr, uint32_t size);
 
-void mc_hyperram_read_async(struct pmsis_device *device,
+void pmsis_hyperram_read_async(struct pmsis_device *device,
   void *addr, uint32_t hyper_addr, uint32_t size, struct fc_task *task);
 
 
@@ -145,12 +167,12 @@ void mc_hyperram_read_async(struct pmsis_device *device,
  * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the HyperRAM.
  * \param size        The size in bytes of the copy
- * \param event       The event used to notify the end of transfer. See the documentation of mc_event_t for more details.
+ * \param event       The event used to notify the end of transfer. See the documentation of pmsis_event_t for more details.
  */
-void mc_hyperram_write(struct pmsis_device *device,
+void pmsis_hyperram_write(struct pmsis_device *device,
   void *addr, uint32_t hyper_addr, uint32_t size);
 
-void mc_hyperram_write_async(struct pmsis_device *device,
+void pmsis_hyperram_write_async(struct pmsis_device *device,
   void *addr, uint32_t hyper_addr, uint32_t size, struct fc_task *task);
 
 
@@ -167,12 +189,12 @@ void mc_hyperram_write_async(struct pmsis_device *device,
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one. Must fit in 16 bits, i.e. must be less than 65536.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line. Must fit in 16 bits, i.e. must be less than 65536.
- * \param event       The event used to notify the end of transfer. See the documentation of mc_event_t for more details.
+ * \param event       The event used to notify the end of transfer. See the documentation of pmsis_event_t for more details.
  */
-void mc_hyperram_read_2d(struct pmsis_device *device,
+void pmsis_hyperram_read_2d(struct pmsis_device *device,
   void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length);
 
-void mc_hyperram_read_2d_async(struct pmsis_device *device,
+void pmsis_hyperram_read_2d_async(struct pmsis_device *device,
   void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length, struct fc_task *task);
 
 
@@ -189,12 +211,12 @@ void mc_hyperram_read_2d_async(struct pmsis_device *device,
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one. Must fit in 16 bits, i.e. must be less than 65536.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line. Must fit in 16 bits, i.e. must be less than 65536.
- * \param event       The event used to notify the end of transfer. See the documentation of mc_event_t for more details.
+ * \param event       The event used to notify the end of transfer. See the documentation of pmsis_event_t for more details.
  */
-void mc_hyperram_write_2d(struct pmsis_device *device,
+void pmsis_hyperram_write_2d(struct pmsis_device *device,
   void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length);
 
-void mc_hyperram_write_2d_async(struct pmsis_device *device,
+void pmsis_hyperram_write_2d_async(struct pmsis_device *device,
   void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length, struct fc_task *task);
 
 
@@ -209,7 +231,7 @@ void mc_hyperram_write_2d_async(struct pmsis_device *device,
  * \param size   The size in bytes of the memory to allocate
  * \return NULL if not enough memory was available, otherwise the address of the allocated chunk
  */
-uint32_t mc_hyperram_alloc(struct pmsis_device *device, uint32_t size);
+uint32_t pmsis_hyperram_alloc(struct pmsis_device *device, uint32_t size);
 
 /** \brief Free HyperRAM memory
  *
@@ -222,7 +244,7 @@ uint32_t mc_hyperram_alloc(struct pmsis_device *device, uint32_t size);
  * \param size   The size in bytes of the memory chunk which was allocated
  * \return 0 if the operation was successful, -1 otherwise
  */
-int mc_hyperram_free(struct pmsis_device *device, uint32_t chunk, uint32_t size);
+int pmsis_hyperram_free(struct pmsis_device *device, uint32_t chunk, uint32_t size);
 
 
 
@@ -240,11 +262,11 @@ int mc_hyperram_free(struct pmsis_device *device, uint32_t chunk, uint32_t size)
  * \param size        The size in bytes of the copy
  * \param req         A pointer to the HyperRam request structure. It must be allocated by the caller and kept alive until the copy is finished.
  */
-static inline void cl_hyperram_read(struct pmsis_device *device,
-  void *addr, uint32_t hyper_addr, uint32_t size, cl_hyperram_req_t *req);
+static inline void pmsis_cl_hyperram_read(struct pmsis_device *device,
+  void *addr, uint32_t hyper_addr, uint32_t size, pmsis_cl_hyperram_req_t *req);
 
-static inline void cl_hyperram_read_2d(struct pmsis_device *device,
-  void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length, cl_hyperram_req_t *req);
+static inline void pmsis_cl_hyperram_read_2d(struct pmsis_device *device,
+  void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length, pmsis_cl_hyperram_req_t *req);
 
 
 
@@ -254,7 +276,7 @@ static inline void cl_hyperram_read_2d(struct pmsis_device *device,
  *
  * \param req       The request structure used for termination.
  */
-static inline void cl_hyperram_read_wait(cl_hyperram_req_t *req);
+static inline void pmsis_cl_hyperram_read_wait(pmsis_cl_hyperram_req_t *req);
 
 
 
@@ -272,12 +294,12 @@ static inline void cl_hyperram_read_wait(cl_hyperram_req_t *req);
  * \param size        The size in bytes of the copy
  * \param req         A pointer to the HyperRam request structure. It must be allocated by the caller and kept alive until the copy is finished.
  */
-static inline void cl_hyperram_write(struct pmsis_device *device,
-  void *addr, uint32_t hyper_addr, uint32_t size, cl_hyperram_req_t *req);
+static inline void pmsis_cl_hyperram_write(struct pmsis_device *device,
+  void *addr, uint32_t hyper_addr, uint32_t size, pmsis_cl_hyperram_req_t *req);
 
 
-static inline void cl_hyperram_write_2d(struct pmsis_device *device,
-  void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length, cl_hyperram_req_t *req);
+static inline void pmsis_cl_hyperram_write_2d(struct pmsis_device *device,
+  void *addr, uint32_t hyper_addr, uint32_t size, uint32_t stride, uint32_t length, pmsis_cl_hyperram_req_t *req);
 
 
 
@@ -287,7 +309,7 @@ static inline void cl_hyperram_write_2d(struct pmsis_device *device,
  *
  * \param req       The request structure used for termination.
  */
-static inline void cl_hyperram_write_wait(cl_hyperram_req_t *req);
+static inline void pmsis_cl_hyperram_write_wait(pmsis_cl_hyperram_req_t *req);
 
 /** \brief Allocate HyperRAM memory from cluster
  *
@@ -298,7 +320,7 @@ static inline void cl_hyperram_write_wait(cl_hyperram_req_t *req);
  * \param size   The size in bytes of the memory to allocate
  * \param req    The request structure used for termination.
  */
-void cl_hyperram_alloc(struct pmsis_device *device, uint32_t size, cl_hyperram_alloc_req_t *req);
+void pmsis_cl_hyperram_alloc(struct pmsis_device *device, uint32_t size, pmsis_cl_hyperram_alloc_req_t *req);
 
 /** \brief Free HyperRAM memory from cluster
  *
@@ -311,7 +333,7 @@ void cl_hyperram_alloc(struct pmsis_device *device, uint32_t size, cl_hyperram_a
  * \param size   The size in bytes of the memory chunk which was allocated
  * \param req    The request structure used for termination.
  */
-void cl_hyperram_free(struct pmsis_device *device, uint32_t chunk, uint32_t size, cl_hyperram_free_req_t *req);
+void pmsis_cl_hyperram_free(struct pmsis_device *device, uint32_t chunk, uint32_t size, pmsis_cl_hyperram_free_req_t *req);
 
 /** \brief Wait until the specified hyperram alloc request has finished.
  *
@@ -320,7 +342,7 @@ void cl_hyperram_free(struct pmsis_device *device, uint32_t chunk, uint32_t size
  * \param req       The request structure used for termination.
  * \return NULL     if not enough memory was available, otherwise the address of the allocated chunk
  */
-static inline uint32_t cl_hyperram_alloc_wait(cl_hyperram_alloc_req_t *req);
+static inline uint32_t pmsis_cl_hyperram_alloc_wait(pmsis_cl_hyperram_alloc_req_t *req);
 
 /** \brief Wait until the specified hyperram free request has finished.
  *
@@ -329,7 +351,7 @@ static inline uint32_t cl_hyperram_alloc_wait(cl_hyperram_alloc_req_t *req);
  * \param req       The request structure used for termination.
  * \return 0        if the operation was successful, -1 otherwise
  */
-static inline void cl_hyperram_free_wait(cl_hyperram_free_req_t *req);
+static inline void pmsis_cl_hyperram_free_wait(pmsis_cl_hyperram_free_req_t *req);
 
 //!@}
 

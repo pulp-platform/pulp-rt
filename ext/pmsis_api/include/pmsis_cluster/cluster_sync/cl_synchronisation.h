@@ -17,7 +17,7 @@
 #ifndef __CL_SYNCHRONISATION_H__
 #define __CL_SYNCHRONISATION_H__
 
-#include "cl_pmsis_types.h"
+#include "pmsis_cluster/cl_pmsis_types.h"
 
 // ----- FIXME: just for test purpose, should be in OS, not here!
 #define L1_TAS_BASE (1<<20)

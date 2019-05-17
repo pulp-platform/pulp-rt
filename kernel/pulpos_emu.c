@@ -22,7 +22,7 @@
 #include "rt/rt_api.h"
 #include "stdio.h"
 
-static struct pmsis_device *__rt_fc_cluster_device;
+static struct pi_device *__rt_fc_cluster_device;
 static struct cluster_task __rt_pulpos_emu_global_cluster_task;
 
 
@@ -30,7 +30,7 @@ static void __attribute__((constructor)) __rt_cluster_pulpos_emu_init()
 {
   int nb_cluster = rt_nb_cluster();
 
-  __rt_fc_cluster_device = rt_alloc(RT_ALLOC_FC_DATA, sizeof(struct pmsis_device)*nb_cluster);
+  __rt_fc_cluster_device = rt_alloc(RT_ALLOC_FC_DATA, sizeof(struct pi_device)*nb_cluster);
   if (__rt_fc_cluster_device == NULL) {
     rt_fatal("Unable to allocate cluster control structure\n");
     return;

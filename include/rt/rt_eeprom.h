@@ -18,8 +18,6 @@
 #ifndef __RT__RT_EEPROM_H__
 #define __RT__RT_EEPROM_H__
 
-#include "rt/rt_api.h"
-
 typedef struct rt_eeprom_s
 {
   rt_i2c_t *i2c_handle;

@@ -31,8 +31,6 @@
 #ifndef _GAP_MALLOC_H_
 #define _GAP_MALLOC_H_
 
-#include "pmsis_hal.h"
-
 /*!
  * @addtogroup pmsis_malloc
  * @{

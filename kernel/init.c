@@ -22,6 +22,8 @@
 #include "rt/rt_api.h"
 #include "archi/pulp.h"
 
+int pmsis_exit_value;
+
 typedef void (*fptr)(void);
 
 static fptr ctor_list[1] __attribute__((section(".ctors.start"))) = { (fptr) -1 };
@@ -324,3 +326,15 @@ static int __rt_check_clusters_start()
 }
 
 #endif
+
+
+struct pi_device *pi_open_from_conf(void *conf)
+{
+  struct pi_device *device = rt_alloc(RT_ALLOC_FC_DATA, sizeof(struct pi_device));
+  if (device == NULL)
+    return NULL;
+
+  device->config = conf;
+
+  return device;
+}

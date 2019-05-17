@@ -326,7 +326,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
 
 
 
-int mc_cluster_open_with_conf(struct pmsis_device *cluster_dev, void *_conf)
+int mc_cluster_open_with_conf(struct pi_device *cluster_dev, void *_conf)
 {
   int irq = rt_irq_disable();
 
@@ -351,7 +351,7 @@ int mc_cluster_open_with_conf(struct pmsis_device *cluster_dev, void *_conf)
 
 
 
-int mc_cluster_send_task_to_cl_async(struct pmsis_device *device, struct cluster_task *task, fc_task_t *async_task)
+int mc_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_task *task, pi_fc_task_t *async_task)
 {
   int irq = rt_irq_disable();
 
@@ -428,7 +428,7 @@ int mc_cluster_send_task_to_cl_async(struct pmsis_device *device, struct cluster
 
 
 
-int mc_cluster_send_task_to_cl(struct pmsis_device *device, struct cluster_task *task)
+int mc_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *task)
 {
   int irq = rt_irq_disable();
 
@@ -448,7 +448,7 @@ int mc_cluster_send_task_to_cl(struct pmsis_device *device, struct cluster_task 
 }
 
 
-int mc_cluster_close(struct pmsis_device *cluster_dev)
+int mc_cluster_close(struct pi_device *cluster_dev)
 {
   rt_fc_cluster_data_t *data = (rt_fc_cluster_data_t *)cluster_dev->data;
 
@@ -485,6 +485,15 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
   rt_irq_mask_set(1<<RT_BRIDGE_ENQUEUE_EVENT);
 
   return 0;
+}
+
+
+struct pi_fc_task *mc_task_callback(struct pi_fc_task *task, void (*callback)(void*), void *arg)
+{
+  task->id = FC_TASK_CALLBACK_ID;
+  task->arg[0] = (uint32_t)callback;
+  task->arg[1] = (uint32_t)arg;
+  return task;
 }
 
 

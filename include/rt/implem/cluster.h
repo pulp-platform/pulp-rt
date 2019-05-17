@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna and
- * GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef __RT_IMPLEM_IMPLEM_H__
-#define __RT_IMPLEM_IMPLEM_H__
+#ifndef __RT_IMPLEM_CLUSTER_H__
+#define __RT_IMPLEM_CLUSTER_H__
 
-/// @cond IMPLEM
+#if defined(ARCHI_HAS_CLUSTER)
 
-#include "rt/implem/utils.h"
-#include "rt/implem/hyperram.h"
-#include "rt/implem/dma.h"
-#include "rt/implem/cluster.h"
+static inline void *pi_cl_l2_malloc_wait(pi_cl_alloc_req_t *req)
+{
+  return rt_alloc_cluster_wait((rt_alloc_req_t *)req);
+}
 
-/// @endcond
+static inline void pi_cl_l2_free_wait(pi_cl_free_req_t *req)
+{
+  rt_free_cluster_wait((rt_free_req_t *)req);
+}
+
+#endif
 
 #endif

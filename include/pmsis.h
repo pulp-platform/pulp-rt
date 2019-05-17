@@ -17,34 +17,49 @@
 #ifndef __PMSIS__H__
 #define __PMSIS__H__
 
-#include <rt/rt_api.h>
+#include "rt/rt_api_decl.h"
+
+#include "pmsis.h"
 
 #include "pmsis_cluster/cluster_sync/fc_to_cl_delegate.h"
+#include "pmsis_cluster/cl_malloc.h"
+#include "rtos/pmsis_driver_core_api/pmsis_driver_core_api.h"
+#include "rtos/event_kernel/event_kernel.h"
+#include "rtos/os_frontend_api/pmsis_task.h"
+#include "rtos/malloc/pmsis_malloc.h"
+#include "rtos/malloc/pmsis_l1_malloc.h"
+#include "rtos/malloc/pmsis_l2_malloc.h"
+#include "hyperbus/hyperram.h"
 
+#include "rt/implem/implem.h"
 
-static inline struct cluster_task *mc_cluster_task(struct cluster_task *task, void (*entry)(void*), void *arg)
+extern int pmsis_exit_value;
+
+static inline int pmsis_kickoff(void *arg)
 {
-  task->entry = entry;
-  task->arg = arg;
-  task->stacks = NULL;
-  task->stack_size = 0;
-  task->nb_cores = 0;
-  return task;
+  ((void (*)())arg)();
+  return pmsis_exit_value;
 }
 
-static inline struct fc_task *mc_task_callback(struct fc_task *task, void (*callback)(void*), void *arg)
+static inline void pmsis_exit(int err)
 {
-  task->id = FC_TASK_CALLBACK_ID;
-  task->arg[0] = (uint32_t)callback;
-  task->arg[1] = (uint32_t)arg;
-  return task;
+  pmsis_exit_value = err;
 }
 
-static inline struct fc_task *mc_task(struct fc_task *task)
-{
-  task->id = FC_TASK_NONE_ID;
-  task->arg[0] = (uint32_t)0;
-  return task;
+static inline uint32_t __native_core_id() {
+  return rt_core_id();
+}
+
+static inline uint32_t __native_cluster_id() {
+  return rt_cluster_id();
+}
+
+static inline uint32_t __native_is_fc() {
+  return rt_is_fc();
+}
+
+static inline uint32_t __native_native_nb_cores() {
+  return rt_nb_pe();
 }
 
 

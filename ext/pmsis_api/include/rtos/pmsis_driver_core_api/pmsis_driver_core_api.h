@@ -20,20 +20,23 @@
 
 // Open a device using its name if available
 // if no name is passed, just allocate necessary memory
-struct pmsis_device *pmsis_open(const char *name);
+struct pi_device *pi_open(const char *name);
 
-int pmsis_close(struct pmsis_device *device);
+struct pi_device *pi_open_from_conf(void *conf);
+
+
+int pmsis_close(struct pi_device *device);
 
 // ioctl like mechanism
-uint32_t pmsis_ioctl(struct pmsis_device *device, uint32_t func_id, void *arg);
+uint32_t pmsis_ioctl(struct pi_device *device, uint32_t func_id, void *arg);
 
 // Generic write and read functions:
 // write or read to devices (spi, i2s, (hyper)flash...)
 // might be null for devices which are not concerned
-uint32_t pmsis_write(struct pmsis_device *device, uintptr_t size,
+uint32_t pmsis_write(struct pi_device *device, uintptr_t size,
         const void *addr, const void *buffer);
 
-uint32_t pmsis_read(struct pmsis_device *device, uintptr_t size,
+uint32_t pmsis_read(struct pi_device *device, uintptr_t size,
         const void *addr, const void *buffer);
 
 #endif

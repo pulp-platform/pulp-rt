@@ -195,6 +195,21 @@ static inline void rt_tas_unlock_32(unsigned int addr, signed int value);
 
 static inline int rt_cluster_id();
 
+static inline uint32_t pi_core_id()
+{
+  return rt_core_id();
+}
+
+static inline uint32_t pi_cluster_id()
+{
+  return rt_cluster_id();
+}
+
+static inline uint32_t pi_nb_cluster_cores()
+{
+  return rt_nb_pe();
+}
+
 /// @endcond
 
 #endif
