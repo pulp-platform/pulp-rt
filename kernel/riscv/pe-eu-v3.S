@@ -147,7 +147,12 @@ __rt_master_loop_update_next:
     lw      t6, RT_CLUSTER_TASK_NB_CORES(t3)
     mv      ra, s5
 
+#ifdef ARCHI_NO_L1_TINY
+    la      t4, __rt_cluster_nb_active_pe
+    sw      t6, 0(t4)
+#else
     sw      t6, %tiny(__rt_cluster_nb_active_pe)(x0)
+#endif
 
 #ifdef __RT_USE_ASSERT
     // Update stack checking information
