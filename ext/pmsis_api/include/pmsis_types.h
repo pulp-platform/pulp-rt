@@ -20,6 +20,13 @@
 #include "inttypes.h"
 
 /**
+ * @defgroup groupDrivers Drivers
+ */
+
+
+/// @cond IMPLEM
+
+/**
  * @ingroup PMSIS_OS
  */
 

@@ -17,14 +17,17 @@
 #ifndef __FC_TO_CL_H__
 #define __FC_TO_CL_H__
 
+/// @cond IMPLEM
+
 #include "pmsis_cluster/cl_pmsis_types.h"
 #include "pmsis_types.h"
+
 /**
- * @ingroup groupCluster
+ * @ingroup groupDrivers
  */
 
 /**
- * @defgroup clusterDriver
+ * @defgroup clusterDriver Cluster driver
  *
  * Primitives to pilot the cluster
  * Can only be use from mcu side
@@ -33,7 +36,7 @@
 
 
 /**
- * @addtogroup groupCluster
+ * @addtogroup clusterDriver
  * @{
  */
 
@@ -51,6 +54,9 @@
 #define WAIT_FREE_ASYNC_ID 5
 #define OPEN_ASYNC_ID 6
 #define CLOSE_ASYNC_ID 7
+
+void pi_cluster_conf_init(struct cluster_driver_conf *conf);
+
 /** \brief poweron the cluster (deactivate clock gating)
  * Calling this function will poweron the cluster
  * At the end of the call, cluster is ready to execute a task
@@ -58,8 +64,7 @@
  * \param device initialized device structure
  * \param conf configuration struct for cluster driver
  */
-int mc_cluster_open_with_conf(struct pi_device *device,
-        void *conf);
+int pi_cluster_open(struct pi_device *device);
 
 /** \brief poweron the cluster (deactivate clock gating) - async version
  * Calling this function will poweron the cluster
@@ -68,7 +73,7 @@ int mc_cluster_open_with_conf(struct pi_device *device,
  * \param cluster_id ID of the cluster to poweron
  * \param async_task asynchronous task to be executed at the end of operation
  */
-int mc_cluster_open_with_conf_async(struct pi_device *device,
+int pi_cluster_open_with_conf_async(struct pi_device *device,
         void *conf, pi_fc_task_t *async_task);
 
 /** \brief send a task to the cluster
@@ -78,7 +83,7 @@ int mc_cluster_open_with_conf_async(struct pi_device *device,
  * \param cluster_id ID of the cluster to execute task on
  * \param cl_task task structure containing task and its parameters
  */
-int mc_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *task);
+int pi_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *task);
 
 /** \brief send a task to the cluster - async version
  * Calling this function will result in the cluster executing task passed as a parameter
@@ -89,21 +94,21 @@ int mc_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *ta
  * \param cl_task task structure containing task and its parameters
  * \param async_task structure to execute at the end of cl_task execution
  */
-int mc_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_task *cl_task,
+int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_task *cl_task,
         pi_fc_task_t *async_task);
 
 /** \brief Wait for the cluster to be free i.e. nothing executes on it
  * Wait until no task is executed on cluster
  * \param cluster_id ID of the cluster to wait on
  */
-void mc_cluster_wait_free(struct pi_device *device);
+void pi_cluster_wait_free(struct pi_device *device);
 
 /** \brief Wait for the cluster to be free i.e. nothing executes on it
  * Wait until no task is executed on cluster
  * \param cluster_id ID of the cluster to wait on
  * \param async_task asynchronous task to be executed at the end of operation
  */
-void mc_cluster_wait_free_async(struct pi_device *device, pi_fc_task_t *async_task);
+void pi_cluster_wait_free_async(struct pi_device *device, pi_fc_task_t *async_task);
 
 /** \brief poweroff the cluster (activate clock gating)
  * Stops the cluster and activate clock gating
@@ -111,7 +116,7 @@ void mc_cluster_wait_free_async(struct pi_device *device, pi_fc_task_t *async_ta
  * If multiple threads are using the cluster, will only decrement a semaphore
  * \param cluster_id ID of the cluster to poweroff
  */
-int mc_cluster_close(struct pi_device *device);
+int pi_cluster_close(struct pi_device *device);
 
 /** \brief poweroff the cluster (activate clock gating) - async version
  * Stops the cluster and activate clock gating
@@ -120,14 +125,14 @@ int mc_cluster_close(struct pi_device *device);
  * \param cluster_id ID of the cluster to poweroff
  * \param async_task asynchronous task to be executed at the end of operation
  */
-int mc_cluster_close_async(struct pi_device *device, pi_fc_task_t *async_task);
+int pi_cluster_close_async(struct pi_device *device, pi_fc_task_t *async_task);
 
-uint32_t mc_cluster_ioctl(struct pi_device *device, uint32_t func_id, void *arg);
+uint32_t pi_cluster_ioctl(struct pi_device *device, uint32_t func_id, void *arg);
 
-uint32_t mc_cluster_ioctl_async(struct pi_device *device, uint32_t func_id,
+uint32_t pi_cluster_ioctl_async(struct pi_device *device, uint32_t func_id,
         void *arg, pi_fc_task_t *async_task);
 
-static inline struct cluster_task *mc_cluster_task(struct cluster_task *task, void (*entry)(void*), void *arg)
+static inline struct cluster_task *pi_cluster_task(struct cluster_task *task, void (*entry)(void*), void *arg)
 {
   task->entry = entry;
   task->arg = arg;
@@ -139,7 +144,7 @@ static inline struct cluster_task *mc_cluster_task(struct cluster_task *task, vo
 
 /** \brief check if any cluster is on
  */
-uint8_t mc_cluster_is_on(void);
+uint8_t pi_cluster_is_on(void);
 
 // --- Useful defines to manipulate cluster objects
 //
@@ -152,4 +157,7 @@ uint8_t mc_cluster_is_on(void);
 /**
  * @} end of Team group
  */
+
+/// @endcond
+
 #endif

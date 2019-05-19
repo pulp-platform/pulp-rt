@@ -44,7 +44,7 @@
 
 /**@{*/
 
-/** \struct pi_hyperram_conf_t
+/** \struct pi_hyperram_conf
  * \brief HyperRAM configuration structure.
  *
  * This structure is used to pass the desired HyperRAM configuration to the runtime when opening the device.
@@ -100,9 +100,7 @@ void pi_hyperram_conf_init(struct pi_hyperram_conf *conf);
  * usable and also return a handle used to refer to this opened device when calling other functions.
  * This operation is asynchronous and its termination can be managed through an event.
  *
- * \param device    The device name. This name should correspond to the one used to configure the devices managed by the runtime.
- * \param conf      A pointer to the HyperRAM configuration. Can be NULL to take default configuration.
- * \param event     The event used for managing termination.
+ * \param device    The device structure of the device to open.
  * \return          0 if the operation is successfull, -1 if there was an error
  */
 int pi_hyperram_open(struct pi_device *device);
@@ -114,8 +112,7 @@ int pi_hyperram_open(struct pi_device *device);
  * again before being used.
  * This operation is asynchronous and its termination can be managed through an event.
  *
- * \param handle    The handler of the device which was returned when the device was opened.
- * \param event     The event used for managing termination.
+ * \param device    The device structure of the device to close.
  */
 void pi_hyperram_close(struct pi_device *device);
 

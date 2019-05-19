@@ -35,7 +35,7 @@ int pmsis_event_push(struct pmsis_event_kernel_wrap *event_kernel, pi_fc_task_t 
  * Wait on the execution of the task associated to pi_fc_task_t
  * Task must already have been initialized
  **/
-void mc_wait_on_task(pi_fc_task_t *task);
+void pi_wait_on_task(pi_fc_task_t *task);
 
 void pmsis_event_kernel_mutex_release(struct pmsis_event_kernel_wrap *wrap);
 

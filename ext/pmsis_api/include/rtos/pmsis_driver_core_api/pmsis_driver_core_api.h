@@ -22,7 +22,7 @@
 // if no name is passed, just allocate necessary memory
 struct pi_device *pi_open(const char *name);
 
-struct pi_device *pi_open_from_conf(void *conf);
+void pi_open_from_conf(struct pi_device *device, void *conf);
 
 
 int pmsis_close(struct pi_device *device);
