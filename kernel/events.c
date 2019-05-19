@@ -266,7 +266,7 @@ void __rt_event_sched_init()
 }
 
 
-void mc_wait_on_task(struct pi_fc_task *task)
+void pi_wait_on_task(struct pi_fc_task *task)
 {
   while(!task->done)
     rt_event_yield(NULL);

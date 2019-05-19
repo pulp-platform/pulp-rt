@@ -47,14 +47,14 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
 
   struct cluster_task *task = &__rt_pulpos_emu_global_cluster_task;
 
-  mc_cluster_task(task, entry, arg);
+  pi_cluster_task(task, entry, arg);
 
   task->stacks = stacks;
   task->stack_size = master_stack_size;
   task->slave_stack_size = slave_stack_size;
   task->nb_cores = nb_pe;
 
-  if (mc_cluster_send_task_to_cl_async(&__rt_fc_cluster_device[cid], task, call_event))
+  if (pi_cluster_send_task_to_cl_async(&__rt_fc_cluster_device[cid], task, call_event))
   {
   	rt_irq_restore(irq);
   	return -1;
@@ -71,12 +71,14 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
 {
   if (mount)
   {
-    struct cluster_driver_conf conf = { .id = cid };
-    mc_cluster_open_with_conf(&__rt_fc_cluster_device[cid], (void *)&conf);
+    struct cluster_driver_conf conf;
+    pi_cluster_conf_init(&conf);
+    conf.id = cid;
+    pi_cluster_open(&__rt_fc_cluster_device[cid]);
   }
   else
   {
-    mc_cluster_close(&__rt_fc_cluster_device[cid]);
+    pi_cluster_close(&__rt_fc_cluster_device[cid]);
   }
 
   if (event)

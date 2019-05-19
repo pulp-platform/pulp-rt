@@ -328,13 +328,7 @@ static int __rt_check_clusters_start()
 #endif
 
 
-struct pi_device *pi_open_from_conf(void *conf)
+void pi_open_from_conf(struct pi_device *device, void *conf)
 {
-  struct pi_device *device = rt_alloc(RT_ALLOC_FC_DATA, sizeof(struct pi_device));
-  if (device == NULL)
-    return NULL;
-
   device->config = conf;
-
-  return device;
 }

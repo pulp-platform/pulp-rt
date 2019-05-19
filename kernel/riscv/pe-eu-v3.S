@@ -315,9 +315,9 @@ __rt_set_slave_stack:
     csrw    0x7D1, t4
     csrw    0x7D2, sp
     csrwi   0x7D0, 1
+#endif
 __rt_no_stack_check_end:
     ret
-#endif
 
 #else
 

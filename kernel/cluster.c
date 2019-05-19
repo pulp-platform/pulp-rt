@@ -325,12 +325,17 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
 }
 
 
+void pi_cluster_conf_init(struct cluster_driver_conf *conf)
+{
+  conf->id = 0;
+}
 
-int mc_cluster_open_with_conf(struct pi_device *cluster_dev, void *_conf)
+
+int pi_cluster_open(struct pi_device *cluster_dev)
 {
   int irq = rt_irq_disable();
 
-  struct cluster_driver_conf *conf = (struct cluster_driver_conf *)_conf;
+  struct cluster_driver_conf *conf = (struct cluster_driver_conf *)cluster_dev->config;
 
   cluster_dev->data = (void *)&__rt_fc_cluster_data[conf->id];
 
@@ -351,7 +356,7 @@ int mc_cluster_open_with_conf(struct pi_device *cluster_dev, void *_conf)
 
 
 
-int mc_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_task *task, pi_fc_task_t *async_task)
+int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_task *task, pi_fc_task_t *async_task)
 {
   int irq = rt_irq_disable();
 
@@ -428,13 +433,13 @@ int mc_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_ta
 
 
 
-int mc_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *task)
+int pi_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *task)
 {
   int irq = rt_irq_disable();
 
   rt_event_t *event = __rt_wait_event_prepare_blocking();
 
-  if (mc_cluster_send_task_to_cl_async(device, task, event))
+  if (pi_cluster_send_task_to_cl_async(device, task, event))
   {
     rt_irq_restore(irq);
     return -1;
@@ -448,7 +453,7 @@ int mc_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *ta
 }
 
 
-int mc_cluster_close(struct pi_device *cluster_dev)
+int pi_cluster_close(struct pi_device *cluster_dev)
 {
   rt_fc_cluster_data_t *data = (rt_fc_cluster_data_t *)cluster_dev->data;
 
@@ -488,7 +493,7 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
 }
 
 
-struct pi_fc_task *mc_task_callback(struct pi_fc_task *task, void (*callback)(void*), void *arg)
+struct pi_fc_task *pi_task_callback(struct pi_fc_task *task, void (*callback)(void*), void *arg)
 {
   task->id = FC_TASK_CALLBACK_ID;
   task->arg[0] = (uint32_t)callback;

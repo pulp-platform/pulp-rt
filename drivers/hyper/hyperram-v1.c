@@ -243,7 +243,7 @@ void pi_hyperram_read(struct pi_device *device,
 {
   struct pi_fc_task task;
   pi_hyperram_read_async(device, hyper_addr, addr, size, mc_task(&task));
-  mc_wait_on_task(&task);
+  pi_wait_on_task(&task);
 }
 
 
@@ -263,7 +263,7 @@ void pi_hyperram_write(struct pi_device *device,
 {
   struct pi_fc_task task;
   pi_hyperram_write_async(device, hyper_addr, addr, size, mc_task(&task));
-  mc_wait_on_task(&task);
+  pi_wait_on_task(&task);
 }
 
 
@@ -282,7 +282,7 @@ void pi_hyperram_read_2d(struct pi_device *device,
 {
   struct pi_fc_task task;
   pi_hyperram_read_2d_async(device, hyper_addr, addr, size, stride, length, mc_task(&task));
-  mc_wait_on_task(&task);
+  pi_wait_on_task(&task);
 }
 
 
@@ -302,7 +302,7 @@ void pi_hyperram_write_2d(struct pi_device *device,
 {
   struct pi_fc_task task;
   pi_hyperram_write_2d_async(device, hyper_addr, addr, size, stride, length, mc_task(&task));
-  mc_wait_on_task(&task);
+  pi_wait_on_task(&task);
 }
 
 
