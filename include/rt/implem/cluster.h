@@ -19,14 +19,31 @@
 
 #if defined(ARCHI_HAS_CLUSTER)
 
+static inline void *rt_alloc_cluster_wait(pi_cl_alloc_req_t *req)
+{
+  while((*(volatile char *)&req->done) == 0)
+  {
+    eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+  }
+  return req->result;
+}
+
+static inline void rt_free_cluster_wait(pi_cl_free_req_t *req)
+{
+  while((*(volatile char *)&req->done) == 0)
+  {
+    eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+  }
+}
+
 static inline void *pi_cl_l2_malloc_wait(pi_cl_alloc_req_t *req)
 {
-  return rt_alloc_cluster_wait((rt_alloc_req_t *)req);
+  return rt_alloc_cluster_wait((pi_cl_alloc_req_t *)req);
 }
 
 static inline void pi_cl_l2_free_wait(pi_cl_free_req_t *req)
 {
-  rt_free_cluster_wait((rt_free_req_t *)req);
+  rt_free_cluster_wait((pi_cl_free_req_t *)req);
 }
 
 #endif

@@ -43,7 +43,7 @@
 struct pi_device;
 struct pmsis_event_kernel_wrap;
 
-typedef struct pi_fc_task pi_fc_task_t;
+typedef struct pi_task pi_task_t;
 
 typedef void (*callback_t)(void *arg);
 
@@ -75,31 +75,31 @@ typedef uint32_t (*device_ioctl_func)(struct pi_device *device,
         void *arg);
 
 typedef uint32_t (*device_rw_func_async)(struct pi_device *device,
-        uintptr_t size, const void *addr, const void *buffer, pi_fc_task_t *async);
+        uintptr_t size, const void *addr, const void *buffer, pi_task_t *async);
 
 typedef uint32_t (*device_ioctl_func_async)(struct pi_device *device,
-        uint32_t func_id, void *arg, pi_fc_task_t *async);
+        uint32_t func_id, void *arg, pi_task_t *async);
 
 typedef int (*open_func)(struct pi_device *device, void *conf);
 typedef int (*close_func)(struct pi_device *device);
 
 typedef int (*open_func_async)(struct pi_device *device, void *conf,
-        pi_fc_task_t *async);
-typedef int (*close_func_async)(struct pi_device *device, pi_fc_task_t *async);
+        pi_task_t *async);
+typedef int (*close_func_async)(struct pi_device *device, pi_task_t *async);
 
 // pmsis device minimal api: used for basic inheritance
 typedef struct pi_device_api {
     int (*open)(struct pi_device *device, void *conf);
     int (*close)(struct pi_device *device);
-    int (*open_async)(struct pi_device *device, void *conf, pi_fc_task_t *async);
-    int (*close_async)(struct pi_device *device, pi_fc_task_t *async);
+    int (*open_async)(struct pi_device *device, void *conf, pi_task_t *async);
+    int (*close_async)(struct pi_device *device, pi_task_t *async);
     uint32_t (*read)(struct pi_device *device,
-            uintptr_t size, const void *addr, const void *buffer, pi_fc_task_t *async);
+            uintptr_t size, const void *addr, const void *buffer, pi_task_t *async);
     uint32_t (*write)(struct pi_device *device,
-            uint32_t func_id, void *arg, pi_fc_task_t *async);
+            uint32_t func_id, void *arg, pi_task_t *async);
     uint32_t (*ioctl)(struct pi_device *device, uint32_t func_id, void *arg);
     uint32_t (*ioctl_async)(struct pi_device *device,
-            uint32_t func_id, void *arg, pi_fc_task_t *async);
+            uint32_t func_id, void *arg, pi_task_t *async);
     void *specific_api;
 } pi_device_api_t;
 
@@ -123,25 +123,25 @@ struct pmsis_event_kernel_wrap {
     void *priv;
 };
 
-enum pi_fc_task_id {
+enum pi_task_id {
     FC_TASK_CALLBACK_ID,
     FC_TASK_NONE_ID,
 };
 
-#ifndef PI_FC_TASK_IMPLEM
-#define PI_FC_TASK_IMPLEM
+#ifndef PI_TAsK_IMPLEM
+#define PI_TAsK_IMPLEM
 #endif
 
-typedef struct pi_fc_task{
+typedef struct pi_task{
     // Warning, might be accessed inline in asm, and thus can not be moved
     uintptr_t arg[4];
     int8_t done;
     pmsis_mutex_t wait_on;
     int id;
 
-    PI_FC_TASK_IMPLEM;
+    PI_TAsK_IMPLEM;
 
-} pi_fc_task_t;
+} pi_task_t;
 
 /// @endcond
 #endif

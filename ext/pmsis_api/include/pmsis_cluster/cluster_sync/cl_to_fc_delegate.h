@@ -40,9 +40,9 @@
 /** \brief Create an opaque task structure for FC
  * create a task ready to launch on the fc (os dependant implementation)
  *
- * \param task pi_fc_task_t generic form argument (optional)
+ * \param task pi_task_t generic form argument (optional)
  */
-void *cl_create_pi_fc_task(pi_fc_task_t *task);
+void *cl_create_pi_task(pi_task_t *task);
 
 /** \brief Create an opaque synchronisation object for cl to wait on
  *
@@ -57,7 +57,7 @@ void cl_create_fc_cl_sync_object(void *sync_object);
  * (callback, driver access...)
  * \param        opaque argument for the fc
  */
-void cl_send_task_to_fc(pi_fc_task_t *task);
+void cl_send_task_to_fc(pi_task_t *task);
 
 /** \brief send an opaque task structure for FC with async call
  *

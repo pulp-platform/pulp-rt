@@ -74,7 +74,7 @@ int pi_cluster_open(struct pi_device *device);
  * \param async_task asynchronous task to be executed at the end of operation
  */
 int pi_cluster_open_with_conf_async(struct pi_device *device,
-        void *conf, pi_fc_task_t *async_task);
+        void *conf, pi_task_t *async_task);
 
 /** \brief send a task to the cluster
  * Calling this function will result in the cluster executing task passed as a parameter
@@ -83,7 +83,7 @@ int pi_cluster_open_with_conf_async(struct pi_device *device,
  * \param cluster_id ID of the cluster to execute task on
  * \param cl_task task structure containing task and its parameters
  */
-int pi_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *task);
+int pi_cluster_send_task_to_cl(struct pi_device *device, struct pi_cluster_task *task);
 
 /** \brief send a task to the cluster - async version
  * Calling this function will result in the cluster executing task passed as a parameter
@@ -94,8 +94,8 @@ int pi_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *ta
  * \param cl_task task structure containing task and its parameters
  * \param async_task structure to execute at the end of cl_task execution
  */
-int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_task *cl_task,
-        pi_fc_task_t *async_task);
+int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster_task *cl_task,
+        pi_task_t *async_task);
 
 /** \brief Wait for the cluster to be free i.e. nothing executes on it
  * Wait until no task is executed on cluster
@@ -108,7 +108,7 @@ void pi_cluster_wait_free(struct pi_device *device);
  * \param cluster_id ID of the cluster to wait on
  * \param async_task asynchronous task to be executed at the end of operation
  */
-void pi_cluster_wait_free_async(struct pi_device *device, pi_fc_task_t *async_task);
+void pi_cluster_wait_free_async(struct pi_device *device, pi_task_t *async_task);
 
 /** \brief poweroff the cluster (activate clock gating)
  * Stops the cluster and activate clock gating
@@ -125,14 +125,14 @@ int pi_cluster_close(struct pi_device *device);
  * \param cluster_id ID of the cluster to poweroff
  * \param async_task asynchronous task to be executed at the end of operation
  */
-int pi_cluster_close_async(struct pi_device *device, pi_fc_task_t *async_task);
+int pi_cluster_close_async(struct pi_device *device, pi_task_t *async_task);
 
 uint32_t pi_cluster_ioctl(struct pi_device *device, uint32_t func_id, void *arg);
 
 uint32_t pi_cluster_ioctl_async(struct pi_device *device, uint32_t func_id,
-        void *arg, pi_fc_task_t *async_task);
+        void *arg, pi_task_t *async_task);
 
-static inline struct cluster_task *pi_cluster_task(struct cluster_task *task, void (*entry)(void*), void *arg)
+static inline struct pi_cluster_task *pi_cluster_task(struct pi_cluster_task *task, void (*entry)(void*), void *arg)
 {
   task->entry = entry;
   task->arg = arg;

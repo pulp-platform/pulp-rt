@@ -356,7 +356,7 @@ int pi_cluster_open(struct pi_device *cluster_dev)
 
 
 
-int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_task *task, pi_fc_task_t *async_task)
+int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster_task *task, pi_task_t *async_task)
 {
   int irq = rt_irq_disable();
 
@@ -433,7 +433,7 @@ int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct cluster_ta
 
 
 
-int pi_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *task)
+int pi_cluster_send_task_to_cl(struct pi_device *device, struct pi_cluster_task *task)
 {
   int irq = rt_irq_disable();
 
@@ -493,7 +493,7 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
 }
 
 
-struct pi_fc_task *pi_task_callback(struct pi_fc_task *task, void (*callback)(void*), void *arg)
+struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), void *arg)
 {
   task->id = FC_TASK_CALLBACK_ID;
   task->arg[0] = (uint32_t)callback;

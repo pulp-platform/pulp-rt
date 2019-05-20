@@ -22,7 +22,7 @@
 
 
 // If not NULL, this task is enqueued when the current transfer is finished.
-RT_FC_TINY_DATA struct pi_fc_task *__rt_hyper_end_task;
+RT_FC_TINY_DATA struct pi_task *__rt_hyper_end_task;
 
 // Following variables are used to reenqueue transfers to overcome burst limit.
 // This is used directly by assebly to quickly reenqueue the transfer.
@@ -34,8 +34,8 @@ RT_FC_TINY_DATA unsigned int __rt_hyper_pending_repeat_size;
 
 // Head and tail of the queue of pending transfers which were put on hold
 // as a transfer was already on-going.
-RT_FC_TINY_DATA struct pi_fc_task *__rt_hyper_pending_tasks;
-RT_FC_TINY_DATA struct pi_fc_task *__rt_hyper_pending_tasks_last;
+RT_FC_TINY_DATA struct pi_task *__rt_hyper_pending_tasks;
+RT_FC_TINY_DATA struct pi_task *__rt_hyper_pending_tasks_last;
 
 // All the following are used to keep track of the current transfer when it is
 // emulated due to aligment constraints.
@@ -49,12 +49,12 @@ RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_size_2d;
 RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_length;
 RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_stride;
 RT_FC_TINY_DATA unsigned char __rt_hyper_pending_emu_do_memcpy;
-RT_FC_TINY_DATA struct pi_fc_task *__rt_hyper_pending_emu_task;
+RT_FC_TINY_DATA struct pi_task *__rt_hyper_pending_emu_task;
 
 // Local task used to enqueue cluster requests.
 // We cannot reuse the task coming from cluster side as it is used by the emulation
 // state machine so we copy the request here to improve performance.
-static struct pi_fc_task __pi_hyper_cluster_task;
+static struct pi_task __pi_hyper_cluster_task;
 static pi_cl_hyperram_req_t *__pi_hyper_cluster_reqs_first;
 static pi_cl_hyperram_req_t *__pi_hyper_cluster_reqs_last;
 
@@ -91,7 +91,7 @@ static void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
-static int __pi_hyper_resume_misaligned_read(struct pi_fc_task *task);
+static int __pi_hyper_resume_misaligned_read(struct pi_task *task);
 
 // Performs a misaligned 2d write without any constraint.
 // This function can be either called directly or as an event callback
@@ -99,11 +99,11 @@ static int __pi_hyper_resume_misaligned_read(struct pi_fc_task *task);
 // it checks the state of the pending copy and does one more step
 // so that the whole transfer can be done asynchronously without blocking
 // the core.
-static int __pi_hyper_resume_misaligned_write(struct pi_fc_task *task);
+static int __pi_hyper_resume_misaligned_write(struct pi_task *task);
 
 // Continue the pending misaligned transfer until nothing else can be done.
 // This can also switch to the next pending task if the pending one is done.
-static void __pi_hyper_copy_misaligned(struct pi_fc_task *task);
+static void __pi_hyper_copy_misaligned(struct pi_task *task);
 
 // Execute a 1D copy.
 // Figure out if the copy can be pushed directly (if it has good alignments)
@@ -133,7 +133,7 @@ void __rt_hyper_resume_emu_task();
 
 // This is called by the interrupt handler when a transfer is finished and a waiting
 // transfer is detected, to execute it.
-void __rt_hyper_resume_copy(struct pi_fc_task *task);
+void __rt_hyper_resume_copy(struct pi_task *task);
 
 // Execute a transfer request from cluster side
 static void __pi_hyperram_cluster_req_exec(pi_cl_hyperram_req_t *req);
@@ -229,7 +229,7 @@ int pi_hyperram_free(struct pi_device *device, uint32_t chunk, uint32_t size)
 
 
 void pi_hyperram_read_async(struct pi_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, struct pi_fc_task *task)
+  uint32_t hyper_addr, void *addr, uint32_t size, struct pi_task *task)
 {
   rt_hyperram_t *hyper = (rt_hyperram_t *)device->data;
   task->done = 0;
@@ -241,15 +241,15 @@ void pi_hyperram_read_async(struct pi_device *device,
 void pi_hyperram_read(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size)
 {
-  struct pi_fc_task task;
-  pi_hyperram_read_async(device, hyper_addr, addr, size, mc_task(&task));
+  struct pi_task task;
+  pi_hyperram_read_async(device, hyper_addr, addr, size, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
 
 
 void pi_hyperram_write_async(struct pi_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, struct pi_fc_task *task)
+  uint32_t hyper_addr, void *addr, uint32_t size, struct pi_task *task)
 {
   rt_hyperram_t *hyper = (rt_hyperram_t *)device->data;
   task->done = 0;
@@ -261,14 +261,14 @@ void pi_hyperram_write_async(struct pi_device *device,
 void pi_hyperram_write(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size)
 {
-  struct pi_fc_task task;
-  pi_hyperram_write_async(device, hyper_addr, addr, size, mc_task(&task));
+  struct pi_task task;
+  pi_hyperram_write_async(device, hyper_addr, addr, size, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
 
 void pi_hyperram_read_2d_async(struct pi_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, struct pi_fc_task *task)
+  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, struct pi_task *task)
 {
   rt_hyperram_t *hyper = (rt_hyperram_t *)device->data;
   task->done = 0;
@@ -280,15 +280,15 @@ void pi_hyperram_read_2d_async(struct pi_device *device,
 void pi_hyperram_read_2d(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length)
 {
-  struct pi_fc_task task;
-  pi_hyperram_read_2d_async(device, hyper_addr, addr, size, stride, length, mc_task(&task));
+  struct pi_task task;
+  pi_hyperram_read_2d_async(device, hyper_addr, addr, size, stride, length, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
 
 
 void pi_hyperram_write_2d_async(struct pi_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, struct pi_fc_task *task)
+  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, struct pi_task *task)
 {
   rt_hyperram_t *hyper = (rt_hyperram_t *)device->data;
   task->done = 0;
@@ -300,8 +300,8 @@ void pi_hyperram_write_2d_async(struct pi_device *device,
 void pi_hyperram_write_2d(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length)
 {
-  struct pi_fc_task task;
-  pi_hyperram_write_2d_async(device, hyper_addr, addr, size, stride, length, mc_task(&task));
+  struct pi_task task;
+  pi_hyperram_write_2d_async(device, hyper_addr, addr, size, stride, length, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
@@ -382,7 +382,7 @@ static void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
 
 
 
-static int __pi_hyper_resume_misaligned_read(struct pi_fc_task *task)
+static int __pi_hyper_resume_misaligned_read(struct pi_task *task)
 {
   while (1)
   {
@@ -525,7 +525,7 @@ static int __pi_hyper_resume_misaligned_read(struct pi_fc_task *task)
 
 
 
-static int __pi_hyper_resume_misaligned_write(struct pi_fc_task *task)
+static int __pi_hyper_resume_misaligned_write(struct pi_task *task)
 {
 
   while(1)
@@ -680,7 +680,7 @@ static int __pi_hyper_resume_misaligned_write(struct pi_fc_task *task)
 
 
 
-static void __pi_hyper_copy_misaligned(struct pi_fc_task *task)
+static void __pi_hyper_copy_misaligned(struct pi_task *task)
 {
     int end;
     if (__rt_hyper_pending_emu_channel & 1)
@@ -739,7 +739,7 @@ static void __pi_hyper_2d_copy_exec(int channel, uint32_t addr, uint32_t hyper_a
 
 static void exec_pending_task()
 {
-  struct pi_fc_task *task = __rt_hyper_pending_tasks;
+  struct pi_task *task = __rt_hyper_pending_tasks;
 
   if (task)
   {
@@ -838,7 +838,7 @@ void __rt_hyper_resume_emu_task()
 
 
 
-void __rt_hyper_resume_copy(struct pi_fc_task *task)
+void __rt_hyper_resume_copy(struct pi_task *task)
 {
   exec_pending_task();
 }
@@ -862,7 +862,7 @@ static void __pi_hyperram_cluster_req_exec(pi_cl_hyperram_req_t *req)
 {
   pi_hyperram_t *hyper = (pi_hyperram_t *)req->device->data;
   rt_event_t *event = &__pi_hyper_cluster_task;
-  mc_task_callback(event, __pi_hyperram_cluster_req_done, (void* )req);
+  pi_task_callback(event, __pi_hyperram_cluster_req_done, (void* )req);
 
   if(req->is_2d)
     __pi_hyper_copy_2d(UDMA_CHANNEL_ID(hyper->channel) + req->is_write, (uint32_t)req->addr, req->hyper_addr, req->size, req->stride, req->length, event, REG_MBR0);
@@ -916,7 +916,7 @@ void __cl_hyperram_cluster_copy(struct pi_device *device,
   req->done = 0;
   req->is_write = (ext2loc)? 0:1;
   req->is_2d = 0;
-  mc_task_callback(&req->event, __pi_hyperram_cluster_req, (void* )req);
+  pi_task_callback(&req->event, __pi_hyperram_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
 }
 
@@ -934,7 +934,7 @@ void __cl_hyperram_cluster_copy_2d(struct pi_device *device,
   req->done = 0;
   req->is_write = (ext2loc)? 0:1;
   req->is_2d = 1;
-  mc_task_callback(&req->event, __pi_hyperram_cluster_req, (void* )req);
+  pi_task_callback(&req->event, __pi_hyperram_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
 }
 
@@ -965,7 +965,7 @@ void pi_cl_hyperram_alloc(struct pi_device *device, uint32_t size, pi_cl_hyperra
   req->size = size;
   req->cid = rt_cluster_id();
   req->done = 0;
-  mc_task_callback(&req->event, __pi_hyperram_alloc_cluster_req, (void* )req);
+  pi_task_callback(&req->event, __pi_hyperram_alloc_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
 }
 
@@ -978,7 +978,7 @@ void pi_cl_hyperram_free(struct pi_device *device, uint32_t chunk, uint32_t size
   req->chunk = chunk;
   req->cid = rt_cluster_id();
   req->done = 0;
-  mc_task_callback(&req->event, __pi_hyperram_free_cluster_req, (void* )req);
+  pi_task_callback(&req->event, __pi_hyperram_free_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
 }
 

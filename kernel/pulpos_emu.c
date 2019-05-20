@@ -23,7 +23,7 @@
 #include "stdio.h"
 
 static struct pi_device *__rt_fc_cluster_device;
-static struct cluster_task __rt_pulpos_emu_global_cluster_task;
+static struct pi_cluster_task __rt_pulpos_emu_global_cluster_task;
 
 
 static void __attribute__((constructor)) __rt_cluster_pulpos_emu_init()
@@ -45,7 +45,7 @@ int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg),
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  struct cluster_task *task = &__rt_pulpos_emu_global_cluster_task;
+  struct pi_cluster_task *task = &__rt_pulpos_emu_global_cluster_task;
 
   pi_cluster_task(task, entry, arg);
 

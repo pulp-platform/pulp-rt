@@ -474,23 +474,6 @@ void __rt_allocs_init();
 
 void __rt_alloc_cluster_req(void *req);
 
-static inline void *rt_alloc_cluster_wait(rt_alloc_req_t *req)
-{
-	while((*(volatile char *)&req->done) == 0)
-	{
-		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
-	}
-	return req->result;
-}
-
-static inline void rt_free_cluster_wait(rt_free_req_t *req)
-{
-	while((*(volatile char *)&req->done) == 0)
-	{
-		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
-	}
-}
-
 #endif
 
 

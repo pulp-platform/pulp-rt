@@ -138,10 +138,10 @@ void pi_hyperram_read(struct pi_device *device,
  * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the HyperRAM.
  * \param size        The size in bytes of the copy
- * \param task        The task used to notify the end of transfer. See the documentation of pi_fc_task for more details.
+ * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
 void pi_hyperram_read_async(struct pi_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, struct pi_fc_task *task);
+  uint32_t hyper_addr, void *addr, uint32_t size, struct pi_task *task);
 
 /** \brief Enqueue a write copy to the HyperRAM (from processor to HyperRAM).
  *
@@ -165,10 +165,10 @@ void pi_hyperram_write(struct pi_device *device,
  * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the HyperRAM.
  * \param size        The size in bytes of the copy
- * \param task        The task used to notify the end of transfer. See the documentation of pi_fc_task for more details.
+ * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
 void pi_hyperram_write_async(struct pi_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, struct pi_fc_task *task);
+  uint32_t hyper_addr, void *addr, uint32_t size, struct pi_task *task);
 
 /** \brief Enqueue a 2D read copy (rectangle area) to the HyperRAM (from HyperRAM to processor).
  *
@@ -196,10 +196,10 @@ void pi_hyperram_read_2d(struct pi_device *device,
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line.
- * \param task        The task used to notify the end of transfer. See the documentation of pi_fc_task for more details.
+ * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
 void pi_hyperram_read_2d_async(struct pi_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, struct pi_fc_task *task);
+  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, struct pi_task *task);
 
 /** \brief Enqueue a 2D write copy (rectangle area) to the HyperRAM (from processor to HyperRAM).
  *
@@ -227,10 +227,10 @@ void pi_hyperram_write_2d(struct pi_device *device,
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line.
- * \param task        The task used to notify the end of transfer. See the documentation of pi_fc_task for more details.
+ * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
 void pi_hyperram_write_2d_async(struct pi_device *device,
-  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, struct pi_fc_task *task);
+  uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length, struct pi_task *task);
 
 
 

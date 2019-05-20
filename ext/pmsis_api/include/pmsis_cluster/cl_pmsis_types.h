@@ -41,7 +41,7 @@
 #define INLINE
 #endif
 
-struct cluster_task {
+struct pi_cluster_task {
     // entry function and its argument(s)
     void (*entry)(void*);
     void *arg;
@@ -52,10 +52,10 @@ struct cluster_task {
     // Number of cores to be activated
     int nb_cores;
     // callback called at task completion
-    pi_fc_task_t *completion_callback;
+    pi_task_t *completion_callback;
     int stack_allocated;
     // to implement a fifo
-    struct cluster_task *next;
+    struct pi_cluster_task *next;
 
     CLUSTER_TASK_IMPLEM;
 };
@@ -69,11 +69,11 @@ struct cl_team_task {
 
 // object for device specific api
 typedef struct cluster_driver_api {
-    int (*send_task)(struct pi_device *device, struct cluster_task *cl_task);
-    int (*send_task_async)(struct pi_device *device, struct cluster_task *cl_task
-            , struct pi_fc_task *async_task);
+    int (*send_task)(struct pi_device *device, struct pi_cluster_task *cl_task);
+    int (*send_task_async)(struct pi_device *device, struct pi_cluster_task *cl_task
+            , struct pi_task *async_task);
     void (*wait_free)(struct pi_device *device);
-    void (*wait_free_async)(struct pi_device *device, struct pi_fc_task *async_task);
+    void (*wait_free_async)(struct pi_device *device, struct pi_task *async_task);
 } cluster_driver_api_t;
 
 typedef struct cluster_driver_conf {
@@ -87,8 +87,8 @@ typedef struct cluster_driver_conf {
 struct cluster_driver_data {
     // prepare a small fifo so that FC can pipeline tasks
     // --> need to be first for inline access
-    struct cluster_task *task_first;
-    struct cluster_task *task_last;
+    struct pi_cluster_task *task_first;
+    struct pi_cluster_task *task_last;
     // event kernel attached
     struct pmsis_event_kernel_wrap* event_kernel;
     // metadata
