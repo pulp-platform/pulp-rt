@@ -233,7 +233,6 @@ static void __rt_rtc_cold_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
 
   // config the RTC in calendar mode.
   rt_rtc_set_clk(rtc->conf.clkDivider);
-  rt_rtc_enable();
 }
 
 
@@ -282,6 +281,8 @@ rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *rtc_conf, rt_event_t *event)
 {
   if(dev_rtc.open_count) goto error;
 
+  rt_rtc_init(&dev_rtc, rtc_conf);
+
   if (__rt_rtc_init_done == 0)
   {
     __rt_rtc_init_done = 1;
@@ -291,7 +292,7 @@ rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *rtc_conf, rt_event_t *event)
     }
   }
 
-  rt_rtc_init(&dev_rtc, rtc_conf);
+
   if (event) __rt_event_enqueue(event);
   dev_rtc.open_count++;
 

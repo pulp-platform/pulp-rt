@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna and
- * GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich and University of Bologna
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef __RT_IMPLEM_IMPLEM_H__
-#define __RT_IMPLEM_IMPLEM_H__
+/*
+ * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
+ */
 
-/// @cond IMPLEM
 
-#include "rt/implem/utils.h"
-#include "rt/implem/hyperram.h"
-#include "rt/implem/dma.h"
-#include "rt/implem/cluster.h"
+#ifndef __KERNEL_PULPRT_WRAPPER_H__
+#define __KERNEL_PULPRT_WRAPPER_H__
 
-static inline struct pi_task *pi_task(struct pi_task *task)
+static inline int __rt_cluster_lock(rt_fc_cluster_data_t *cluster)
 {
-  task->id = FC_TASK_NONE_ID;
-  task->arg[0] = (uint32_t)0;
-  return task;
+  return rt_irq_disable();
 }
 
-/// @endcond
+static inline void __rt_cluster_unlock(rt_fc_cluster_data_t *cluster, int lock)
+{
+  rt_irq_restore(lock);
+}
 
 #endif

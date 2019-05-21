@@ -133,6 +133,11 @@ endif
 
 PULP_LIB_FC_SRCS_rt += kernel/cluster.c kernel/pulpos_emu.c
 
+ifneq '$(cluster/version)' ''
+PULP_CFLAGS += -D__RT_CLUSTER_ASM
+PULP_LIB_FC_SRCS_rt += kernel/cluster_call.c
+endif
+
 ifneq '$(perf_counters)' ''
 PULP_LIB_FC_SRCS_rt += kernel/perf.c
 endif

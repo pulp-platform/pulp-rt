@@ -436,6 +436,7 @@ void __rt_event_sched_init();
 static inline void __rt_task_init(pi_task_t *task)
 {
   task->done = 0;
+  task->implem.keep = 1;
 }
 
 static inline void __rt_task_init_from_cluster(pi_task_t *task)

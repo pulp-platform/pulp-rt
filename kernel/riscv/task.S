@@ -46,7 +46,6 @@ __rt_task_loop_entry:
     and     s5, s5, 0x1f
     srli    s6, s5, 5
     la      s7, __rt_fc_cluster_data
-    lw      s7, 0(s7)
     li      t2, RT_FC_CLUSTER_DATA_T_SIZEOF
     mul     t2, t2, s6
     add     s7, s7, t2

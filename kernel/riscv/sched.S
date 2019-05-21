@@ -122,7 +122,6 @@ __rt_remote_enqueue_event:
     li   x8, ARCHI_NB_CLUSTER
 #endif
     la   x9, __rt_fc_cluster_data
-    lw   x9, 0(x9)
 
     // Loop over the clusters to see if there is an event to push
 __rt_remote_enqueue_event_loop_cluster:
