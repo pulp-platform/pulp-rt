@@ -130,6 +130,11 @@ static inline rt_periph_channel_t *__rt_periph_channel(int channel) {
   return &periph_channels[channel];
 }
 
+static inline void __rt_udma_register_channel_callback(int channel, void (*callback)(void *))
+{
+  __rt_periph_channel(channel)->callback = callback;
+}
+
 
 #if defined(UDMA_VERSION) && UDMA_VERSION < 3
 

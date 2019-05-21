@@ -253,7 +253,7 @@ static inline void rt_cluster_notif_wait(int event)
   eu_evt_maskWaitAndClr(event);
 }
 
-rt_fc_cluster_data_t *__rt_fc_cluster_data;
+extern rt_fc_cluster_data_t __rt_fc_cluster_data[];
 
 #endif
 

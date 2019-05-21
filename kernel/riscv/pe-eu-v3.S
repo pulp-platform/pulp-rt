@@ -22,7 +22,7 @@
 #include "archi/gvsoc/gvsoc.h"
 #endif
 
-#include "rt/rt_data.h"
+#include "data.h"
 #include "archi/pulp.h"
 #if defined(ITC_VERSION)
 #include "archi/itc/itc_v1.h"
@@ -46,6 +46,10 @@ __rt_pe_start:
 
 #endif
 
+    csrr    a0, 0xF14
+    andi    a1, a0, 0x1f
+    srli    a0, a0, 5
+    
     // Activate a few events
     li      t0, (1<<PULP_DISPATCH_EVENT) | (1<<PULP_HW_BAR_EVENT) | (1<<PULP_MUTEX_EVENT)
     li      t1, ARCHI_EU_DEMUX_ADDR
@@ -64,7 +68,6 @@ __rt_pe_start:
     li      s4, 1<<RT_CLUSTER_CALL_EVT
     la      s5, __rt_master_event
     la      s7, __rt_fc_cluster_data
-    lw      s7, 0(s7)
     li      t2, RT_FC_CLUSTER_DATA_T_SIZEOF
     mul     t2, t2, a0
     add     s7, s7, t2

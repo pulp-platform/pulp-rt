@@ -433,6 +433,20 @@ static inline __attribute__((always_inline)) void __rt_push_event(rt_event_sched
 
 void __rt_event_sched_init();
 
+static inline void __rt_task_init(pi_task_t *task)
+{
+  task->done = 0;
+}
+
+static inline void __rt_task_init_from_cluster(pi_task_t *task)
+{
+}
+
+static inline void __rt_event_handle_end_of_task(pi_task_t *task)
+{
+  rt_event_enqueue(task);
+}
+
 /// @endcond
 
 #endif

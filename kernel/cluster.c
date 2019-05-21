@@ -25,6 +25,10 @@
 
 #if defined(ARCHI_HAS_CLUSTER)
 
+#ifndef ARCHI_NB_CLUSTER
+#define ARCHI_NB_CLUSTER 1
+#endif
+
 typedef enum 
 {
   RT_CLUSTER_MOUNT_START,
@@ -32,7 +36,8 @@ typedef enum
   RT_CLUSTER_MOUNT_DONE,
 } __rt_cluster_mount_step_e;
 
-rt_fc_cluster_data_t *__rt_fc_cluster_data;
+rt_fc_cluster_data_t __rt_fc_cluster_data[ARCHI_NB_CLUSTER];
+pi_task_t *__rt_cluster_tasks[ARCHI_NB_CLUSTER];
 
 #ifdef __RT_USE_PROFILE
 RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
@@ -469,12 +474,6 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
 {
   int nb_cluster = rt_nb_cluster();
   int data_size = sizeof(rt_fc_cluster_data_t)*nb_cluster;
-
-  __rt_fc_cluster_data = rt_alloc(RT_ALLOC_FC_DATA, data_size);
-  if (__rt_fc_cluster_data == NULL) {
-    rt_fatal("Unable to allocate cluster control structure\n");
-    return -1;
-  }
 
   memset(__rt_fc_cluster_data, 0, data_size);
 

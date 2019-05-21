@@ -23,13 +23,26 @@
 
 RT_FC_TINY_DATA rt_rtc_t dev_rtc;
 RT_FC_TINY_DATA rt_event_t *__rtc_handler;
+RT_FC_TINY_DATA int __rt_rtc_init_done;
 
 static void  rt_rtc_alarm_stop();
 static void  rt_rtc_cntDwn_stop();
 
-static void  rt_apb_wait_int_apb(){
+#ifdef ITC_VERSION
+
+static void  rt_apb_wait_int_apb()
+{
+  __rt_wait_for_event(1<<ARCHI_FC_EVT_RTC_APB_IRQ);
+}
+
+#else
+
+static void  rt_apb_wait_int_apb()
+{
   __rt_periph_wait_event(ARCHI_SOC_EVENT_RTC_APB_IRQ, 1);
 }
+
+#endif
 
 static void  rt_apb_int_apb_clear(unsigned char write){
   if (write){
@@ -98,24 +111,22 @@ void __rt_int_rtc_handler(void *arg)
   }
 }
 
-static void  rt_rtc_enable(){
-  RtcT rtc;
-  rtc.Raw = rt_rtc_reg_read(RTC_Ctrl_Addr);
-  rtc.conf.rtc_sb = RTC_Active_Mode;
-  rt_rtc_reg_config(RTC_Ctrl_Addr, (unsigned int) rtc.Raw);
+static void  rt_rtc_enable()
+{
+  rt_rtc_reg_config(RTC_Ctrl_Addr, RTC_Active_Mode);
 }
 
-static void  rt_rtc_disable(){
-  RtcT rtc;
-  rtc.Raw = rt_rtc_reg_read(RTC_Ctrl_Addr);
-  rtc.conf.rtc_sb = RTC_Standby_Mode;
-  rt_rtc_reg_config(RTC_Ctrl_Addr, (unsigned int) rtc.Raw);
+static void  rt_rtc_disable()
+{
+  rt_rtc_reg_config(RTC_Ctrl_Addr, RTC_Standby_Mode);
 }
+
 static void  rt_rtc_set_clk(unsigned int value){
   RtcT rtc;
   /* Set CkInDiv1 to 0x80 => Clock = 32768/128 Hz, e.g 256 Hz, Period = 3.9 ms approx */
   rtc.ckinDiv.divVal = value;                                         // 0x8000 as init.Set the divider at 2, so 32KHz right shift 1
   rt_rtc_reg_config(RTC_CKIN_DIV1_Addr, (unsigned int) rtc.Raw);     // Enable the countdown timer 1 interruption
+  // RTC is enabled at reset, we need to disable it to take into account the new clock divider
   rt_rtc_disable();
   rt_rtc_enable();
 }
@@ -124,11 +135,9 @@ static unsigned int rt_rtc_status_get(){
   return rt_rtc_reg_read(RTC_Status_Addr);
 }
 
-static void  rt_rtc_reset(){
-  RtcT rtc;
-  rtc.Raw = rt_rtc_reg_read(RTC_Ctrl_Addr);
-  rtc.conf.soft_rst = RTC_Soft_Reset;
-  rt_rtc_reg_config(RTC_Ctrl_Addr, (unsigned int) rtc.Raw);
+static void  rt_rtc_reset()
+{
+  rt_rtc_reg_config(RTC_Ctrl_Addr, RTC_Soft_Reset | RTC_Standby_Mode);
 }
 
 static void  rt_rtc_calibration(){
@@ -162,35 +171,30 @@ static void  rt_rtc_getTime(rt_rtc_calendar_t *calendar){
   calendar->date = rt_rtc_reg_read(RTC_Calendar_DATE_Addr);
 }
 
-static void  rt_rtc_cntDwn_start(rt_rtc_cntDwn_t *cntDwn){
-  RtcT rtc;
-  rt_rtc_calendar_stop();
-  rt_rtc_alarm_stop();
-  // Clear the RTC countdown interrupt in case it has been used previously
-  // without any interrupt handler. This can hapen for example when using RTC
-  // to wakeup from deep sleep mode where the runtime, which is booting from
-  // scratch will not handle the interrupt.
-  rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Timer1_Flag);
-  rtc.Raw = rt_rtc_reg_read(RTC_CntDown_Ctrl_Addr);
-  if (cntDwn->repeat_en) rtc.cntDwnCtrl.cntDwn1_mode = RTC_CountDown1_Rpt_Mode; // Set to repeat mode, if repeat = 1
-  rtc.cntDwnCtrl.cntDwn1_En = RTC_CountDown1_Active;                 // Start the CountDown timer
-  rt_rtc_reg_config(RTC_CntDown_Ctrl_Addr, (unsigned int) rtc.Raw);
+static void  rt_rtc_cntDwn_start(rt_rtc_cntDwn_t *cntDwn)
+  {
+  Rtc_cntDwn_ctrlT reg = { .raw = 0 };
+
+  if (cntDwn->repeat_en)
+    reg.cntDwn1_mode = RTC_CountDown1_Rpt_Mode; // Set to repeat mode, if repeat = 1
+
+  reg.cntDwn1_En = RTC_CountDown1_Active;                 // Start the CountDown timer
+
+  rt_rtc_reg_config(RTC_CntDown_Ctrl_Addr, reg.raw);
 }
 
-static void  rt_rtc_cntDwn_stop(){
-  RtcT rtc;
-  rtc.Raw = rt_rtc_reg_read(RTC_CntDown_Ctrl_Addr);
-  rtc.cntDwnCtrl.cntDwn1_En = RTC_CountDown1_Inactive;                 // Start the CountDown timer
-  rt_rtc_reg_config(RTC_CntDown_Ctrl_Addr, (unsigned int) rtc.Raw);
+static void  rt_rtc_cntDwn_stop()
+{
+  Rtc_cntDwn_ctrlT reg = { .raw = 0 };
+
+  reg.cntDwn1_En = RTC_CountDown1_Inactive;                 // Start the CountDown timer
+
+  rt_rtc_reg_config(RTC_CntDown_Ctrl_Addr, reg.raw);
 }
 
 static void  rt_rtc_countDown(rt_rtc_cntDwn_t *cntDwn){
   RtcT rtc;
   rt_rtc_reg_config(RTC_CntDown1_Init_Addr, cntDwn->value);                 // Configure the init value
-
-  rtc.Raw = rt_rtc_reg_read(RTC_IRQ_Mask_Addr);
-  rtc.irqMask.timer1_masked = RTC_Timer1_Irq_Enable;
-  rt_rtc_reg_config(RTC_IRQ_Mask_Addr, (unsigned int) rtc.Raw);     // Enable the countdown timer 1 interruption
 }
 
 static void  rt_rtc_alarm_start(rt_rtc_alarm_t * alarm){
@@ -212,11 +216,6 @@ static void  rt_rtc_alarm_stop(){
 }
 
 static void  rt_rtc_set_alarm(rt_rtc_alarm_t* alarm){
-  RtcT rtc;
-  rtc.Raw = rt_rtc_reg_read(RTC_IRQ_Mask_Addr);
-  rtc.irqMask.alarm1_masked = RTC_Alarm1_Irq_Enable;
-  rt_rtc_reg_config(RTC_IRQ_Mask_Addr, (unsigned int) rtc.Raw);     // Enable the Alarm interruption
-
   if (alarm->time_date.date) rt_rtc_reg_config(RTC_Alarm1_DATE_Addr, alarm->time_date.date);
   rt_rtc_reg_config(RTC_Alarm1_TIME_Addr, alarm->time_date.time);
 }
@@ -226,22 +225,42 @@ void rt_rtc_conf_init(rt_rtc_conf_t *conf)
   conf->clkDivider = 0x8000;
 }
 
+
+
+static void __rt_rtc_cold_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
+{
+  rt_rtc_reg_config(RTC_IRQ_Mask_Addr, RTC_Timer1_Irq_Enable | RTC_Alarm1_Irq_Enable);     // Enable the countdown timer 1 interruption
+
+  // config the RTC in calendar mode.
+  rt_rtc_set_clk(rtc->conf.clkDivider);
+  rt_rtc_enable();
+}
+
+
+
 static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
 {
   // TODI this would be better to always have these events active so that 
   // the runtime can clear interrupts during boot and before the RTC is opened
   // so that the user can clear pending wkaeup flags before opening RTC
-  soc_eu_fcEventMask_setEvent(RTC_RTC_INT_EVENT);
-  soc_eu_fcEventMask_setEvent(RTC_RTC_APB_EVENT);
-  rt_rtc_reset();
+#ifdef ITC_VERSION
+
+#else
+
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_RTC_APB_IRQ);
+
+#endif
+
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_RTC_IRQ);
+
+  //rt_rtc_reset();
   rtc->conf.mode = MODE_CALENDAR;
   if (rtc_conf)
     memcpy(&rtc->conf, rtc_conf, sizeof(rt_rtc_conf_t));
   else
     rt_rtc_conf_init(&rtc->conf);
-  // config the RTC in calendar mode.
-  rt_rtc_set_clk(rtc->conf.clkDivider);
-  rt_rtc_calendar(&rtc->conf.calendar);
+
+
   rtc->conf.mode = MODE_CALENDAR;
   rtc->alarm_event = NULL;
   rtc->countdown_event = NULL;
@@ -253,12 +272,25 @@ static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
   // to re-open everything after wake-up. Once we support a mode where
   // everything is restored, we should make sure the associated event
   // is executed
-  rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Timer1_Flag | RTC_Irq_Calibration_Flag | RTC_Irq_Calibration_Flag);
+  if (rt_pm_wakeup_state() != RT_PM_WAKEUP_COLD)
+  {
+    rt_rtc_reg_config(RTC_IRQ_Flag_Addr, RTC_Irq_Timer1_Flag | RTC_Irq_Calibration_Flag | RTC_Irq_Calibration_Flag);
+  }
 }
 
 rt_rtc_t* rt_rtc_open(rt_rtc_conf_t *rtc_conf, rt_event_t *event)
 {
   if(dev_rtc.open_count) goto error;
+
+  if (__rt_rtc_init_done == 0)
+  {
+    __rt_rtc_init_done = 1;
+    if (rt_pm_wakeup_state() == RT_PM_WAKEUP_COLD)
+    {
+      __rt_rtc_cold_init(&dev_rtc, rtc_conf);
+    }
+  }
+
   rt_rtc_init(&dev_rtc, rtc_conf);
   if (event) __rt_event_enqueue(event);
   dev_rtc.open_count++;
@@ -284,8 +316,12 @@ error:
 void rt_rtc_close(rt_rtc_t *rtc, rt_event_t *event)
 {
   rt_rtc_disable();
-  soc_eu_fcEventMask_clearEvent(RTC_RTC_INT_EVENT);
-  soc_eu_fcEventMask_clearEvent(RTC_RTC_APB_EVENT);
+
+#ifndef ITC_VERSION
+  soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_RTC_IRQ);
+#endif
+
+  soc_eu_fcEventMask_clearEvent(ARCHI_SOC_EVENT_RTC_APB_IRQ);
   if (event) __rt_event_enqueue(event);
 }
 
@@ -377,4 +413,5 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_rtc_init()
 {
   __rtc_handler = NULL;
   dev_rtc.open_count = 0;
+  __rt_rtc_init_done = 0;
 }
