@@ -29,8 +29,10 @@
 #include "rtos/malloc/pmsis_malloc.h"
 #include "rtos/malloc/pmsis_l1_malloc.h"
 #include "rtos/malloc/pmsis_l2_malloc.h"
+#include "rtos/perf.h"
 #include "hyperbus/hyperram.h"
 
+#include "pmsis/implem/implem.h"
 #include "rt/implem/implem.h"
 
 extern int pmsis_exit_value;

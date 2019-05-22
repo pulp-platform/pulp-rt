@@ -80,18 +80,18 @@ typedef uint32_t (*device_rw_func_async)(struct pi_device *device,
 typedef uint32_t (*device_ioctl_func_async)(struct pi_device *device,
         uint32_t func_id, void *arg, pi_task_t *async);
 
-typedef int (*open_func)(struct pi_device *device, void *conf);
+typedef int (*open_func)(struct pi_device *device);
 typedef int (*close_func)(struct pi_device *device);
 
-typedef int (*open_func_async)(struct pi_device *device, void *conf,
+typedef int (*open_func_async)(struct pi_device *device,
         pi_task_t *async);
 typedef int (*close_func_async)(struct pi_device *device, pi_task_t *async);
 
 // pmsis device minimal api: used for basic inheritance
 typedef struct pi_device_api {
-    int (*open)(struct pi_device *device, void *conf);
+    int (*open)(struct pi_device *device);
     int (*close)(struct pi_device *device);
-    int (*open_async)(struct pi_device *device, void *conf, pi_task_t *async);
+    int (*open_async)(struct pi_device *device, pi_task_t *async);
     int (*close_async)(struct pi_device *device, pi_task_t *async);
     uint32_t (*read)(struct pi_device *device,
             uintptr_t size, const void *addr, const void *buffer, pi_task_t *async);

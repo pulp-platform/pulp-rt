@@ -17,13 +17,21 @@
 #ifndef __PMSIS_DRIVER_CORE_API_H__
 #define __PMSIS_DRIVER_CORE_API_H__
 
+#include "pmsis.h"
+
+// device type placed at the top of conf
+typedef enum {
+    PI_DEVICE_CLUSTER_TYPE,
+    PI_DEVICE_HYPERBUS_TYPE,
+    PI_DEVICE_SPI_TYPE
+} pi_device_e;
+
 
 // Open a device using its name if available
 // if no name is passed, just allocate necessary memory
 struct pi_device *pi_open(const char *name);
 
 void pi_open_from_conf(struct pi_device *device, void *conf);
-
 
 int pmsis_close(struct pi_device *device);
 

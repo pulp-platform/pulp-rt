@@ -49,7 +49,7 @@ INLINE int cl_cluster_nb_cores();
  *
  * Calling this function will create a team of workers and call the specified entry point
  * to start multi-core processing.
- * Use a full fledged cluster_task
+ * Use a full fledged pi_cluster_task
  * However, fork_task->stacks/stack_size will only concern slave cores
  * \param   fork_task task to be forked on slave cores
  */
