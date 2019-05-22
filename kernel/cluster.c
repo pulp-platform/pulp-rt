@@ -22,6 +22,7 @@
 #include "stdio.h"
 #include "hal/gvsoc/gvsoc.h"
 #include "pmsis.h"
+#include "archi/pulp.h"
 
 #if defined(ARCHI_HAS_CLUSTER)
 
@@ -341,12 +342,13 @@ int pi_cluster_open(struct pi_device *cluster_dev)
   int irq = rt_irq_disable();
 
   struct cluster_driver_conf *conf = (struct cluster_driver_conf *)cluster_dev->config;
+  int cid = conf->id;
 
-  cluster_dev->data = (void *)&__rt_fc_cluster_data[conf->id];
+  cluster_dev->data = (void *)&__rt_fc_cluster_data[cid];
 
   rt_event_t *event = __rt_wait_event_prepare_blocking();
 
-  if (__rt_cluster_mount(&__rt_fc_cluster_data[conf->id], conf->id, 0, event))
+  if (__rt_cluster_mount(&__rt_fc_cluster_data[cid], conf->id, 0, event))
   {
     rt_irq_restore(irq);
     return -1;
