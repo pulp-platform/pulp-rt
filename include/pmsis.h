@@ -29,7 +29,8 @@
 #include "rtos/malloc/pmsis_malloc.h"
 #include "rtos/malloc/pmsis_l1_malloc.h"
 #include "rtos/malloc/pmsis_l2_malloc.h"
-#include "rtos/perf.h"
+#include "drivers/perf.h"
+#include "chips/gap8/drivers/gap8_perf.h"
 #include "hyperbus/hyperram.h"
 
 #include "pmsis/implem/implem.h"

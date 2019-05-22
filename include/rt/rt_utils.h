@@ -210,6 +210,11 @@ static inline uint32_t pi_nb_cluster_cores()
   return rt_nb_pe();
 }
 
+static inline uint32_t pi_is_fc()
+{
+  return rt_is_fc();
+}
+
 /// @endcond
 
 #endif
