@@ -17,7 +17,7 @@
 #ifndef __PMSIS_DRIVER_CORE_API_H__
 #define __PMSIS_DRIVER_CORE_API_H__
 
-#include "pmsis.h"
+#include "pmsis_types.h"
 
 // device type placed at the top of conf
 typedef enum {
