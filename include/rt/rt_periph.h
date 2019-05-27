@@ -44,6 +44,9 @@ static inline void rt_periph_copy_init(rt_periph_copy_t *copy, int flags);
 void rt_periph_copy(rt_periph_copy_t *copy, int channel, unsigned int addr, int size,
   unsigned int cfg, rt_event_t *event);
 
+void rt_periph_hyper_copy(rt_periph_copy_t *copy, int channel, unsigned int addr, int size,
+  unsigned int cfg, rt_event_t *event);
+
 void rt_periph_single_copy(rt_periph_copy_t *copy, int channel, unsigned int addr, int size,
   unsigned int cfg, rt_event_t *event);
 

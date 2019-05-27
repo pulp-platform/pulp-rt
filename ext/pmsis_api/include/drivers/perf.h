@@ -29,12 +29,6 @@
  * limits the number of events which can be monitored at the same time and depends on the architecture and the platform.
  *
  * In addition, this API uses a few other HW mechanisms useful for monitoring performance such as timers.
- *
- * To use the API, a structure of type pi_perf_t must be allocated and passed to most of the calls. This structure
- * contains the desired configuration and is used to save the values of the performance counters.
- * It can be used by one core or several (if concurrent accesses are protected).
- * The idea is that the hardware counters can be reset, started and stopped in order to get the event values for
- * a specific period and this can then be cumulated to the performance structure.
  */
 
 /**        
@@ -50,7 +44,6 @@
  *
  * At least PI_PERF_CYCLES and another event can be monitored at the same time as the first one is using the timer.
  *
- * \param perf  A pointer to the performance structure.
  * \param events A mask containing the events to activate. This is a bitfield, so events identifier must be used like 1 << PI_PERF_CYCLES.
  */
 static inline void pi_perf_conf(unsigned events);
@@ -60,10 +53,7 @@ static inline void pi_perf_conf(unsigned events);
 /** \brief Reset all hardware performance counters.
  *
  * All hardware performance counters are set to 0.
- * Note that this does not modify the value of the counters in the specified structure,
- * this must be done by calling pi_perf_init.
  *
- * \param perf  A pointer to the performance structure.
  */
 static inline void pi_perf_reset();
 
@@ -75,7 +65,6 @@ static inline void pi_perf_reset();
  * The counter retains its value between stop and start so it is possible to easily sum events for several
  * portions of code.
  *
- * \param perf  A pointer to the performance structure.
  */
 static inline void pi_perf_start();
 
@@ -83,7 +72,6 @@ static inline void pi_perf_start();
 
 /** \brief Stop monitoring configured events.
  *
- * \param perf  A pointer to the performance structure.
  */
 static inline void pi_perf_stop();
 

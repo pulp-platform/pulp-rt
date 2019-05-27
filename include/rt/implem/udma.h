@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna and
- * GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef __RT_IMPLEM_IMPLEM_H__
-#define __RT_IMPLEM_IMPLEM_H__
+#ifndef __RT_IMPLEM_UDMA_H__
+#define __RT_IMPLEM_UDMA_H__
 
-/// @cond IMPLEM
+extern void __rt_udma_handle_copy();
 
-#include "rt/implem/utils.h"
-#include "rt/implem/hyperram.h"
-#include "rt/implem/dma.h"
-#include "rt/implem/cluster.h"
-#include "rt/implem/udma.h"
-#include "rt/implem/cpi.h"
+extern void __rt_udma_copy_enqueue(pi_task_t *task, int channel_id, rt_udma_channel_t *channel, uint32_t buffer, uint32_t size, uint32_t cfg);
 
-static inline struct pi_task *pi_task(struct pi_task *task)
-{
-  task->id = FC_TASK_NONE_ID;
-  task->arg[0] = (uint32_t)0;
-  return task;
-}
+extern void __rt_udma_channel_init(int channel_id, rt_udma_channel_t *channel);
 
-/// @endcond
+extern void __rt_udma_channel_reg_data(int channel_id, void *data);
 
 #endif

@@ -177,12 +177,26 @@ static void __rt_hyperflash_erase_chip(rt_flash_t *_dev, rt_event_t *event)
   }
 }
 
-static void __rt_hyperflash_erase(rt_flash_t *_dev, void *data, int size, rt_event_t *event)
-{
-}
-
 static void __rt_hyperflash_erase_sector(rt_flash_t *_dev, void *data, rt_event_t *event)
 {
+  rt_hyperflash_t *dev = (rt_hyperflash_t *)_dev;
+
+  __rt_hyperflash_set_reg(dev, 0x555, 0xAA);
+  __rt_hyperflash_set_reg(dev, 0x2AA, 0x55);
+  __rt_hyperflash_set_reg(dev, 0x555, 0x80);
+  __rt_hyperflash_set_reg(dev, 0x555, 0xAA);
+  __rt_hyperflash_set_reg(dev, 0x2AA, 0x55);
+  __rt_hyperflash_set_reg(dev, (int)data, 0x30);
+
+  while(((__rt_hyperflash_get_status_reg(dev) >> 7) & 1) == 0)
+  {
+    rt_time_wait_us(1000);
+  }
+}
+
+static void __rt_hyperflash_erase(rt_flash_t *_dev, void *data, int size, rt_event_t *event)
+{
+  __rt_hyperflash_erase_sector(_dev, data, event);
 }
 
 rt_flash_dev_t hyperflash_desc = {

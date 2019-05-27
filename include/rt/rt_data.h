@@ -279,17 +279,17 @@ struct pi_task_implem
   union {
     rt_periph_copy_t copy;
     struct {
-      unsigned int data[6];
+      unsigned int data[8];
     };
     struct {
       unsigned int time;
     };
     rt_bridge_req_t bridge_req;
   };
-};
+} __attribute__((packed));
 
 #define CLUSTER_TASK_IMPLEM struct pi_cluster_task_implem implem
-#define PI_TAsK_IMPLEM struct pi_task_implem implem
+#define PI_TASK_IMPLEM struct pi_task_implem implem
 
 #include "pmsis_types.h"
 #include "pmsis_cluster/cl_pmsis_types.h"
@@ -702,12 +702,16 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #include "rt/data/rt_data_spim.h"
 #include "rt/data/rt_data_camera.h"
 #include "rt/data/rt_data_i2c.h"
+#include "rt/data/udma.h"
+#include "rt/data/cpi.h"
+#include "rt/data/i2c.h"
+#include "rt/data/spi.h"
 
 #endif
 
 #define RT_EVENT_T_CALLBACK   0
 #define RT_EVENT_T_ARG        4
-#define RT_EVENT_T_NEXT       40
+#define RT_EVENT_T_NEXT       24
 
 #define RT_SCHED_T_FIRST      0
 #define RT_SCHED_T_LAST       4
@@ -824,6 +828,29 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC_FOR_CL    (0*4)
 #define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC           (1*4)
 #define RT_CLUSTER_CALL_POOL_T_FIRST_LAST_FC           (2*4)
+
+
+#define PI_TASK_T_ARG_0          (0*4)
+#define PI_TASK_T_ARG_1          (1*4)
+#define PI_TASK_T_ARG_2          (2*4)
+#define PI_TASK_T_ARG_3          (3*4)
+#define PI_TASK_T_DONE           (4*4)
+#define PI_TASK_T_ID             (5*4)
+#define PI_TASK_T_NEXT           (6*4)
+#define PI_TASK_T_THREAD         (7*4)
+#define PI_TASK_T_PENDING        (8*4)
+#define PI_TASK_T_KEEP           (9*4)
+#define PI_TASK_T_SAVED_CALLBACK (10*4)
+#define PI_TASK_T_SAVED_ARG      (11*4)
+#define PI_TASK_T_SAVED_PENDING  (12*4)
+#define PI_TASK_T_DATA_0         (13*4)
+#define PI_TASK_T_DATA_1         (14*4)
+#define PI_TASK_T_DATA_2         (15*4)
+#define PI_TASK_T_DATA_3         (16*4)
+#define PI_TASK_T_DATA_4         (17*4)
+#define PI_TASK_T_DATA_5         (18*4)
+#define PI_TASK_T_DATA_6         (19*4)
+#define PI_TASK_T_DATA_7         (20*4)
 
 /// @endcond
 

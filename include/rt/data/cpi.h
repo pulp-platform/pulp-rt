@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna and
- * GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef __RT_IMPLEM_IMPLEM_H__
-#define __RT_IMPLEM_IMPLEM_H__
+#ifndef __RT_DATA_CPI_H__
+#define __RT_DATA_CPI_H__
 
-/// @cond IMPLEM
-
-#include "rt/implem/utils.h"
-#include "rt/implem/hyperram.h"
-#include "rt/implem/dma.h"
-#include "rt/implem/cluster.h"
-#include "rt/implem/udma.h"
-#include "rt/implem/cpi.h"
-
-static inline struct pi_task *pi_task(struct pi_task *task)
-{
-  task->id = FC_TASK_NONE_ID;
-  task->arg[0] = (uint32_t)0;
-  return task;
-}
-
-/// @endcond
+typedef struct {
+  int channel_id;
+  int open_count;
+  uint32_t base;
+  rt_udma_channel_t channel;
+} rt_cpi_t;
 
 #endif

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich and University of Bologna and
- * GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef __RT_IMPLEM_IMPLEM_H__
-#define __RT_IMPLEM_IMPLEM_H__
+#ifndef __RT_DATA_SPIM_H__
+#define __RT_DATA_SPIM_H__
 
-/// @cond IMPLEM
+#ifndef LANGUAGE_ASSEMBLY
 
-#include "rt/implem/utils.h"
-#include "rt/implem/hyperram.h"
-#include "rt/implem/dma.h"
-#include "rt/implem/cluster.h"
-#include "rt/implem/udma.h"
-#include "rt/implem/cpi.h"
+typedef struct {
+  pi_task_t *pending_copy;
+  pi_task_t *waiting_first;
+  pi_task_t *waiting_last;
+  unsigned int udma_cmd[4];
+  int open_count;
+} pi_spim_t;
 
-static inline struct pi_task *pi_task(struct pi_task *task)
-{
-  task->id = FC_TASK_NONE_ID;
-  task->arg[0] = (uint32_t)0;
-  return task;
-}
+#endif
 
-/// @endcond
+#define PI_SPIM_T_PENDING_COPY      0
+#define PI_SPIM_T_WAITING_FIRST     4
+#define PI_SPIM_T_WAITING_LAST      8
 
 #endif

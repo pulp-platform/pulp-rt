@@ -56,6 +56,8 @@ __rt_fc_socevents_handler:
 
   // We have the channel ID in x10, get pointer to the corresponding channel
 
+  // TODO once deprecated drivers are removed this should disappear, and we should keep
+  // only the callback
 #if defined(ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT) && ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT > 2
   andi   x8, x10, 1
   srli   x10, x10, 1
@@ -77,8 +79,8 @@ __rt_soc_evt_no_udma_channel:
   li x9, ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + ARCHI_SOC_EVENT_UDMA_NB_EXTRA_EVT
   bge x10, x9, __rt_soc_evt_no_udma
 
-  addi x11, x10, -ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT
-  slli x11, x11, 2
+  addi x8, x10, -ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT
+  slli x11, x8, 2
   lw   x11, %tiny(__rt_udma_extra_callback)(x11)
 
   jr   x11

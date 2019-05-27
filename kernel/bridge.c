@@ -784,6 +784,7 @@ void __rt_bridge_req_shutdown()
     __rt_bridge_printf_flush();
 
   #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+
     // It can happen that the bridge is still in a state where he haven't
     // seen that we became available. Wait until this is the case.
     while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)
