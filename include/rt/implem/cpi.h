@@ -17,6 +17,8 @@
 #ifndef __RT_IMPLEM_CPI_H__
 #define __RT_IMPLEM_CPI_H__
 
+#ifdef ARCHI_UDMA_HAS_CAM
+
 static inline void pi_cpi_control_start(struct pi_device *device)
 {
   rt_cpi_t *cpi = (rt_cpi_t *)device->data;
@@ -97,5 +99,7 @@ static inline void pi_cpi_set_slice(struct pi_device *device, uint32_t x, uint32
     );
   }
 }
+
+#endif
 
 #endif
