@@ -45,7 +45,7 @@ static void __rt_hyperflash_set_reg(rt_hyperflash_t *dev, unsigned int addr, uns
 {
   rt_event_t *event = rt_event_get_blocking(NULL);
   __rt_hyperflash_set_reg_buffer[0] = value;
-  __rt_hyper_copy_aligned(UDMA_CHANNEL_ID(dev->channel) + 1, (void *)__rt_hyperflash_set_reg_buffer, (void *)(addr<<1), 2, event, REG_MBR1);
+  rt_hyperflash_copy(dev, UDMA_CHANNEL_ID(dev->channel) + 1, __rt_hyperflash_set_reg_buffer, (void *)(addr<<1), 2, event);
   rt_event_wait(event);
 }
 
@@ -79,12 +79,21 @@ static rt_flash_t *__rt_hyperflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt
     hyper->channel = ARCHI_UDMA_HYPER_ID(conf->id);
   }
 
-  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(hyper->channel));
-  soc_eu_fcEventMask_setEvent(UDMA_EVENT_ID(hyper->channel)+1);
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<hyper->channel));
+  struct pi_hyperram_conf hyper_conf;
+
+  pi_hyperram_conf_init(&hyper_conf);
+
+  hyper_conf.id = hyper->channel - ARCHI_UDMA_HYPER_ID(0);
+
+  pi_open_from_conf(&hyper->device, &hyper_conf);
+
+  if (pi_hyperram_open(&hyper->device))
+    return NULL;
 
   // HyperFlash
+#if !defined(ARCHI_UDMA_HYPER_VERSION) || ARCHI_UDMA_HYPER_VERSION == 1
   hal_hyper_udma_dt1_set(0);
+#endif
 
   if (event) __rt_event_enqueue(event);
 
@@ -190,7 +199,6 @@ static void __rt_hyperflash_erase_sector(rt_flash_t *_dev, void *data, rt_event_
   {
     rt_time_wait_us(1000);
   }
-
 }
 
 static void __rt_hyperflash_erase(rt_flash_t *_dev, void *data, int size, rt_event_t *event)

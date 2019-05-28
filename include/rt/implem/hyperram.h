@@ -147,6 +147,13 @@ static inline void pi_cl_hyperram_copy_2d(struct pi_device *device,
   __cl_hyperram_cluster_copy_2d(device, hyper_addr, addr, size, stride, length, req, ext2loc);
 }
 
+// Performs a direct aligned copy:
+//  - hyper addr is multiple of 2
+//  - l2 addr is multiple of 4
+//  - size is multiple of 4
+void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event);
+
 #endif
 
 #endif

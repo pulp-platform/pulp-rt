@@ -79,7 +79,7 @@ static void __pi_hyperram_free(pi_hyperram_t *hyper);
 //  - hyper addr is multiple of 2
 //  - l2 addr is multiple of 4
 //  - size is multiple of 4
-static void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
+void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
   uint32_t addr, uint32_t _hyper_addr, uint32_t size, pi_task_t *event);
 
 // Performs a misaligned 2d read without any constraint.
@@ -368,7 +368,7 @@ static void __pi_hyperram_free(pi_hyperram_t *hyper)
 
 
 
-static void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
+void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
   uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event)
 {
   unsigned int base = hal_udma_channel_base(channel);
@@ -710,7 +710,7 @@ static void __pi_hyper_copy_misaligned(struct pi_task *task)
 static void __pi_hyper_copy_exec(int channel, uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event)
 {
   // Check if we are in the fast case where everything is correctly aligned.
-  if (likely((((int)addr & 0x3) == 0) && (((int)hyper_addr) & 0x1) == 0 && (((int)size & 0x3) == 0)))
+  if (likely((((int)addr & 0x3) == 0) && (((int)hyper_addr) & 0x1) == 0 && (((int)size & 0x3) == 0 || ((channel & 1) && ((int)size & 0x1) == 0))))
   {
     __pi_hyper_copy_aligned(channel, addr, hyper_addr, size, event);
   }

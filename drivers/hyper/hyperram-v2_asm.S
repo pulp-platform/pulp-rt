@@ -48,7 +48,7 @@ __rt_hyper_repeat_copy:
   p.bclr    x9, x11, 0, UDMA_CHANNEL_SIZE_LOG2
 #endif
   add       x10, x10, x12
-  sw        x10, HYPER_EXT_ADDR_CHANNEL_CUSTOM_OFFSET(x9)
+  sw        x10, HYPER_EXT_ADDR_OFFSET(x9)
   sw        x10, %tiny(__rt_hyper_pending_hyper_addr)(x0)
 
   lw        x10, %tiny(__rt_hyper_pending_addr)(x0)
@@ -58,7 +58,7 @@ __rt_hyper_repeat_copy:
   blt       x12, x9, __rt_hyper_repeat_copy_not_last
   mv        x12, x9
   sw        x0, %tiny(__rt_hyper_pending_repeat)(x0)
-  beq       x12, x0, udma_event_handler_end
+  beq       x12, x0, __rt_fc_socevents_handler_exit
 
 __rt_hyper_repeat_copy_not_last:
   sw        x10, %tiny(__rt_hyper_pending_addr)(x0)
@@ -69,7 +69,7 @@ __rt_hyper_repeat_copy_not_last:
   li        x10, UDMA_CHANNEL_CFG_EN
   sw        x10, UDMA_CHANNEL_CFG_OFFSET(x11)
 
-  j         udma_event_handler_end
+  j         __rt_fc_socevents_handler_exit
 
 
 
@@ -86,15 +86,15 @@ __rt_hyper_handle_emu_task:
   beqz      x10, __rt_hyper_handle_pending_tasks
 
   la      x12, __rt_hyper_resume_emu_task
-  la        x9, udma_event_handler_end
+  la        x9, __rt_fc_socevents_handler_exit
   j         __rt_call_external_c_function
 
 
 __rt_hyper_handle_pending_tasks:
   lw        x10, %tiny(__rt_hyper_pending_tasks)(x0)
-  beqz      x10, udma_event_handler_end
+  beqz      x10, __rt_fc_socevents_handler_exit
 
   la 	    x12, __rt_hyper_resume_copy
-  la        x9, udma_event_handler_end
+  la        x9, __rt_fc_socevents_handler_exit
   j         __rt_call_external_c_function
 

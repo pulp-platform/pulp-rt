@@ -75,13 +75,6 @@ static int __pi_hyperram_init(pi_hyperram_t *hyper, int ramsize);
 // Free all resources allocated for the driver
 static void __pi_hyperram_free(pi_hyperram_t *hyper);
 
-// Performs a direct aligned copy:
-//  - hyper addr is multiple of 2
-//  - l2 addr is multiple of 4
-//  - size is multiple of 4
-static void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
-  uint32_t addr, uint32_t _hyper_addr, uint32_t size, pi_task_t *event);
-
 // Performs a misaligned 2d read without any constraint.
 // This function can be either called directly or as an event callback
 // This function is like a state machine,
@@ -230,11 +223,32 @@ int pi_hyperram_open(struct pi_device *device)
   hyper->channel = periph_id;
 
   // Activate routing of UDMA hyper soc events to FC to trigger interrupts
-  soc_eu_fcEventMask_setEvent(channel);
-  soc_eu_fcEventMask_setEvent(channel+1);
+  soc_eu_fcEventMask_setEvent(channel+3);
 
   // Deactivate Hyper clock-gating
   plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
+
+  hyper_clk_div_set(UDMA_HYPER_ADDR(0), 4);
+
+  hyper_device_set(UDMA_HYPER_ADDR(0),
+    HYPER_DEVICE_DT1(1) |
+    HYPER_DEVICE_DT0(0) |
+    HYPER_DEVICE_TYPE(1)
+  );
+
+  hyper_mba0_set(UDMA_HYPER_ADDR(0), REG_MBR0);
+  hyper_mba1_set(UDMA_HYPER_ADDR(0), REG_MBR1);
+
+  hyper_timing_cfg_set(UDMA_HYPER_ADDR(0),
+    HYPER_TIMING_CFG_CS_MAX(665) |
+    HYPER_TIMING_CFG_RWDS_DELAY(1) |
+    HYPER_TIMING_CFG_RW_RECOVERY(6) |
+    HYPER_TIMING_CFG_ADDITIONAL_LATENCY_AUTOCHECK_EN(1) |
+    HYPER_TIMING_CFG_LATENCY0(6) |
+    HYPER_TIMING_CFG_LATENCY1(6)
+  );
+
+  hyper_irq_en_set(UDMA_HYPER_ADDR(0), 1);
 
   // Redirect all UDMA hyper events to our callback
   __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy);
@@ -268,6 +282,7 @@ int pi_hyperram_free(struct pi_device *device, uint32_t chunk, uint32_t size)
   pi_hyperram_t *hyper = (pi_hyperram_t *)device->data;
   return rt_extern_free(&hyper->alloc, (void *)chunk, size);
 }
+
 
 
 
@@ -368,7 +383,7 @@ static void __pi_hyperram_free(pi_hyperram_t *hyper)
 
 
 
-static void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
+void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
   uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event)
 {
   unsigned int base = hal_udma_channel_base(channel);
@@ -710,7 +725,7 @@ static void __pi_hyper_copy_misaligned(struct pi_task *task)
 static void __pi_hyper_copy_exec(int channel, uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event)
 {
   // Check if we are in the fast case where everything is correctly aligned.
-  if (likely((((int)addr & 0x3) == 0) && (((int)hyper_addr) & 0x1) == 0 && (((int)size & 0x3) == 0)))
+  if (likely((((int)addr & 0x3) == 0) && (((int)hyper_addr) & 0x1) == 0 && (((int)size & 0x3) == 0 || ((channel & 1) && ((int)size & 0x1) == 0))))
   {
     __pi_hyper_copy_aligned(channel, addr, hyper_addr, size, event);
   }

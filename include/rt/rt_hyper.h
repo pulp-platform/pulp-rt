@@ -72,7 +72,7 @@ typedef rt_periph_copy_t rt_hyperram_copy_t;
  * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
  * or through a memory allocator.
  */
-typedef struct rt_hyperram_req_s rt_hyperram_req_t;
+typedef struct pi_cl_hyperram_req_s rt_hyperram_req_t;
 
 
 
@@ -317,7 +317,11 @@ static inline void rt_hyperram_free_cluster_wait(rt_hyperram_free_req_t *req);
 
 /// @cond IMPLEM
 
+#include "hyperbus/hyperram.h"
+#include "rt/implem/hyperram.h"
+
 #if defined(ARCHI_UDMA_HAS_HYPER)
+
 
 void __rt_hyper_copy(int channel,
   void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr);
@@ -329,63 +333,68 @@ void __rt_hyper_copy_2d(int channel,
 static inline void rt_hyperram_read(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, rt_event_t *event)
 {
-  __rt_hyper_copy(UDMA_CHANNEL_ID(dev->channel) + 0, addr, hyper_addr, size, event, REG_MBR0);
+  if (event)
+    pi_hyperram_read_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, event);
+  else
+    pi_hyperram_read((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size);
 }
 
 
 static inline void rt_hyperram_read_2d(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event)
 {
-  __rt_hyper_copy_2d(UDMA_CHANNEL_ID(dev->channel) + 0, addr, hyper_addr, size, stride, length, event, REG_MBR0);
+  if (event)
+    pi_hyperram_read_2d_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, event);
+  else
+    pi_hyperram_read_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length);
 }
 
 
 static inline void rt_hyperram_write(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, rt_event_t *event)
 {
-  __rt_hyper_copy(UDMA_CHANNEL_ID(dev->channel) + 1, addr, hyper_addr, size, event, REG_MBR0);
+  if (event)
+    pi_hyperram_write_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, event);
+  else
+    pi_hyperram_write((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size);
 }
 
 
 static inline void rt_hyperram_write_2d(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event)
 {
-  __rt_hyper_copy_2d(UDMA_CHANNEL_ID(dev->channel) + 1, addr, hyper_addr, size, stride, length, event, REG_MBR0);
+  if (event)
+    pi_hyperram_write_2d_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, event);
+  else
+    pi_hyperram_write_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length);
 }
-
-int __rt_hyperram_init(rt_hyperram_t *dev, int ramsize);
 
 static inline void *rt_hyperram_alloc(rt_hyperram_t *dev, int size)
 {
-  return rt_extern_alloc(dev->alloc, size);
+  return (void *)pi_hyperram_alloc((struct pi_device *)dev, size);
 }
 
 static inline int rt_hyperram_free(rt_hyperram_t *dev, void *chunk, int size)
 {
-  return rt_extern_free(dev->alloc, chunk, size);
+  return pi_hyperram_free((struct pi_device *)dev, (uint32_t)chunk, size);
 }
 
-void __rt_hyper_copy_aligned(int channel,
-  void *addr, void *hyper_addr, int size, rt_event_t *event, int mbr);
-
 static inline void rt_hyperflash_copy(rt_hyperflash_t *dev, int channel,
-   void *addr, void *hyper_addr, int size, rt_event_t *event)
+   void *addr, void *_hyper_addr, int size, rt_event_t *event)
 {
-  rt_periph_copy_t *copy = &event->implem.copy;
 
-  rt_periph_copy_init_ctrl(copy, RT_PERIPH_COPY_HYPER);
-  copy->u.hyper.hyper_addr = REG_MBR1 | (unsigned int)hyper_addr;
+  uint32_t hyper_addr = REG_MBR1 | (unsigned int)_hyper_addr;
 
-  if (size > 1024) {
-    copy->addr = (unsigned int)addr;
-    copy->repeat = 1024;
-    copy->repeat_size = size;
-    size = 1024;
-  } else {
-    copy->repeat = 0;
-  }
-
-  rt_periph_copy(copy, UDMA_CHANNEL_ID(dev->channel) + channel, (unsigned int)addr, size, UDMA_CHANNEL_CFG_SIZE_16, event);
+  if (channel & 1)
+    if (event)
+      pi_hyperram_write_async(&dev->device, (uint32_t)hyper_addr, addr, size, event);
+    else
+      pi_hyperram_write(&dev->device, (uint32_t)hyper_addr, addr, size);
+  else
+    if (event)
+      pi_hyperram_read_async(&dev->device, (uint32_t)hyper_addr, addr, size, event);
+    else
+      pi_hyperram_read(&dev->device, (uint32_t)hyper_addr, addr, size);
 }
 
 #if defined(ARCHI_HAS_CLUSTER)
@@ -396,7 +405,7 @@ static inline void *rt_hyperram_alloc_cluster_wait(rt_hyperram_alloc_req_t *req)
 	{
 		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
 	}
-	return req->result;
+	return (void *)req->result;
 }
 
 static inline void rt_hyperram_free_cluster_wait(rt_hyperram_free_req_t *req)
@@ -415,11 +424,17 @@ static inline __attribute__((always_inline)) void rt_hyperram_cluster_wait(rt_hy
   }
 }
 
-void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
-  void *hyper_addr, void *addr, int size, rt_hyperram_req_t *req, int ext2loc);
+static inline void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
+  void *hyper_addr, void *addr, int size, rt_hyperram_req_t *req, int ext2loc)
+{
+  __cl_hyperram_cluster_copy((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, req, ext2loc);
+}
 
-void __rt_hyperram_cluster_copy_2d(rt_hyperram_t *dev,
-  void *hyper_addr, void *addr, int size, int stride, int length, rt_hyperram_req_t *req, int ext2loc);
+static inline void __rt_hyperram_cluster_copy_2d(rt_hyperram_t *dev,
+  void *hyper_addr, void *addr, int size, int stride, int length, rt_hyperram_req_t *req, int ext2loc)
+{
+  __cl_hyperram_cluster_copy_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, req, ext2loc);
+}
 
 static inline void rt_hyperram_cluster_read(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, rt_hyperram_req_t *req)

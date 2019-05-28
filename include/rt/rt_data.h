@@ -423,6 +423,7 @@ typedef struct rt_flash_s {
 typedef struct rt_hyperflash_s {
   rt_flash_t header;
   int channel;
+  struct pi_device device;
 } rt_hyperflash_t;
 
 // BEWARE, assembly offsets must be updated below if this structure is modified
@@ -580,38 +581,11 @@ typedef struct pi_cl_alloc_req_s rt_alloc_req_t;
 typedef struct pi_cl_free_req_s rt_free_req_t;
 
 
-typedef struct rt_hyperram_req_s {
-  rt_hyperram_t *dev;
-  void *addr;
-  void *hyper_addr;
-  int size;
-  int stride;
-  int length;
-  rt_event_t event;
-  int done;
-  unsigned char cid;
-  unsigned char is_write;
-  unsigned char is_2d;
-} rt_hyperram_req_t ;
+typedef struct pi_cl_hyperram_req_s rt_hyperram_req_t ;
 
-typedef struct rt_hyperram_alloc_req_s {
-  rt_hyperram_t *dev;
-  void *result;
-  int size;
-  rt_event_t event;
-  char done;
-  char cid;
-} rt_hyperram_alloc_req_t ;
+typedef struct pi_cl_hyperram_alloc_req_s rt_hyperram_alloc_req_t ;
 
-typedef struct rt_hyperram_free_req_s {
-  rt_hyperram_t *dev;
-  void *result;
-  int size;
-  void *chunk;
-  rt_event_t event;
-  char done;
-  char cid;
-} rt_hyperram_free_req_t ;
+typedef struct pi_cl_hyperram_free_req_s rt_hyperram_free_req_t ;
 
 typedef struct {
   rt_flash_t *dev;
