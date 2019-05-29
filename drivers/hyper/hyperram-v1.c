@@ -301,27 +301,6 @@ void pi_hyperram_write_async(struct pi_device *device,
 }
 
 
-void __rt_hyperram_cluster_copy_2d(rt_hyperram_t *dev,
-  void *hyper_addr, void *addr, int size, int stride, int length, rt_hyperram_req_t *req, int ext2loc)
-{
-  req->dev = dev;
-  req->addr = addr;
-  req->hyper_addr = hyper_addr;
-  req->size = size;
-  req->stride = stride;
-  req->length = length;
-  req->cid = rt_cluster_id();
-  req->done = 0;
-  req->is_write = (ext2loc)? 0:1;
-  req->is_2d = 1;
-  __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_hyperram_cluster_req, (void *)req);
-  // Mark it as pending event so that it is not added to the list of free events
-  // as it stands inside the event request
-  __rt_event_set_pending(&req->event);
-  __rt_cluster_push_fc_event(&req->event);
-}
-
-
 void pi_hyperram_write(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size)
 {
