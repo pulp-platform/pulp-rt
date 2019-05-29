@@ -248,7 +248,7 @@ static int __rt_bridge_flash_erase_sector(int type, unsigned int itf, unsigned i
 static void __rt_bridge_handle_req(void *arg)
 {
   rt_event_t *event = (rt_event_t *)arg;
-  rt_bridge_req_t *req = &event->bridge_req;
+  rt_bridge_req_t *req = &event->implem.bridge_req;
 
   if (req->header.type == HAL_BRIDGE_TARGET_REQ_EFUSE_ACCESS)
   {
@@ -278,6 +278,11 @@ static void __rt_bridge_handle_req(void *arg)
   {
     req->header.flash_erase_sector.retval = __rt_bridge_flash_erase_sector(req->header.flash_erase_sector.type, req->header.flash_erase_sector.itf, req->header.flash_erase_sector.cs, (void *)req->header.flash_erase_sector.addr);
   }
+  else if (req->header.type == HAL_BRIDGE_TARGET_REQ_FLASH_ERASE)
+  {
+    req->header.flash_erase_sector.retval = __rt_bridge_flash_erase(req->header.flash_erase.type, req->header.flash_erase.itf, req->header.flash_erase.cs, (void *)req->header.flash_erase.addr, req->header.flash_erase.size);
+  }
+
 
   hal_bridge_reply(&req->header);
   __rt_bridge_post_reply(req, event);
@@ -305,8 +310,8 @@ int rt_bridge_connect(int wait_bridge, rt_event_t *event)
   {
     rt_event_t *bridge_req_event = rt_event_get(NULL, __rt_bridge_handle_req, NULL);
     __rt_event_set_keep(bridge_req_event);
-    bridge_req_event->arg = (void *)bridge_req_event;
-    rt_bridge_req_t *bridge_req = &bridge_req_event->bridge_req;
+    bridge_req_event->arg[1] = (intptr_t)bridge_req_event;
+    rt_bridge_req_t *bridge_req = &bridge_req_event->implem.bridge_req;
     bridge_req->event = bridge_req_event;
 
     bridge_req->header.next = bridge->first_bridge_free_req;
@@ -315,7 +320,7 @@ int rt_bridge_connect(int wait_bridge, rt_event_t *event)
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_bridge_req_t *req = &call_event->bridge_req;
+  rt_bridge_req_t *req = &call_event->implem.bridge_req;
   // Init request to 0 otherwise the CRC computation on RTL platform
   // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -343,7 +348,7 @@ void rt_bridge_disconnect(rt_event_t *event)
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_bridge_req_t *req = &call_event->bridge_req;
+  rt_bridge_req_t *req = &call_event->implem.bridge_req;
   // Init request to 0 otherwise the CRC computation on RTL platform
   // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -365,7 +370,7 @@ int rt_bridge_open(const char* name, int flags, int mode, rt_event_t *event)
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_bridge_req_t *req = &call_event->bridge_req;
+  rt_bridge_req_t *req = &call_event->implem.bridge_req;
   // Init request to 0 otherwise the CRC computation on RTL platform
   // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -389,7 +394,7 @@ int rt_bridge_open(const char* name, int flags, int mode, rt_event_t *event)
 int rt_bridge_open_wait(rt_event_t *event)
 {
   int irq = rt_irq_disable();
-  rt_bridge_req_t *req = &event->bridge_req;
+  rt_bridge_req_t *req = &event->implem.bridge_req;
 
   __rt_wait_event(event);
   // Be careful to not reactivate interrupts before we read
@@ -412,7 +417,7 @@ int rt_bridge_close(int file, rt_event_t *event)
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_bridge_req_t *req = &call_event->bridge_req;
+  rt_bridge_req_t *req = &call_event->implem.bridge_req;
   // Init request to 0 otherwise the CRC computation on RTL platform
   // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -437,7 +442,7 @@ int rt_bridge_close_wait(rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
-  rt_bridge_req_t *req = &event->bridge_req;
+  rt_bridge_req_t *req = &event->implem.bridge_req;
   __rt_wait_event(event);
   // Be careful to not reactivate interrupts before we read
   // the retval as the wait function is putting the event
@@ -459,7 +464,7 @@ int rt_bridge_read(int file, void* ptr, int len, rt_event_t *event)
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_bridge_req_t *req = &call_event->bridge_req;
+  rt_bridge_req_t *req = &call_event->implem.bridge_req;
   // Init request to 0 otherwise the CRC computation on RTL platform
   // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -482,7 +487,7 @@ int rt_bridge_read_wait(rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
-  rt_bridge_req_t *req = &event->bridge_req;
+  rt_bridge_req_t *req = &event->implem.bridge_req;
   __rt_wait_event(event);
   // Be careful to not reactivate interrupts before we read
   // the retval as the wait function is putting the event
@@ -504,7 +509,7 @@ int rt_bridge_write(int file, void* ptr, int len, rt_event_t *event)
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_bridge_req_t *req = &call_event->bridge_req;
+  rt_bridge_req_t *req = &call_event->implem.bridge_req;
   // Init request to 0 otherwise the CRC computation on RTL platform
   // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -533,7 +538,7 @@ uint64_t rt_bridge_fb_open(const char* name, int width, int height, rt_fb_format
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_bridge_req_t *req = &call_event->bridge_req;
+  rt_bridge_req_t *req = &call_event->implem.bridge_req;
   // Init request to 0 otherwise the CRC computation on RTL platform
   // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -557,7 +562,7 @@ uint64_t rt_bridge_fb_open_wait(rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
-  rt_bridge_req_t *req = &event->bridge_req;
+  rt_bridge_req_t *req = &event->implem.bridge_req;
   __rt_wait_event(event);
   // Be careful to not reactivate interrupts before we read
   // the retval as the wait function is putting the event
@@ -578,7 +583,7 @@ void rt_bridge_fb_update(uint64_t fb, unsigned int addr, int posx, int posy, int
 
   rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-  rt_bridge_req_t *req = &call_event->bridge_req;
+  rt_bridge_req_t *req = &call_event->implem.bridge_req;
   // Init request to 0 otherwise the CRC computation on RTL platform
   // is invalid.
   memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -596,7 +601,7 @@ int rt_bridge_write_wait(rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
-  rt_bridge_req_t *req = &event->bridge_req;
+  rt_bridge_req_t *req = &event->implem.bridge_req;
   __rt_wait_event(event);
 
   // Be careful to not reactivate interrupts before we read
@@ -619,7 +624,7 @@ void __rt_bridge_target_status_sync(rt_event_t *event)
   {
     rt_event_t *call_event = __rt_wait_event_prepare(event);
 
-    rt_bridge_req_t *req = &call_event->bridge_req;
+    rt_bridge_req_t *req = &call_event->implem.bridge_req;
     // Init request to 0 otherwise the CRC computation on RTL platform
     // is invalid.
     memset((void *)&req->header, 0, sizeof(hal_bridge_req_t));
@@ -779,6 +784,7 @@ void __rt_bridge_req_shutdown()
     __rt_bridge_printf_flush();
 
   #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+
     // It can happen that the bridge is still in a state where he haven't
     // seen that we became available. Wait until this is the case.
     while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)

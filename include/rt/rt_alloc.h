@@ -328,7 +328,7 @@ void *rt_alloc_align(rt_alloc_e flags, int size, int align);
  * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
  * or through a memory allocator.
  */
-typedef struct rt_alloc_req_s rt_alloc_req_t ;
+typedef struct pi_cl_alloc_req_s rt_alloc_req_t ;
 
 
 /** \brief Free request structure.
@@ -338,7 +338,7 @@ typedef struct rt_alloc_req_s rt_alloc_req_t ;
  * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
  * or through a memory allocator.
  */
-typedef struct rt_free_req_s rt_free_req_t ;
+typedef struct pi_cl_free_req_s rt_free_req_t ;
 
 
 
@@ -473,23 +473,6 @@ void __rt_allocs_init();
 #include "hal/pulp.h"
 
 void __rt_alloc_cluster_req(void *req);
-
-static inline void *rt_alloc_cluster_wait(rt_alloc_req_t *req)
-{
-	while((*(volatile char *)&req->done) == 0)
-	{
-		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
-	}
-	return req->result;
-}
-
-static inline void rt_free_cluster_wait(rt_free_req_t *req)
-{
-	while((*(volatile char *)&req->done) == 0)
-	{
-		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
-	}
-}
 
 #endif
 

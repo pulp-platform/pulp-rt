@@ -43,6 +43,12 @@ static RT_FC_TINY_DATA unsigned int __rt_pmu_current_sequence;
 
 
 
+void rt_pm_wakeup_clear_all()
+{
+}
+
+
+
 void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 {
   //plp_trace(RT_TRACE_PMU, "Cluster power down\n");

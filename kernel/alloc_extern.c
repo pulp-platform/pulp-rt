@@ -122,6 +122,15 @@ int rt_extern_alloc_init(rt_extern_alloc_t *a, void *addr, int size)
   return 0;
 }
 
+
+
+void rt_extern_alloc_deinit(rt_extern_alloc_t *a)
+{
+  __rt_free_chunk(a->first_free);
+}
+
+
+
 void *rt_extern_alloc(rt_extern_alloc_t *a, int size)
 {
   rt_alloc_chunk_extern_t *pt = a->first_free, *prev = 0;

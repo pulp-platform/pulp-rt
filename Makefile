@@ -26,6 +26,11 @@ endif
 
 include $(PULP_RT_CONFIG)
 
+PULP_CFLAGS += -I$(CURDIR)/kernel
+
+ifdef USE_PMSIS
+PULP_CFLAGS += -D__RT_USE_PMSIS__=1
+endif
 
 ifdef CONFIG_IO_ENABLED
 PULP_CFLAGS += -D__RT_USE_IO=1
@@ -68,6 +73,7 @@ endif
 
 include kernel/kernel.mk
 include drivers/drivers.mk
+include drivers_deprecated/drivers.mk
 include libs/libs.mk
 
 
@@ -100,6 +106,10 @@ clean_all:
 	make PULP_RT_CONFIG=configs/pulpos_profile.mk fullclean $(MK_OPT)
 
 build_all:
+ifndef USE_PMSIS
+	mkdir -p $(TARGET_INSTALL_DIR)
+	cp -r ext/pmsis_api/* $(TARGET_INSTALL_DIR)
+endif
 	make build_rt install $(MK_OPT)
 	make PULP_RT_CONFIG=configs/pulpos_profile.mk build install $(MK_OPT)
 

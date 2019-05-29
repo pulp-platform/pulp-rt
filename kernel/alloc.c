@@ -35,6 +35,7 @@
  *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
+#include "pmsis.h"
 #include "rt/rt_api.h"
 #include <string.h>
 #include <stdio.h>
@@ -398,6 +399,36 @@ void rt_free_cluster(rt_alloc_e flags, void *chunk, int size, rt_free_req_t *req
   // as it stands inside the event request
   __rt_event_set_pending(&req->event);
   __rt_cluster_push_fc_event(&req->event);
+}
+
+void pi_cl_l2_malloc(int size, pi_cl_alloc_req_t *req)
+{
+  rt_alloc_cluster(RT_ALLOC_PERIPH, size, (rt_alloc_req_t *)req);
+}
+
+void pi_cl_l2_free(void *chunk, int size, pi_cl_free_req_t *req)
+{
+  rt_free_cluster(RT_ALLOC_PERIPH, chunk, size, (rt_free_req_t *)req);
+}
+
+void *pmsis_l1_malloc(uint32_t size)
+{
+  return rt_alloc(RT_ALLOC_CL_DATA, size);
+}
+
+void pmsis_l1_malloc_free(void *_chunk, int size)
+{
+  return rt_free(RT_ALLOC_CL_DATA, _chunk, size);
+}
+
+void *pmsis_l2_malloc(uint32_t size)
+{
+  return rt_alloc(RT_ALLOC_PERIPH, size);
+}
+
+void pmsis_l2_malloc_free(void *_chunk, int size)
+{
+  return rt_free(RT_ALLOC_PERIPH, _chunk, size);
 }
 
 

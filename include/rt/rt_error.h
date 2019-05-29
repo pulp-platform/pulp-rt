@@ -34,8 +34,6 @@
 #define __RT_RT_ERROR_H__
 
 
-#include "rt/rt_api.h"
-
 /**        
  * @ingroup groupKernel        
  */

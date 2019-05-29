@@ -174,6 +174,15 @@ void rt_cluster_notif_deinit(rt_notif_t *notif);
 
 /// @cond IMPLEM
 
+extern RT_L1_TINY_DATA rt_cluster_call_pool_t __rt_cluster_pool;
+extern RT_L1_TINY_DATA int __rt_cluster_nb_active_pe;
+
+
+static inline int rt_cluster_nb_pe()
+{
+  return __rt_cluster_nb_active_pe;
+}
+
 int rt_cluster_fetch_all(int cid);
 
 #if defined(ARCHI_HAS_CLUSTER)
@@ -206,11 +215,10 @@ static inline void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 
 extern RT_L1_GLOBAL_DATA void (*__rt_cluster_entry)(void *);
 extern RT_L1_GLOBAL_DATA void *__rt_cluster_entry_arg;
-extern RT_L1_TINY_DATA rt_event_sched_t *__rt_cluster_sched_current;
 
 static inline rt_event_sched_t *__rt_cluster_sched_get()
 {
-  return __rt_cluster_sched_current;
+  return rt_event_internal_sched();
 }
 
 
@@ -245,7 +253,7 @@ static inline void rt_cluster_notif_wait(int event)
   eu_evt_maskWaitAndClr(event);
 }
 
-rt_fc_cluster_data_t *__rt_fc_cluster_data;
+extern rt_fc_cluster_data_t __rt_fc_cluster_data[];
 
 #endif
 

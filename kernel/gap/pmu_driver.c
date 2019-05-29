@@ -668,6 +668,8 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
 #endif
 
+#if PULP_CHIP == CHIP_GAP
+
 /* Return to close loop mode and give gain to feedback loop */
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_GAIN);
 
@@ -713,6 +715,18 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
           } 
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
 
+#else
+
+  Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT
+  Config.ConfigReg1.MultFactor = Mult;
+  Config.ConfigReg1.ClockOutDivider = Div;
+  SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
+
+  FllsFrequency[Fll] = SetFrequency;
+  PMUState.Frequency[Fll] = SetFrequency;
+
+#endif
+
   if (Fll == FLL_SOC)
     __rt_bridge_set_available();
   
@@ -757,6 +771,8 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
       SetFllConfiguration(WhichFll, FLL_INTEGRATOR, (unsigned int) Config.Raw);
     }
 
+#if PULP_CHIP == CHIP_GAP
+
     /* Lock Fll */
     // Config.Raw = FLL_CONFIG1_DEF_LOCK;
     Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT 
@@ -797,6 +813,21 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     PMUState.Frequency[WhichFll] = SetFrequency;
 
     SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
+
+#else
+
+    /* Lock Fll */
+    Config.Raw = FLL_CONFIG1_DEF_LOCK;
+    SetFrequency = SetFllMultDivFactors(50000000, &Mult, &Div);
+    Config.ConfigReg1.MultFactor = Mult;
+    Config.ConfigReg1.ClockOutDivider = Div;
+    SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
+
+    FllsFrequency[WhichFll] = SetFrequency;
+    PMUState.Frequency[WhichFll] = SetFrequency;
+
+#endif
+
   }
 }
 

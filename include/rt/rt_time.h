@@ -64,6 +64,8 @@ unsigned int rt_time_get_us();
  * The time is specified in microseconds and is a minimum amount of time that
  * the core will sleep. The actual time may be bigger due to the timer
  * resolution.
+ * Each call to this function is consuming an event, which is freed when the function returns.
+ * It is up to the caller to make sure enough events have been allocated.
  *
  * \param time_us  The time to wait in microseconds.
  */

@@ -161,10 +161,6 @@ void rt_task_cluster_deinit(rt_task_cluster_t *cluster, rt_event_t *event)
   }
   rt_irq_disable();
 
-  // Since the cores will just reexecute from scratch, we need to reinitialize
-  // the cluster driver
-  __rt_fc_cluster_data[cluster->cid].call_head = 0;
-
   // Now free all allocated resources
   if (cluster->free_stacks)
   {
@@ -240,7 +236,7 @@ void rt_task_fc_push(rt_task_cluster_t *cluster, rt_task_t *task, rt_event_t *ev
 
   // We need to execute some code after the task is done to update the queues.
   // To simplify allocation, we reuse user event.
-  rt_event_sched_t *sched = event == NULL ? NULL : event->sched;
+  rt_event_sched_t *sched = rt_event_internal_sched();
   __rt_event_save(call_event);
   __rt_init_event(call_event, sched, __rt_task_handle_end_of_task, (void *)task);
   __rt_event_set_pending(call_event);

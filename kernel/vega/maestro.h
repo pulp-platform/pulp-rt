@@ -29,16 +29,19 @@
 #define RETENTIVE_BOOT  2     /* Reboot from Retentive state, state has been retained, should bypass flash reload */
 
 
-#define RT_PMU_MRAM_ID    0
-#define RT_PMU_CSI_ID     1
-#define RT_PMU_CLUSTER_ID 2
-#define RT_PMU_CHIP_ID    3
+#define RT_PMU_SWU_ID     0
+#define RT_PMU_MRAM_ID    1
+#define RT_PMU_CSI_ID     2
+#define RT_PMU_CLUSTER_ID 3
+#define RT_PMU_CHIP_ID    4
 
 #define RT_PMU_STATE_OFF 0
 #define RT_PMU_STATE_ON  1
 
-#define RT_PMU_RETENTION_OFF 0
-#define RT_PMU_RETENTION_ON  1
+#define RT_PMU_FLAGS_NO_RET     0
+#define RT_PMU_FLAGS_RET        1
+#define RT_PMU_FLAGS_PADS_OFF   0
+#define RT_PMU_FLAGS_PADS_ON    2
 
 /* Maestro internal events */
 #define MAESTRO_EVENT_ICU_OK            (1<<0)
@@ -60,7 +63,7 @@ extern RT_FC_DATA rt_event_t *__rt_pmu_pending_requests;
 extern RT_FC_DATA uint32_t __rt_pmu_domains_on;
 
 
-static inline __attribute__((always_inline)) void __rt_pmu_apply_state(int domain, int state, int ret)
+static inline __attribute__((always_inline)) void __rt_pmu_apply_state(int domain, int state, int flags)
 {
   int sequence;
 
@@ -74,14 +77,23 @@ static inline __attribute__((always_inline)) void __rt_pmu_apply_state(int domai
   // Compute the right sequence
   if (domain == RT_PMU_CHIP_ID)
   {
-    // For soc, 4 is deep sleep, 5 retentive deep sleep, and 6 and 7 the same
-    // with smart wakeup on.
-    sequence = 4 + ret;
+    int ret  = (flags & RT_PMU_FLAGS_RET) != 0;
+
+    if (flags & RT_PMU_FLAGS_PADS_ON)
+    {
+      // For soc, 14 is deep sleep with pads on, 15 retentive deep sleep with pads on
+      sequence = 14 + ret;
+    }
+    else
+    {
+      // For soc, 4 is deep sleep with pads off, 5 retentive deep sleep with pads off
+      sequence = 4 + ret;
+    }
   }
   else
   {
     // For other domains, first sequence if OFF, second is ON
-    sequence = domain*2 + 8 + state;
+    sequence = domain*2 + 6 + state;
   }
 
   // Finally ask Maestro to trigger the sequence

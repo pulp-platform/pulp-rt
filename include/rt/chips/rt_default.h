@@ -17,7 +17,7 @@
 #ifndef __RT_CHIPS_RT_DEFAULT_H__
 #define __RT_CHIPS_RT_DEFAULT_H__
 
-#if !defined(CONFIG_GAP) && !defined(CONFIG_WOLFE)
+#if !defined(CONFIG_GAP) && !defined(CONFIG_WOLFE) && !defined(CONFIG_VEGA)
 
 /**
  * @addtogroup GPIO
