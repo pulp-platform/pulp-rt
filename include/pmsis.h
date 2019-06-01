@@ -31,10 +31,11 @@
 #include "rtos/malloc/pmsis_l2_malloc.h"
 #include "drivers/perf.h"
 #include "chips/gap8/drivers/gap8_perf.h"
-#include "hyperbus/hyperram.h"
+#include "drivers/hyperbus.h"
 #include "drivers/cpi.h"
 #include "drivers/i2c.h"
 #include "drivers/spi.h"
+#include "drivers/buffer.h"
 
 #include "pmsis/implem/implem.h"
 #include "rt/implem/implem.h"

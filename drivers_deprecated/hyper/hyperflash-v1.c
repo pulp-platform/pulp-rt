@@ -49,6 +49,14 @@ static void __rt_hyperflash_set_reg(rt_hyperflash_t *dev, unsigned int addr, uns
   rt_event_wait(event);
 }
 
+static void __rt_hyperflash_set_reg_noshift(rt_hyperflash_t *dev, unsigned int addr, unsigned short value)
+{
+  rt_event_t *event = rt_event_get_blocking(NULL);
+  __rt_hyperflash_set_reg_buffer[0] = value;
+  rt_hyperflash_copy(dev, UDMA_CHANNEL_ID(dev->channel) + 1, __rt_hyperflash_set_reg_buffer, (void *)(addr), 2, event);
+  rt_event_wait(event);
+}
+
 static unsigned int __rt_hyperflash_get_status_reg(rt_hyperflash_t *dev)
 {
   __rt_hyperflash_set_reg(dev, 0x555, 0x70);
@@ -79,15 +87,15 @@ static rt_flash_t *__rt_hyperflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt
     hyper->channel = ARCHI_UDMA_HYPER_ID(conf->id);
   }
 
-  struct pi_hyperram_conf hyper_conf;
+  struct pi_hyper_conf hyper_conf;
 
-  pi_hyperram_conf_init(&hyper_conf);
+  pi_hyper_conf_init(&hyper_conf);
 
   hyper_conf.id = hyper->channel - ARCHI_UDMA_HYPER_ID(0);
 
   pi_open_from_conf(&hyper->device, &hyper_conf);
 
-  if (pi_hyperram_open(&hyper->device))
+  if (pi_hyper_open(&hyper->device))
     return NULL;
 
   // HyperFlash
@@ -193,12 +201,13 @@ static void __rt_hyperflash_erase_sector(rt_flash_t *_dev, void *data, rt_event_
   __rt_hyperflash_set_reg(dev, 0x555, 0x80);
   __rt_hyperflash_set_reg(dev, 0x555, 0xAA);
   __rt_hyperflash_set_reg(dev, 0x2AA, 0x55);
-  __rt_hyperflash_set_reg(dev, (int)data, 0x30);
+  __rt_hyperflash_set_reg_noshift(dev, (int)data, 0x30);
 
   while(((__rt_hyperflash_get_status_reg(dev) >> 7) & 1) == 0)
   {
     rt_time_wait_us(1000);
   }
+
 }
 
 static void __rt_hyperflash_erase(rt_flash_t *_dev, void *data, int size, rt_event_t *event)

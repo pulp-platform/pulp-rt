@@ -25,7 +25,7 @@
 
 void rt_hyperram_conf_init(rt_hyperram_conf_t *conf)
 {
-  pi_hyperram_conf_init((struct pi_hyperram_conf *)conf); 
+  pi_hyper_conf_init((struct pi_hyper_conf *)conf); 
 }
 
 
@@ -51,7 +51,7 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
 
   pi_open_from_conf(device, conf);
 
-  if (pi_hyperram_open(device))
+  if (pi_hyper_open(device))
     goto error;
 
   return (rt_hyperram_t *)device;
@@ -66,6 +66,6 @@ if (device != NULL)
 
 void rt_hyperram_close(rt_hyperram_t *handle, rt_event_t *event)
 {
-  pi_hyperram_close((struct pi_device *)handle);
+  pi_hyper_close((struct pi_device *)handle);
   rt_free(RT_ALLOC_FC_DATA, handle, sizeof(struct pi_device));
 }
