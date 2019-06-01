@@ -35,7 +35,6 @@
 #include "drivers/cpi.h"
 #include "drivers/i2c.h"
 #include "drivers/spi.h"
-#include "drivers/buffer.h"
 
 #include "pmsis/implem/implem.h"
 #include "rt/implem/implem.h"
