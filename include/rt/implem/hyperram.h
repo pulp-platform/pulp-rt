@@ -127,7 +127,7 @@ static inline uint32_t pi_cl_hyper_alloc_wait(pi_cl_hyperram_alloc_req_t *req)
 
 
 
-static inline void pi_cl_hyper_free_wait(pi_cl_hyperram_free_req_t *req)
+static inline void pi_cl_hyperram_free_wait(pi_cl_hyperram_free_req_t *req)
 {
   while((*(volatile char *)&req->done) == 0)
   {

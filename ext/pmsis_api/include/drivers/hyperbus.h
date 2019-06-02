@@ -424,7 +424,7 @@ static inline uint32_t pi_cl_hyperram_alloc_wait(pi_cl_hyperram_alloc_req_t *req
  * \param req       The request structure used for termination.
  * \return 0        if the operation was successful, -1 otherwise
  */
-static inline void pi_cl_hyper_free_wait(pi_cl_hyperram_free_req_t *req);
+static inline void pi_cl_hyperram_free_wait(pi_cl_hyperram_free_req_t *req);
 
 //!@}
 
