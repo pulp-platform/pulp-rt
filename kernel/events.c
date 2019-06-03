@@ -27,28 +27,25 @@ RT_FC_TINY_DATA rt_event_t        *__rt_first_free;
 void rt_event_sched_init(rt_event_sched_t *sched)
 {
   sched->first = NULL;
-  sched->waiting = NULL;
 }
 
 void __rt_event_init(rt_event_t *event, rt_event_sched_t *sched)
 {
   __rt_event_min_init(event);
 #if PULP_CHIP_FAMILY == CHIP_GAP || !defined(ARCHI_HAS_FC)
-  event->copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
+  event->implem.copy.periph_data = (char *)rt_alloc(RT_ALLOC_PERIPH, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
 #endif
-  event->saved_pending = 0;
-  event->sched = sched;
-  event->callback = NULL;
+  event->implem.saved_pending = 0;
+  event->arg[0] = 0;
 }
 
 rt_event_t *__rt_wait_event_prepare_blocking()
 {
   rt_event_t *event = __rt_first_free;
-  __rt_first_free = event->next;
+  __rt_first_free = event->implem.next;
   __rt_event_min_init(event);
-  event->pending = 1;
-  event->sched = __rt_event_get_current_sched();
-  event->callback = NULL;
+  event->implem.pending = 1;
+  event->arg[0] = 0;
   return event;
 }
 
@@ -67,7 +64,7 @@ int rt_event_alloc(rt_event_sched_t *sched, int nb_events)
 
   for (int i=0; i<nb_events; i++) {
     __rt_event_init(event, sched);
-    event->next = __rt_first_free;
+    event->implem.next = __rt_first_free;
     __rt_first_free = event;
     event++;
   }
@@ -79,7 +76,7 @@ int rt_event_alloc(rt_event_sched_t *sched, int nb_events)
 void __rt_event_free(rt_event_t *event)
 {
 #if PULP_CHIP_FAMILY == CHIP_GAP
-  rt_free(RT_ALLOC_PERIPH, (void *)event->copy.periph_data, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
+  rt_free(RT_ALLOC_PERIPH, (void *)event->implem.copy.periph_data, RT_PERIPH_COPY_PERIPH_DATA_SIZE);
 #endif  
   rt_free(RT_ALLOC_FC_DATA, (void *)event, sizeof(rt_event_t));
 }
@@ -89,7 +86,7 @@ void rt_event_free(rt_event_sched_t *sched, int nb_events)
   for (int i=0; i<nb_events; i++)
   {
     rt_event_t *event = __rt_first_free;
-    __rt_first_free = event->next;
+    __rt_first_free = event->implem.next;
     __rt_event_free(event);
   }
 }
@@ -99,9 +96,9 @@ static inline __attribute__((always_inline)) rt_event_t *__rt_get_event(rt_event
   // Get event from scheduler and initialize it
   rt_event_t *event = __rt_first_free;
   if (event == NULL) return NULL;
-  __rt_first_free = event->next;
-  event->callback = callback;
-  event->arg = arg;
+  __rt_first_free = event->implem.next;
+  event->arg[0] = (intptr_t)callback;
+  event->arg[1] = (intptr_t)arg;
   return event;
 }
 
@@ -110,7 +107,6 @@ rt_event_t *rt_event_get(rt_event_sched_t *sched, void (*callback)(void *), void
   int irq = rt_irq_disable();
   sched = __rt_event_get_current_sched();
   rt_event_t *event = __rt_get_event(sched, callback, arg);
-  if (event) event->sched = sched;
   rt_irq_restore(irq);
   return event;
 }
@@ -122,7 +118,6 @@ rt_event_t *rt_event_get_permanent(rt_event_sched_t *sched, void (*callback)(voi
   rt_event_t *event = __rt_get_event(sched, callback, arg);
   if (event)
   {
-    event->sched = sched;
     __rt_event_set_keep(event);
   }
   rt_irq_restore(irq);
@@ -135,8 +130,7 @@ rt_event_t *rt_event_get_blocking(rt_event_sched_t *sched)
   sched = __rt_event_get_current_sched();
   rt_event_t *event = __rt_get_event(sched, NULL, NULL);
   if (event) {
-    event->sched = sched;
-    event->pending = 1;
+    event->implem.pending = 1;
   }
   rt_irq_restore(irq);
   return event;
@@ -145,7 +139,7 @@ rt_event_t *rt_event_get_blocking(rt_event_sched_t *sched)
 void rt_event_push(rt_event_t *event)
 {
   int irq = rt_irq_disable();
-  __rt_push_event(event->sched, event);
+  __rt_push_event(rt_event_internal_sched(), event);
   rt_irq_restore(irq);
 }
 
@@ -162,29 +156,25 @@ int rt_event_push_callback(rt_event_sched_t *sched, void (*callback)(void *), vo
 
 void __rt_event_unblock(rt_event_t *event)
 {
-  event->pending = 0;
-  rt_thread_t *thread = event->thread;
-  if (thread) {
-    __rt_thread_enqueue_ready_check(thread);
-  }
+  event->implem.pending = 0;
 }
 
 void __rt_sched_event_cancel(rt_event_t *event)
 {
-  rt_event_sched_t *sched = event->sched;
+  rt_event_sched_t *sched = rt_event_internal_sched();
   rt_event_t *current = sched->first, *prev = NULL;
   while (current && current != event)
   {
     prev = current;
-    current = current->next;
+    current = current->implem.next;
   }
 
   if (current)
   {
     if (prev)
-      prev->next = current->next;
+      prev->implem.next = current->implem.next;
     else
-      sched->first = current->next;
+      sched->first = current->implem.next;
   }
 }
 
@@ -206,17 +196,9 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
       // Pop first event from the queue. Loop until we pop a null event
       // We must always read again the queue head, as the executed
       // callback can modify the queue 
-
-      sched->waiting = __rt_thread_current;
-
-      if (__rt_ready_queue.first) {
-        __rt_thread_sleep();
-      }
-      else {
-        rt_wait_for_interrupt();
-        rt_irq_enable();
-        rt_irq_disable();
-      }
+      rt_wait_for_interrupt();
+      rt_irq_enable();
+      rt_irq_disable();
       event = *((rt_event_t * volatile *)&sched->first);
       if (event == NULL)
       {
@@ -228,14 +210,16 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
   }
 
   do {
-    sched->first = event->next;
+    sched->first = event->implem.next;
 
     // Read event information and put it back in the scheduler
-    void (*callback)(void *) = event->callback;
-    void *arg = event->arg;
+    void (*callback)(void *) = (void (*)(void *))event->arg[0];
+    void *arg = (void *)event->arg[1];
+
+    event->done = 1;
 
     // Free the event now so that it can be used directly from the callback
-    if (!event->pending && !event->keep)
+    if (!event->implem.keep && !event->implem.pending)
     {
       __rt_event_release(event);
     }
@@ -257,16 +241,12 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
 
 void __rt_wait_event(rt_event_t *event)
 {
-  while (event->pending || event->saved_pending) {
-    event->thread = __rt_thread_current;
-    __rt_event_execute(__rt_event_get_current_sched(), 1);
+  while (event->implem.pending || event->implem.saved_pending) {
+    __rt_event_execute(NULL, 1);
   }
 
-  rt_event_sched_t *sched = event->sched;
-  if (sched) {
-    event->next = __rt_first_free;
-    __rt_first_free = event;
-  }
+  event->implem.next = __rt_first_free;
+  __rt_first_free = event;
 }
 
 void rt_event_wait(rt_event_t *event)
@@ -283,4 +263,16 @@ void __rt_event_sched_init()
   // Push one event ot the runtime scheduler as some runtime services need
   // one event.
   rt_event_alloc(&__rt_sched, 1);
+}
+
+
+void pi_wait_on_task(struct pi_task *task)
+{
+  while(!task->done)
+    rt_event_yield(NULL);
+}
+
+void pi_yield()
+{
+  rt_event_yield(NULL);
 }

@@ -35,6 +35,12 @@
 
 /// @cond IMPLEM
 
+#define INLINE static inline
+#define PMSIS_USE_EXTERNAL_TYPES
+#define PMSIS_NO_INLINE_INCLUDE
+
+
+
 #include "archi/pulp.h"
 
 #ifndef LANGUAGE_ASSEMBLY
@@ -42,7 +48,7 @@
 #define   likely(x) __builtin_expect(x, 1)
 #define unlikely(x) __builtin_expect(x, 0)
 
-typedef struct rt_event_s rt_event_t;
+typedef struct pi_task rt_event_t;
 
 #endif
 
@@ -110,6 +116,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #endif
 
 #define RT_L1_DATA RT_L1_GLOBAL_DATA
+#define L1_DATA RT_L1_DATA
 
 #if (defined(ARCHI_HAS_FC_TCDM) || defined(ARCHI_HAS_L2_ALIAS)) && !defined(__LLVM__)
 #define RT_FC_TINY_DATA __attribute__((section(".data_tiny_fc"))) __attribute__ ((tiny))
@@ -119,9 +126,10 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 #define RT_FC_GLOBAL_DATA __attribute__((section(".data_fc")))
 
-#define RT_FC_SHARED_DATA __attribute__((section(".data_fc_shared")))
+#define RT_FC_SHARED_DATA __attribute__((section(".data_fc")))
 
 #define RT_L2_DATA __attribute__((section(".l2_data")))
+#define L2_DATA RT_L2_DATA
 
 #define RT_L2_RET_DATA __attribute__((section(".l2_data")))
 
@@ -147,8 +155,14 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 struct rt_thread_s;
 struct rt_event_sched_s;
-struct rt_event_s;
+struct pi_task;
 struct rt_thread_s;
+
+struct pi_cluster_task_implem
+{
+  int pending;
+  int core_mask;
+};
 
 #include "rt/data/rt_data_bridge.h"
 
@@ -188,10 +202,9 @@ typedef struct rt_thread_queue_s {
 struct rt_event_sched_s;
 
 typedef struct rt_event_sched_s {
-  struct rt_event_s *first;
-  struct rt_event_s *last;
-  struct rt_event_s *first_free;
-  struct rt_thread_s *waiting;
+  struct pi_task *first;
+  struct pi_task *last;
+  struct pi_task *first_free;
   rt_error_callback_t error_cb;
   void *error_arg;
 } rt_event_sched_t;
@@ -211,7 +224,7 @@ typedef struct rt_periph_copy_s {
   unsigned int end_callback;
 #endif
   struct rt_periph_copy_s *next;
-  struct rt_event_s *event;
+  struct pi_task *event;
   unsigned int repeat;
   unsigned int repeat_size;
   union {
@@ -253,11 +266,9 @@ typedef struct rt_periph_copy_s {
 } rt_periph_copy_t;
 
 
-typedef struct rt_event_s {
-  void (*callback)(void *);
-  void *arg;
-  struct rt_event_s *next;
-  struct rt_event_sched_s *sched;
+struct pi_task_implem
+{
+  struct pi_task *next;
   struct rt_thread_s *thread;
   int pending;
   int keep;
@@ -268,14 +279,22 @@ typedef struct rt_event_s {
   union {
     rt_periph_copy_t copy;
     struct {
-      unsigned int data[4];
+      unsigned int data[8];
     };
     struct {
       unsigned int time;
     };
     rt_bridge_req_t bridge_req;
   };
-} rt_event_t;
+} __attribute__((packed));
+
+#define CLUSTER_TASK_IMPLEM struct pi_cluster_task_implem implem
+#define PI_TASK_IMPLEM struct pi_task_implem implem
+
+#include "pmsis_types.h"
+#include "pmsis_cluster/cl_pmsis_types.h"
+
+typedef struct pi_task rt_event_t;
 
 
 typedef struct rt_thread_s {
@@ -303,7 +322,6 @@ typedef struct rt_thread_s {
   int finished;
   void *status;
   rt_event_t event;
-  struct rt_event_sched_s *sched;
   int state;
   int error;
 } rt_thread_t;
@@ -336,19 +354,25 @@ typedef struct {
   int master_stack_size;
   int slave_stack_size;
   rt_event_t *event;
-  rt_event_sched_t *sched;
 } __rt_cluster_call_t;
 
 typedef struct {
 } rt_cluster_call_t;
 
-typedef struct {
+typedef struct
+{
+  struct pi_cluster_task *first_call_fc_for_cl;
+  struct pi_cluster_task *first_call_fc;
+  struct pi_cluster_task *last_call_fc;
+} rt_cluster_call_pool_t;
+
+typedef struct cluster_data_t {
   int mount_count;
-  int call_head;
   rt_event_t *events;
-  void *call_stacks;
-  int call_stacks_size;
+  void *stacks;
+  int stacks_size;
   unsigned int trig_addr;
+  rt_cluster_call_pool_t *pool;
   int powered_up;
   int state;
   int cid;
@@ -399,6 +423,7 @@ typedef struct rt_flash_s {
 typedef struct rt_hyperflash_s {
   rt_flash_t header;
   int channel;
+  struct pi_device device;
 } rt_hyperflash_t;
 
 // BEWARE, assembly offsets must be updated below if this structure is modified
@@ -533,17 +558,16 @@ typedef struct rt_io_wait_req_s {
   char cid;
 } rt_io_wait_req_t ;
 
-typedef struct rt_alloc_req_s {
+struct pi_cl_alloc_req_s {
   void *result;
   int flags;
   int size;
   rt_event_t event;
   char done;
   char cid;
-} rt_alloc_req_t ;
+};
 
-
-typedef struct rt_free_req_s {
+struct pi_cl_free_req_s {
   void *result;
   int flags;
   int size;
@@ -551,40 +575,17 @@ typedef struct rt_free_req_s {
   rt_event_t event;
   char done;
   char cid;
-} rt_free_req_t ;
+};
 
-typedef struct rt_hyperram_req_s {
-  rt_hyperram_t *dev;
-  void *addr;
-  void *hyper_addr;
-  int size;
-  int stride;
-  int length;
-  rt_event_t event;
-  int done;
-  unsigned char cid;
-  unsigned char is_write;
-  unsigned char is_2d;
-} rt_hyperram_req_t ;
+typedef struct pi_cl_alloc_req_s rt_alloc_req_t;
+typedef struct pi_cl_free_req_s rt_free_req_t;
 
-typedef struct rt_hyperram_alloc_req_s {
-  rt_hyperram_t *dev;
-  void *result;
-  int size;
-  rt_event_t event;
-  char done;
-  char cid;
-} rt_hyperram_alloc_req_t ;
 
-typedef struct rt_hyperram_free_req_s {
-  rt_hyperram_t *dev;
-  void *result;
-  int size;
-  void *chunk;
-  rt_event_t event;
-  char done;
-  char cid;
-} rt_hyperram_free_req_t ;
+typedef struct pi_cl_hyperram_req_s rt_hyperram_req_t ;
+
+typedef struct pi_cl_hyperram_alloc_req_s rt_hyperram_alloc_req_t ;
+
+typedef struct pi_cl_hyperram_free_req_s rt_hyperram_free_req_t ;
 
 typedef struct {
   rt_flash_t *dev;
@@ -675,13 +676,16 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #include "rt/data/rt_data_spim.h"
 #include "rt/data/rt_data_camera.h"
 #include "rt/data/rt_data_i2c.h"
+#include "rt/data/udma.h"
+#include "rt/data/cpi.h"
+#include "rt/data/i2c.h"
+#include "rt/data/spi.h"
 
 #endif
 
 #define RT_EVENT_T_CALLBACK   0
 #define RT_EVENT_T_ARG        4
-#define RT_EVENT_T_NEXT       8
-#define RT_EVENT_T_SCHED      12
+#define RT_EVENT_T_NEXT       24
 
 #define RT_SCHED_T_FIRST      0
 #define RT_SCHED_T_LAST       4
@@ -749,7 +753,7 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_MRAM_T_LAST_PENDING_COPY  40
 
 
-#define RT_CLUSTER_CALL_T_SIZEOF       (8*4)
+#define RT_CLUSTER_CALL_T_SIZEOF       (7*4)
 #define RT_CLUSTER_CALL_T_NB_PE        0
 #define RT_CLUSTER_CALL_T_ENTRY        4
 #define RT_CLUSTER_CALL_T_ARG          8
@@ -757,15 +761,14 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_CLUSTER_CALL_T_M_STACK_SIZE 16
 #define RT_CLUSTER_CALL_T_S_STACK_SIZE 20
 #define RT_CLUSTER_CALL_T_EVENT        24
-#define RT_CLUSTER_CALL_T_SCHED        28
 
 #define RT_FC_CLUSTER_DATA_T_SIZEOF       (10*4)
 #define RT_FC_CLUSTER_DATA_T_MOUNT_COUNT  0
-#define RT_FC_CLUSTER_DATA_T_CALL_HEAD    4
-#define RT_FC_CLUSTER_DATA_T_EVENTS       8
-#define RT_FC_CLUSTER_DATA_T_CALL_STACKS       12
-#define RT_FC_CLUSTER_DATA_T_CALL_STACKS_SIZE  16
-#define RT_FC_CLUSTER_DATA_T_TRIG_ADDR         20
+#define RT_FC_CLUSTER_DATA_T_EVENTS       4
+#define RT_FC_CLUSTER_DATA_T_CALL_STACKS       8
+#define RT_FC_CLUSTER_DATA_T_CALL_STACKS_SIZE  12
+#define RT_FC_CLUSTER_DATA_T_TRIG_ADDR         16
+#define RT_FC_CLUSTER_DATA_T_CLUSTER_POOL      20
 
 #define RT_TASK_T_ENTRY       (0*4)
 #define RT_TASK_T_ARGS0       (1*4)
@@ -782,6 +785,46 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_TASK_T_NB_CORES_TO_POP (9*4+4)
 #define RT_TASK_T_NB_CORES_TO_END (9*4+5)
 #define RT_TASK_T_PENDING     (9*4+6)
+
+#define RT_CLUSTER_TASK_ENTRY                 (0*4)
+#define RT_CLUSTER_TASK_ARG                   (1*4)
+#define RT_CLUSTER_TASK_STACKS                (2*4)
+#define RT_CLUSTER_TASK_STACK_SIZE            (3*4)
+#define RT_CLUSTER_TASK_SLAVE_STACK_SIZE      (4*4)
+#define RT_CLUSTER_TASK_NB_CORES              (5*4)
+#define RT_CLUSTER_TASK_COMPLETION_CALLBACK   (6*4)
+#define RT_CLUSTER_TASK_STACK_ALLOCATED       (7*4)
+#define RT_CLUSTER_TASK_NEXT                  (8*4)
+#define RT_CLUSTER_TASK_PENDING               (9*4)
+#define RT_CLUSTER_TASK_CORE_MASK             (10*4)
+
+
+#define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC_FOR_CL    (0*4)
+#define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC           (1*4)
+#define RT_CLUSTER_CALL_POOL_T_FIRST_LAST_FC           (2*4)
+
+
+#define PI_TASK_T_ARG_0          (0*4)
+#define PI_TASK_T_ARG_1          (1*4)
+#define PI_TASK_T_ARG_2          (2*4)
+#define PI_TASK_T_ARG_3          (3*4)
+#define PI_TASK_T_DONE           (4*4)
+#define PI_TASK_T_ID             (5*4)
+#define PI_TASK_T_NEXT           (6*4)
+#define PI_TASK_T_THREAD         (7*4)
+#define PI_TASK_T_PENDING        (8*4)
+#define PI_TASK_T_KEEP           (9*4)
+#define PI_TASK_T_SAVED_CALLBACK (10*4)
+#define PI_TASK_T_SAVED_ARG      (11*4)
+#define PI_TASK_T_SAVED_PENDING  (12*4)
+#define PI_TASK_T_DATA_0         (13*4)
+#define PI_TASK_T_DATA_1         (14*4)
+#define PI_TASK_T_DATA_2         (15*4)
+#define PI_TASK_T_DATA_3         (16*4)
+#define PI_TASK_T_DATA_4         (17*4)
+#define PI_TASK_T_DATA_5         (18*4)
+#define PI_TASK_T_DATA_6         (19*4)
+#define PI_TASK_T_DATA_7         (20*4)
 
 /// @endcond
 

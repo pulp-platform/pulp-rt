@@ -33,8 +33,6 @@
 #ifndef __RT__RT_I2S_H__
 #define __RT__RT_I2S_H__
 
-#include "rt/rt_api.h"
-
 
 
 /**

@@ -112,7 +112,7 @@ PULP_LIB_FC_SRCS_rt += kernel/wolfe/maestro.c
 endif
 
 ifeq '$(pulp_chip_family)' 'vega'
-PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c kernel/vega/maestro_irq.c
+PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c kernel/vega/maestro_irq.c kernel/vega/pad.c
 endif
 
 ifeq '$(pulp_chip_family)' 'gap'
@@ -131,7 +131,12 @@ PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/freq.c
 endif
 
 
-PULP_LIB_FC_SRCS_rt += kernel/cluster.c
+PULP_LIB_FC_SRCS_rt += kernel/cluster.c kernel/pulpos_emu.c
+
+ifneq '$(cluster/version)' ''
+PULP_CFLAGS += -D__RT_CLUSTER_ASM
+PULP_LIB_FC_SRCS_rt += kernel/cluster_call.c
+endif
 
 ifneq '$(perf_counters)' ''
 PULP_LIB_FC_SRCS_rt += kernel/perf.c

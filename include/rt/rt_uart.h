@@ -33,8 +33,6 @@
 #ifndef __RT__RT_UART_H__
 #define __RT__RT_UART_H__
 
-#include "rt/rt_api.h"
-
 
 /**
 * @ingroup groupDrivers

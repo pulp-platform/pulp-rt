@@ -26,8 +26,8 @@ static void __rt_error_cb_stub(void *arg)
 	// Just call the error callback and after that enqueue the user event
 	// 
 	rt_event_t *event = (rt_event_t *)arg;
-	rt_event_sched_t *sched = event->sched;
-	sched->error_cb(sched->error_arg, event, event->data[0], (void *)event->data[1]);
+	rt_event_sched_t *sched = rt_event_internal_sched();
+	sched->error_cb(sched->error_arg, event, event->implem.data[0], (void *)event->implem.data[1]);
 	__rt_event_unblock(event);
 }
 
@@ -35,7 +35,7 @@ void rt_error_conf(rt_event_sched_t *sched, rt_error_callback_t cb, void *arg)
 {
 	// The error callback is stored in the scheduler as it is only used
 	// when an event is specified
-	if (sched ==  NULL) sched = __rt_thread_current->sched;
+	sched = rt_event_internal_sched();
 	sched->error_cb = cb;
 	sched->error_arg = arg;
 }
@@ -54,7 +54,7 @@ void __rt_error_report(rt_event_t *event, int error, void *object)
 	else
 	{
 		// Otherwise an event calling the error callback must be posted
-		rt_event_sched_t *sched = event->sched;
+		rt_event_sched_t *sched = rt_event_internal_sched();
 
 		if (sched->error_cb)
 		{
@@ -63,8 +63,8 @@ void __rt_error_report(rt_event_t *event, int error, void *object)
 			// but we store the error information inside the user event as the error event
 			// won't be valid once inside the stub.
 			rt_event_t *error_event = rt_event_get(sched, __rt_error_cb_stub, (void *)event);
-			event->data[0] = error;
-			event->data[1] = (unsigned int)object;
+			event->implem.data[0] = error;
+			event->implem.data[1] = (unsigned int)object;
 			__rt_event_enqueue(error_event);
 		}
 	}

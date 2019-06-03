@@ -44,12 +44,29 @@ void __rt_freq_init()
 {
   __rt_flls_constructor();
 
-  __rt_freq_domains[RT_FREQ_DOMAIN_FC] = __rt_fll_init(__RT_FLL_FC);
+#ifdef ARCHI_FPGA_FREQUENCY
+  if (rt_platform() != ARCHI_PLATFORM_FPGA)
+#endif
+  {
+    __rt_freq_domains[RT_FREQ_DOMAIN_FC] = __rt_fll_init(__RT_FLL_FC);
 
-  __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = __rt_fll_init(__RT_FLL_PERIPH);
+    __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = __rt_fll_init(__RT_FLL_PERIPH);
 
-#if __RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
-  __rt_freq_domains[RT_FREQ_DOMAIN_CL] = __rt_fll_init(__RT_FLL_CL);
+  #if __RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
+    __rt_freq_domains[RT_FREQ_DOMAIN_CL] = __rt_fll_init(__RT_FLL_CL);
+  #endif
+  }
+#ifdef ARCHI_FPGA_FREQUENCY
+  else
+  {
+    __rt_freq_domains[RT_FREQ_DOMAIN_FC] = ARCHI_FPGA_FREQUENCY;
+
+    __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = ARCHI_FPGA_FREQUENCY;
+
+  #if __RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
+    __rt_freq_domains[RT_FREQ_DOMAIN_CL] = ARCHI_FPGA_FREQUENCY;
+  #endif
+  }
 #endif
 
 #if PULP_CHIP == CHIP_VEGA

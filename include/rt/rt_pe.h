@@ -150,9 +150,14 @@ static inline void rt_team_offload_wait() {
 extern RT_L1_TINY_DATA unsigned int __rt_barrier_wait_mask;
 #endif
 
-static inline int rt_team_nb_cores()
+static inline int cl_team_nb_cores()
 {
   return __FL1(pulp_read32(eu_bar_addr(0) + EU_HW_BARR_TRIGGER_MASK) + 1);
+}
+
+static inline int rt_team_nb_cores()
+{
+  return cl_team_nb_cores();
 }
 
 static inline void __rt_team_barrier_config(unsigned int core_mask)
@@ -170,22 +175,33 @@ static inline void __rt_team_config(int nb_cores) {
   __rt_team_barrier_config(core_mask);
 }
 
-#ifdef ARCHI_HAS_NO_DISPATCH
+extern RT_L1_TINY_DATA int __rt_pe_trace[];
 
-void __rt_team_fork(int nb_cores, void (*entry)(void *), void *arg);
+static inline void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg)
+{
+  rt_team_fork(nb_cores, entry, arg);
+}
+
+static inline void cl_team_barrier()
+{
+  rt_team_barrier();
+}
+
+static inline void cl_team_critical_enter()
+{
+  rt_team_critical_enter();
+}
+
+
+static inline void cl_team_critical_exit()
+{
+  rt_team_critical_exit();
+}
+
+#if !defined(ARCHI_HAS_CC)
 
 static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
 {
-  __rt_team_fork(nb_cores, entry, arg);
-}
-
-#else
-
-extern RT_L1_TINY_DATA int __rt_pe_trace[];
-
-static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) {
-#if !defined(ARCHI_HAS_CC)
-
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[rt_core_id()];
   gv_vcd_dump_trace(trace, 1);
@@ -201,9 +217,11 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) 
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 0);
 #endif
+}
 
 #else
 
+static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) {
   rt_team_offload(nb_cores, entry, arg);
 
   if (nb_cores == 0)
@@ -213,21 +231,10 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) 
     entry(arg);
 
   rt_team_offload_wait();
-
-#endif
 }
 
 #endif
 
-#ifdef ARCHI_HAS_NO_BARRIER
-
-void __rt_team_barrier();
-
-static inline void rt_team_barrier() {
-  __rt_team_barrier();
-}
-
-#else
 
 static inline void __rt_team_barrier() {
   eu_bar_trig_wait_clr(eu_bar_addr(0));
@@ -243,28 +250,6 @@ static inline void rt_team_barrier() {
   gv_vcd_dump_trace(trace, 1);
 #endif
 }
-
-#endif
-
-#ifdef ARCHI_HAS_NO_MUTEX
-
-extern unsigned int __rt_team_critical_lock;
-
-static inline void rt_team_critical_enter()
-{
-  while (rt_tas_lock_32((unsigned int)&__rt_team_critical_lock) == -1L)
-  {
-    eu_evt_maskWaitAndClr(1<<RT_CL_SYNC_EVENT);
-  }
-}
-
-static inline void rt_team_critical_exit()
-{
-  rt_tas_unlock_32((unsigned int)&__rt_team_critical_lock, 0);
-  eu_evt_trig(eu_evt_trig_addr(RT_CL_SYNC_EVENT), 0);
-}
-
-#else
 
 static inline void rt_team_critical_enter()
 {
@@ -285,8 +270,6 @@ static inline void rt_team_critical_exit()
 
   eu_mutex_unlock(eu_mutex_addr(0));
 }
-
-#endif
 
 #else
 

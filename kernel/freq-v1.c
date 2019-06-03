@@ -276,7 +276,6 @@ void __rt_freq_remove_constraint_multiple(unsigned int freq)
 
 void __rt_freq_init()
 {
-
   __rt_flls_constructor();
 
 #if PULP_CHIP == CHIP_KERBIN

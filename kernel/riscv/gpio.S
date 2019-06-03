@@ -20,7 +20,6 @@
 
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
-#include "archi/gpio/gpio_v2.h"
 
   .global __rt_gpio_handler
 __rt_gpio_handler:
@@ -37,7 +36,7 @@ __rt_gpio_handler:
 
   // Read interrupt status from gpio HW reg (this tells which gpio has changed)
   // do an OR with current SW status and update it
-  li  x10, ARCHI_GPIO_ADDR + ARCHI_GPIO_INTSTATUS
+  li  x10, ARCHI_GPIO_ADDR + GPIO_INTSTATUS_OFFSET
   lw  x10, 0(x10)
   lw  x12, %tiny(__rt_gpio_status)(x0)
   lw  x8, %tiny(__rt_gpio_active_events)(x0)

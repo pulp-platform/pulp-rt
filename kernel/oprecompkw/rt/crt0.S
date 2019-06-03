@@ -109,6 +109,9 @@ _start_wed_stored:
   la    t2, main
   jalr  x1, t2
 
+  /* Do all other initializations from C code */
+  jal  x1, __rt_deinit
+
 
 #if PULP_CHIP == CHIP_OPRECOMPKW
   /* Restore the bootloader return address and jump there */
