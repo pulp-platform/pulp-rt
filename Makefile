@@ -60,18 +60,18 @@ install_headers: $(HEADER_DIR)
 	install -D $(GAP_SDK_HOME)/pulp-os/include/gap8_emul.h $(TARGET_INSTALL_DIR)/include
 
 install_rt_gap8: install_headers
-	make -C  $(GAP_SDK_HOME)/pulp-os/pulp-rt MK_ROOT=$(GAP_SDK_HOME)/pulp-os/pulp-rt/mk/gap header build install
+	make -C  $(GAP_SDK_HOME)/pulp-os/pulp-rt MK_ROOT=$(GAP_SDK_HOME)/pulp-os/pulp-rt/mk/gap header pmsis build install
 
 install_rt_vega: install_headers
 	make -C  $(GAP_SDK_HOME)/pulp-os/pulp-rt MK_ROOT=$(GAP_SDK_HOME)/pulp-os/pulp-rt/mk/vega header build install
 
 # Rules for creating the libs.
 #------------------------------------------
-GAP8: install_headers install_rt_gap8
+gap: install_headers install_rt_gap8
 
-GAP8_V2: install_headers install_rt_gap8
+gap_rev1: install_headers install_rt_gap8
 
-VEGA: install_headers install_rt_vega
+vega: install_headers install_rt_vega
 
 #all: install_headers $(TARGET_CHIP)
 
