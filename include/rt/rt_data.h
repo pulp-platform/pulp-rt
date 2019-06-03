@@ -581,7 +581,7 @@ typedef struct pi_cl_alloc_req_s rt_alloc_req_t;
 typedef struct pi_cl_free_req_s rt_free_req_t;
 
 
-typedef struct pi_cl_hyperram_req_s rt_hyperram_req_t ;
+typedef struct pi_cl_hyper_req_s rt_hyperram_req_t ;
 
 typedef struct pi_cl_hyperram_alloc_req_s rt_hyperram_alloc_req_t ;
 

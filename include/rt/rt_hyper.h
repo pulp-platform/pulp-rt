@@ -72,7 +72,7 @@ typedef rt_periph_copy_t rt_hyperram_copy_t;
  * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
  * or through a memory allocator.
  */
-typedef struct pi_cl_hyperram_req_s rt_hyperram_req_t;
+typedef struct pi_cl_hyper_req_s rt_hyperram_req_t;
 
 
 
@@ -317,7 +317,7 @@ static inline void rt_hyperram_free_cluster_wait(rt_hyperram_free_req_t *req);
 
 /// @cond IMPLEM
 
-#include "hyperbus/hyperram.h"
+#include "drivers/hyperbus.h"
 #include "rt/implem/hyperram.h"
 
 #if defined(ARCHI_UDMA_HAS_HYPER)
@@ -334,9 +334,9 @@ static inline void rt_hyperram_read(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, rt_event_t *event)
 {
   if (event)
-    pi_hyperram_read_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, event);
+    pi_hyper_read_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, event);
   else
-    pi_hyperram_read((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size);
+    pi_hyper_read((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size);
 }
 
 
@@ -344,9 +344,9 @@ static inline void rt_hyperram_read_2d(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event)
 {
   if (event)
-    pi_hyperram_read_2d_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, event);
+    pi_hyper_read_2d_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, event);
   else
-    pi_hyperram_read_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length);
+    pi_hyper_read_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length);
 }
 
 
@@ -354,9 +354,9 @@ static inline void rt_hyperram_write(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, rt_event_t *event)
 {
   if (event)
-    pi_hyperram_write_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, event);
+    pi_hyper_write_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, event);
   else
-    pi_hyperram_write((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size);
+    pi_hyper_write((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size);
 }
 
 
@@ -364,9 +364,9 @@ static inline void rt_hyperram_write_2d(rt_hyperram_t *dev,
   void *addr, void *hyper_addr, int size, short stride, short length, rt_event_t *event)
 {
   if (event)
-    pi_hyperram_write_2d_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, event);
+    pi_hyper_write_2d_async((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, event);
   else
-    pi_hyperram_write_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length);
+    pi_hyper_write_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length);
 }
 
 static inline void *rt_hyperram_alloc(rt_hyperram_t *dev, int size)
@@ -387,14 +387,14 @@ static inline void rt_hyperflash_copy(rt_hyperflash_t *dev, int channel,
 
   if (channel & 1)
     if (event)
-      pi_hyperram_write_async(&dev->device, (uint32_t)hyper_addr, addr, size, event);
+      pi_hyper_write_async(&dev->device, (uint32_t)hyper_addr, addr, size, event);
     else
-      pi_hyperram_write(&dev->device, (uint32_t)hyper_addr, addr, size);
+      pi_hyper_write(&dev->device, (uint32_t)hyper_addr, addr, size);
   else
     if (event)
-      pi_hyperram_read_async(&dev->device, (uint32_t)hyper_addr, addr, size, event);
+      pi_hyper_read_async(&dev->device, (uint32_t)hyper_addr, addr, size, event);
     else
-      pi_hyperram_read(&dev->device, (uint32_t)hyper_addr, addr, size);
+      pi_hyper_read(&dev->device, (uint32_t)hyper_addr, addr, size);
 }
 
 #if defined(ARCHI_HAS_CLUSTER)
