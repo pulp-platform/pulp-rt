@@ -150,6 +150,8 @@ __rt_master_loop_update_next:
     lw      t6, RT_CLUSTER_TASK_NB_CORES(t3)
     mv      ra, s5
 
+    add     sp, sp, t1
+
 #ifdef ARCHI_NO_L1_TINY
     la      t4, __rt_cluster_nb_active_pe
     sw      t6, 0(t4)
