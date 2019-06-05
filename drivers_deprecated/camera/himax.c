@@ -144,7 +144,7 @@ typedef struct {
 } i2c_req_t;
 
 static RT_L2_DATA i2c_req_t i2c_req;
-RT_L2_DATA unsigned char valRegHimax;
+RT_L2_DATA unsigned int valRegHimax;
 
 // TODO: write a status var for cam
 RT_FC_DATA unsigned char camera_isAwaked;
@@ -173,9 +173,11 @@ unsigned char himaxRegRead(rt_camera_t *cam, unsigned int addr){
     {
         i2c_req.rd.addr = ((addr >> 8) & 0xff) | ((addr & 0xff) << 8);
         rt_i2c_write(cam->i2c, (unsigned char *)&i2c_req, 2, 1, NULL);
-        rt_i2c_read(cam->i2c, &valRegHimax, 1, 0, NULL);
+        rt_i2c_read(cam->i2c, (unsigned char *)&valRegHimax, 1, 0, NULL);
+        return valRegHimax;
     }
-    return valRegHimax;
+    else
+        return 0;
 }
 
 static void _himaxBoot(rt_camera_t *cam){
