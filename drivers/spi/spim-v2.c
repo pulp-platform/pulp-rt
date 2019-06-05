@@ -129,10 +129,11 @@ error:
   return -1;
 }
 
-void pi_spi_control(struct pi_device *device, pi_spi_control_e cmd, uint32_t arg)
+void pi_spi_ioctl(struct pi_device *device, uint32_t cmd, void *_arg)
 {
   int irq = rt_irq_disable();
   pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
+  uint32_t arg = (uint32_t)_arg;
 
   int polarity = (cmd >> __RT_SPIM_CTRL_CPOL_BIT) & 3;
   int phase = (cmd >> __RT_SPIM_CTRL_CPHA_BIT) & 3;
@@ -181,7 +182,7 @@ void pi_spi_close(struct pi_device *device)
   rt_irq_restore(irq);
 }
 
-void __pi_spi_send_async(struct pi_device *device, void *data, size_t len, int qspi, pi_spi_cs_e cs_mode, pi_task_t *task)
+void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags, pi_task_t *task)
 {
   int irq = rt_irq_disable();
 
@@ -189,6 +190,8 @@ void __pi_spi_send_async(struct pi_device *device, void *data, size_t len, int q
 
   pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
   pi_spim_t *spim = spim_cs->spim;
+  int qspi = ((flags >> 2) & 0x3) == PI_SPI_LINES_QUAD;
+  int cs_mode = (flags >> 0) & 0x3;
 
   if (spim->pending_copy)
   {
@@ -196,8 +199,7 @@ void __pi_spi_send_async(struct pi_device *device, void *data, size_t len, int q
     task->implem.data[1] = (int)device;
     task->implem.data[2] = (int)data;
     task->implem.data[3] = len;
-    task->implem.data[4] = qspi;
-    task->implem.data[5] = cs_mode;
+    task->implem.data[4] = flags;
 
     if (spim->waiting_first)
       spim->waiting_last->implem.next = task;
@@ -262,16 +264,16 @@ end:
 
 
 
-void __pi_spi_send(struct pi_device *device, void *data, size_t len, int qspi, pi_spi_cs_e cs_mode)
+void pi_spi_send(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags)
 {
   pi_task_t task;
-  __pi_spi_send_async(device, data, len, qspi, cs_mode, pi_task(&task));
+  pi_spi_send_async(device, data, len, flags, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
 
 
-void __pi_spi_receive_async(struct pi_device *device, void *data, size_t len, int qspi, pi_spi_cs_e cs_mode, pi_task_t *task)
+void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags, pi_task_t *task)
 {
   rt_trace(RT_TRACE_SPIM, "[SPIM] Receive bitstream (handle: %p, buffer: %p, len: 0x%x, qspi: %d, keep_cs: %d, event: %p)\n", handle, data, len, qspi, cs_mode, event);
 
@@ -281,6 +283,8 @@ void __pi_spi_receive_async(struct pi_device *device, void *data, size_t len, in
 
   pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
   pi_spim_t *spim = spim_cs->spim;
+  int qspi = ((flags >> 2) & 0x3) == PI_SPI_LINES_QUAD;
+  int cs_mode = (flags >> 0) & 0x3;
 
   if (spim->pending_copy)
   {
@@ -288,8 +292,7 @@ void __pi_spi_receive_async(struct pi_device *device, void *data, size_t len, in
     task->implem.data[1] = (int)device;
     task->implem.data[2] = (int)data;
     task->implem.data[3] = len;
-    task->implem.data[4] = qspi;
-    task->implem.data[5] = cs_mode;
+    task->implem.data[4] = flags;
 
     if (spim->waiting_first)
       spim->waiting_last->implem.next = task;
@@ -330,17 +333,17 @@ end:
   rt_irq_restore(irq);
 }
 
-void __pi_spi_receive(struct pi_device *device, void *data, size_t len, int qspi, pi_spi_cs_e cs_mode)
+void pi_spi_receive(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags)
 {
   pi_task_t task;
-  __pi_spi_receive_async(device, data, len, qspi, cs_mode, pi_task(&task));
+  pi_spi_receive_async(device, data, len, flags, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
 
-void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_cs_e cs_mode, pi_task_t *task)
+void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_flags_e flags, pi_task_t *task)
 {
-  rt_trace(RT_TRACE_SPIM, "[SPIM] Transfering bitstream (handle: %p, tx_buffer: %p, rx_buffer: %p, len: 0x%x, keep_cs: %d, event: %p)\n", handle, tx_data, rx_data, len, cs_mode, event);
+  rt_trace(RT_TRACE_SPIM, "[SPIM] Transfering bitstream (handle: %p, tx_buffer: %p, rx_buffer: %p, len: 0x%x, flags: 0x%x, event: %p)\n", handle, tx_data, rx_data, len, flags, event);
 
   int irq = rt_irq_disable();
 
@@ -348,6 +351,7 @@ void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_dat
 
   pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
   pi_spim_t *spim = spim_cs->spim;
+  int cs_mode = (flags >> 0) & 0x3;
 
   if (spim->pending_copy)
   {
@@ -407,19 +411,19 @@ end:
   rt_irq_restore(irq);
 }
 
-void pi_spi_transfer(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_cs_e cs_mode)
+void pi_spi_transfer(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_flags_e flags)
 {
   pi_task_t task;
-  pi_spi_transfer_async(device, tx_data, rx_data, len, cs_mode, pi_task(&task));
+  pi_spi_transfer_async(device, tx_data, rx_data, len, flags, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
 void __pi_handle_waiting_copy(pi_task_t *task)
 {
   if (task->implem.data[0] == 0)
-    __pi_spi_send_async((struct pi_device *)task->implem.data[1], (void *)task->implem.data[2], task->implem.data[3], task->implem.data[4], task->implem.data[5], task);
+    pi_spi_send_async((struct pi_device *)task->implem.data[1], (void *)task->implem.data[2], task->implem.data[3], task->implem.data[4], task);
   else if (task->implem.data[0] == 1)
-    __pi_spi_receive_async((struct pi_device *)task->implem.data[1], (void *)task->implem.data[2], task->implem.data[3], task->implem.data[4], task->implem.data[5], task);
+    pi_spi_receive_async((struct pi_device *)task->implem.data[1], (void *)task->implem.data[2], task->implem.data[3], task->implem.data[4], task);
   else
     pi_spi_transfer_async((struct pi_device *)task->implem.data[1], (void *)task->implem.data[2], (void *)task->implem.data[3], task->implem.data[4], task->implem.data[5], task);
 }
