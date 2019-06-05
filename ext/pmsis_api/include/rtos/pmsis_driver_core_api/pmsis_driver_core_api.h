@@ -19,13 +19,6 @@
 
 #include "pmsis_types.h"
 
-// device type placed at the top of conf
-typedef enum {
-    PI_DEVICE_CLUSTER_TYPE,
-    PI_DEVICE_HYPERBUS_TYPE,
-    PI_DEVICE_SPI_TYPE
-} pi_device_e;
-
 
 // Open a device using its name if available
 // if no name is passed, just allocate necessary memory

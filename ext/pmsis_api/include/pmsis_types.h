@@ -40,6 +40,13 @@
  */
 
 /**@{*/
+
+typedef enum {
+    PI_DEVICE_CLUSTER_TYPE,
+    PI_DEVICE_HYPERBUS_TYPE,
+    PI_DEVICE_SPI_TYPE
+} pi_device_e;
+
 struct pi_device;
 struct pmsis_event_kernel_wrap;
 

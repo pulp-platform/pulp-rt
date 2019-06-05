@@ -17,7 +17,7 @@
 #ifndef __DRIVERS__HYPERBUS_H__
 #define __DRIVERS__HYPERBUS_H__
 
-
+#include "pmsis_types.h"
 
 
 /**
@@ -44,6 +44,18 @@
 
 /**@{*/
 
+/** \enum pi_hyper_type_e
+ * \brief Type of device connected to the hyperbus interface.
+ *
+ * This is used to know if the device is a flash or a RAM.
+ */
+typedef enum
+{
+  PI_HYPER_TYPE_RAM,   /*!< Device is a RAM. */
+  PI_HYPER_TYPE_FLASH  /*!< Device is a flash. */
+} pi_hyper_type_e;
+
+
 /** \struct pi_hyper_conf
  * \brief Hyperbus configuration structure.
  *
@@ -51,8 +63,11 @@
  */
 struct pi_hyper_conf 
 {
-  signed char id;         /*!< If it is different from -1, this specifies on which hyperbus interface the device is connected. */
-  signed int ram_size;   /*!< Size of the ram. */
+    pi_device_e device;  /* Device type. */
+    uint32_t cs;         /*!< Chip select where the device is connected. */
+    pi_hyper_type_e type;/*!< Type of device connected on the hyperbus interface. */
+    signed char id;      /*!< If it is different from -1, this specifies on which hyperbus interface the device is connected. */
+    signed int ram_size; /*!< Size of the ram. */
 };
 
 /** \brief Hyperbus request structure.
