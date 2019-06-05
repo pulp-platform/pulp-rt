@@ -32,6 +32,7 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
 {
   rt_hyperram_conf_t default_conf;
   struct pi_device *device = NULL;
+  struct pi_hyper_conf pi_conf;
 
   if (conf == NULL)
     conf = &default_conf;
@@ -48,7 +49,11 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
   if (device == NULL)
     return NULL;
 
-  pi_open_from_conf(device, conf);
+  pi_hyper_conf_init(&pi_conf);
+  pi_conf.ram_size = conf->ram_size;
+  pi_conf.id = conf->id;
+
+  pi_open_from_conf(device, &pi_conf);
 
   if (pi_hyper_open(device))
     goto error;
