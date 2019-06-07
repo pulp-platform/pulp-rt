@@ -2,7 +2,7 @@
 #define __PMSIS_FC_TCDM_MALLOC_H__
 
 #include "pmsis_hal.h"
-#include "malloc_internal.h"
+#include "pmsis_malloc_internal.h"
 
 void *pmsis_fc_tcdm_malloc(uint32_t size);
 

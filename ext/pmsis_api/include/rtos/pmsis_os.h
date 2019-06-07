@@ -7,6 +7,7 @@
 #include "rtos/malloc/pmsis_malloc.h"
 #include "rtos/malloc/pmsis_l1_malloc.h"
 #include "rtos/malloc/pmsis_l2_malloc.h"
+#include "rtos/malloc/pmsis_hyperram_malloc.h"
 #ifdef __GAP8__
     #include "pmsis_fc_tcdm_malloc.h"
 #endif
@@ -57,7 +58,7 @@ static inline uint32_t pi_is_fc()
 
 static inline uint32_t pi_nb_cluster_cores()
 {
-  return NBCORES;
+  return PI_CLUSTER_NB_CORES;
 }
 
 #endif

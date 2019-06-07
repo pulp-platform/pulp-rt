@@ -1,8 +1,8 @@
 #ifndef __PMSIS_L2_MALLOC_H__
 #define __PMSIS_L2_MALLOC_H__
 
-#include "pmsis_types.h"
-#include "malloc_internal.h"
+#include "pmsis.h"
+#include "pmsis_malloc_internal.h"
 
 void *pmsis_l2_malloc(uint32_t size);
 

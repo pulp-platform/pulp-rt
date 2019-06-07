@@ -404,6 +404,7 @@ struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), 
   task->arg[0] = (uint32_t)callback;
   task->arg[1] = (uint32_t)arg;
   task->implem.keep = 1;
+  __rt_task_init(task);
   return task;
 }
 

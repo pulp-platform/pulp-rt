@@ -49,4 +49,6 @@ extern char  *strchr(const char *s, int c);
 
 extern void  *memmove(void *d, const void *s, size_t n);
 
+size_t strlen(const char *str);
+
 #endif

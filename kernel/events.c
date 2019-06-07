@@ -213,6 +213,7 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
     sched->first = event->implem.next;
 
     // Read event information and put it back in the scheduler
+
     void (*callback)(void *) = (void (*)(void *))event->arg[0];
     void *arg = (void *)event->arg[1];
 

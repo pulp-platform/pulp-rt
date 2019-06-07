@@ -274,7 +274,7 @@ static inline void rt_hyperram_cluster_wait(rt_hyperram_req_t *req);
  * \param size   The size in bytes of the memory to allocate
  * \param req    The request structure used for termination.
  */
-void rt_hyperram_alloc_cluster(rt_hyperram_t *dev, int size, rt_hyperram_alloc_req_t *req);
+static inline void rt_hyperram_alloc_cluster(rt_hyperram_t *dev, int size, rt_hyperram_alloc_req_t *req);
 
 /** \brief Free HyperRAM memory from cluster
  *
@@ -287,7 +287,7 @@ void rt_hyperram_alloc_cluster(rt_hyperram_t *dev, int size, rt_hyperram_alloc_r
  * \param size   The size in bytes of the memory chunk which was allocated
  * \param req    The request structure used for termination.
  */
-void rt_hyperram_free_cluster(rt_hyperram_t *dev, void *chunk, int size, rt_hyperram_free_req_t *req);
+static inline void rt_hyperram_free_cluster(rt_hyperram_t *dev, void *chunk, int size, rt_hyperram_free_req_t *req);
 
 /** \brief Wait until the specified hyperram alloc request has finished.
  *
@@ -399,6 +399,16 @@ static inline void rt_hyperflash_copy(rt_hyperflash_t *dev, int channel,
 
 #if defined(ARCHI_HAS_CLUSTER)
 
+static inline void rt_hyperram_alloc_cluster(rt_hyperram_t *dev, int size, rt_hyperram_alloc_req_t *req)
+{
+  pi_cl_hyperram_alloc((struct pi_device *)dev, size, req);;
+}
+
+static inline void rt_hyperram_free_cluster(rt_hyperram_t *dev, void *chunk, int size, rt_hyperram_free_req_t *req)
+{
+  pi_cl_hyperram_free((struct pi_device *)dev, (uint32_t)chunk, size, req);;
+}
+
 static inline void *rt_hyperram_alloc_cluster_wait(rt_hyperram_alloc_req_t *req)
 {
 	while((*(volatile char *)&req->done) == 0)
@@ -427,13 +437,13 @@ static inline __attribute__((always_inline)) void rt_hyperram_cluster_wait(rt_hy
 static inline void __rt_hyperram_cluster_copy(rt_hyperram_t *dev,
   void *hyper_addr, void *addr, int size, rt_hyperram_req_t *req, int ext2loc)
 {
-  __cl_hyperram_cluster_copy((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, req, ext2loc);
+  __cl_hyper_cluster_copy((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, req, ext2loc);
 }
 
 static inline void __rt_hyperram_cluster_copy_2d(rt_hyperram_t *dev,
   void *hyper_addr, void *addr, int size, int stride, int length, rt_hyperram_req_t *req, int ext2loc)
 {
-  __cl_hyperram_cluster_copy_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, req, ext2loc);
+  __cl_hyper_cluster_copy_2d((struct pi_device *)dev, (uint32_t)hyper_addr, addr, size, stride, length, req, ext2loc);
 }
 
 static inline void rt_hyperram_cluster_read(rt_hyperram_t *dev,

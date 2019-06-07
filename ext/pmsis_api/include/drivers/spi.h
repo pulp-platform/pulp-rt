@@ -86,7 +86,7 @@ struct pi_spi_conf {
 
 
 
-/** \enum pi_spi_control_e
+/** \enum pi_spi_ioctl_e
  * \brief Possible parameters which can be set through the pi_spi_control API function.
  *
  * This is used to reconfigure dynamically some of the parameters of an opened device.
@@ -101,20 +101,23 @@ typedef enum {
   PI_SPI_CTRL_BIG_ENDIAN        = 1 << __PI_SPI_CTRL_ENDIANNESS_BIT,       /*!< Handle the elements in memory in a big-endian way. */
   PI_SPI_CTRL_LITTLE_ENDIAN     = 2 << __PI_SPI_CTRL_ENDIANNESS_BIT,       /*!< Handle the elements in memory in a little-endian way. */
   PI_SPI_CTRL_SET_MAX_BAUDRATE  = 1 << __PI_SPI_CTRL_SET_MAX_BAUDRATE_BIT, /*!< Change maximum baudrate. */
-} pi_spi_control_e;
+} pi_spi_ioctl_e;
 
 
 
-/** \enum pi_spi_cs_e
- * \brief Specifies chip select mode.
+/** \enum pi_spi_flags_e
+ * \brief Specifies additional behaviors for transfers.
  *
  * 
  */
 typedef enum {
-  PI_SPI_CS_AUTO     = 0,    /*!< Handles the chip select automatically. It is set low just before the transfer is started and set back high when the transfer is finished. */
-  PI_SPI_CS_KEEP     = 1,    /*!< Handle the chip select manually. It is set low just before the transfer is started and is kept low until the next transfer. */
-  PI_SPI_CS_NONE     = 2,    /*!< Don't do anything with the chip select. */
-} pi_spi_cs_e;
+  PI_SPI_CS_AUTO      = 0 << 0,    /*!< Handles the chip select automatically. It is set low just before the transfer is started and set back high when the transfer is finished. */
+  PI_SPI_CS_KEEP      = 1 << 0,    /*!< Handle the chip select manually. It is set low just before the transfer is started and is kept low until the next transfer. */
+  PI_SPI_CS_NONE      = 2 << 0,    /*!< Don't do anything with the chip select. */
+  PI_SPI_LINES_SINGLE = 0 << 2,    /*!< Use a single MISO line. */
+  PI_SPI_LINES_QUAD   = 1 << 2,    /*!< Use quad MISO lines. */
+  PI_SPI_LINES_OCTAL  = 2 << 2,    /*!< Use octal MISO lines. */
+} pi_spi_flags_e;
 
 
 
@@ -158,10 +161,10 @@ void pi_spi_close(struct pi_device *device);
  * This function can be called to change part of the device configuration after it has been opened.
  *
  * \param device  A pointer to the structure describing the device.
- * \param cmd       The command which specifies which parameters of the driver to modify and for some of them also their values.
+ * \param cmd       The command which specifies which parameters of the driver to modify and for some of them also their values. The command must be one of those defined in pi_spi_ioctl_e.
  * \param arg       An additional value which is required for some parameters when they are set.
  */
-void pi_spi_control(struct pi_device *device, pi_spi_control_e cmd, uint32_t arg);
+void pi_spi_ioctl(struct pi_device *device, uint32_t cmd, void *arg);
 
 
 
@@ -169,30 +172,32 @@ void pi_spi_control(struct pi_device *device, pi_spi_control_e cmd, uint32_t arg
  *
  * This function can be used to send data to the SPI device.
  * The copy will make a synchronous transfer between the SPI and one of the chip memory.
- * This is using classic SPI transfer with MOSI and MISO lines. 
+ * This is by default using classic SPI transfer with MOSI and MISO lines, but other kind of transfers like quad SPI 
+ * can be used by specifying addional flags.
  * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
  *
- * \param device  A pointer to the structure describing the device.
- * \param data     The address in the chip where the data to be sent must be read.
- * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
+ * \param device    A pointer to the structure describing the device.
+ * \param data      The address in the chip where the data to be sent must be read.
+ * \param len       The size in bits of the copy.
+ * \param flag   Additional behaviors for the transfer can be specified using this flag. Can be 0 to use the default flag, which is using PI_SPI_CS_AUTO and PI_SPI_LINES_SINGLE.
  */
-static inline void pi_spi_send(struct pi_device *device, void *data, size_t len, pi_spi_cs_e cs_mode);
+void pi_spi_send(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flag);
 
 /** \brief Enqueue a write copy to the SPI (from Chip to SPI device).
  *
  * This function can be used to send data to the SPI device.
  * The copy will make an asynchronous transfer between the SPI and one of the chip memory.
- * This is using classic SPI transfer with MOSI and MISO lines.
+ * This is by default using classic SPI transfer with MOSI and MISO lines, but other kind of transfers like quad SPI 
+ * can be used by specifying addional flags.
  * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
  *
  * \param device  A pointer to the structure describing the device.
  * \param data     The address in the chip where the data to be sent must be read.
  * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
+ * \param flag   Additional behaviors for the transfer can be specified using this flag. Can be 0 to use the default flag, which is using PI_SPI_CS_AUTO and PI_SPI_LINES_SINGLE.
  * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
-static inline void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_cs_e cs_mode, pi_task_t *task);
+void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flag, pi_task_t *task);
 
 
 
@@ -201,35 +206,37 @@ static inline void pi_spi_send_async(struct pi_device *device, void *data, size_
  * This function can be used to receive data from the SPI device.
  * The copy will make a synchronous transfer between the SPI and one of the chip memory.
  * An event can be specified in order to be notified when the transfer is finished.
- * This is using classic SPI transfer with MOSI and MISO lines.
+ * This is by default using classic SPI transfer with MOSI and MISO lines, but other kind of transfers like quad SPI 
+ * can be used by specifying addional flags.
  * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
  *
  * \param device  A pointer to the structure describing the device.
  * \param data        The address in the chip where the received data must be written.
  * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
+ * \param flag   Additional behaviors for the transfer can be specified using this flag. Can be 0 to use the default flag, which is using PI_SPI_CS_AUTO and PI_SPI_LINES_SINGLE.
  */
-static inline void pi_spi_receive(struct pi_device *device, void *data, size_t len, pi_spi_cs_e cs_mode);
+void pi_spi_receive(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flag);
 
 /** \brief Enqueue a read copy to the SPI (from Chip to SPI device).
  *
  * This function can be used to receive data from the SPI device.
  * The copy will make an asynchronous transfer between the SPI and one of the chip memory.
  * An event can be specified in order to be notified when the transfer is finished.
- * This is using classic SPI transfer with MOSI and MISO lines.
+ * This is by default using classic SPI transfer with MOSI and MISO lines, but other kind of transfers like quad SPI 
+ * can be used by specifying addional flags.
  * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
  *
  * \param device  A pointer to the structure describing the device.
  * \param data        The address in the chip where the received data must be written.
  * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
+ * \param flag   Additional behaviors for the transfer can be specified using this flag. Can be 0 to use the default flag, which is using PI_SPI_CS_AUTO and PI_SPI_LINES_SINGLE.
  * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
-static inline void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_spi_cs_e cs_mode, pi_task_t *task);
+void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flag, pi_task_t *task);
 
-/** \brief Enqueue a read and write copy to the SPI (using full duplex mode).
+/** \brief Enqueue a read and write copy to the SPI (using full duplex flag).
  *
- * This function can be used to send and receive data with the SPI device using full duplex mode.
+ * This function can be used to send and receive data with the SPI device using full duplex flag.
  * The copy will make a synchronous transfer between the SPI and one of the chip memory.
  * This is using classic SPI transfer with MOSI and MISO lines.
  * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
@@ -238,13 +245,13 @@ static inline void pi_spi_receive_async(struct pi_device *device, void *data, si
  * \param tx_data     The address in the chip where the data to be sent must be read.
  * \param rx_data     The address in the chip where the received data must be written.
  * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
+ * \param flag   Additional behaviors for the transfer can be specified using this flag. Can be 0 to use the default flag, which is using PI_SPI_CS_AUTO and PI_SPI_LINES_SINGLE.
  */
-void pi_spi_transfer(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_cs_e cs_mode);
+void pi_spi_transfer(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_flags_e flag);
 
-/** \brief Enqueue a read and write copy to the SPI (using full duplex mode).
+/** \brief Enqueue a read and write copy to the SPI (using full duplex flag).
  *
- * This function can be used to send and receive data with the SPI device using full duplex mode.
+ * This function can be used to send and receive data with the SPI device using full duplex flag.
  * The copy will make an asynchronous transfer between the SPI and one of the chip memory.
  * This is using classic SPI transfer with MOSI and MISO lines.
  * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
@@ -253,128 +260,15 @@ void pi_spi_transfer(struct pi_device *device, void *tx_data, void *rx_data, siz
  * \param tx_data     The address in the chip where the data to be sent must be read.
  * \param rx_data     The address in the chip where the received data must be written.
  * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
+ * \param flag   Additional behaviors for the transfer can be specified using this flag. Can be 0 to use the default flag, which is using PI_SPI_CS_AUTO and PI_SPI_LINES_SINGLE.
  * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
-void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_cs_e cs_mode, pi_task_t *task);
-
-/** \brief Enqueue a write copy to the SPI using quad spi (from Chip to SPI device).
- *
- * This function can be used to send data to the SPI device using quad SPI.
- * The copy will make a synchronous transfer between the SPI and one of the chip memory.
- * This is using quad SPI transfer with 4 data lines.
- * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
- *
- * \param device  A pointer to the structure describing the device.
- * \param data        The address in the chip where the data to be sent must be read.
- * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
- */
-static inline void pi_spi_send_qspi(struct pi_device *device, void *data, size_t len, pi_spi_cs_e cs_mode);
-
-/** \brief Enqueue a write copy to the SPI using quad spi (from Chip to SPI device).
- *
- * This function can be used to send data to the SPI device using quad SPI.
- * The copy will make an asynchronous transfer between the SPI and one of the chip memory.
- * This is using quad SPI transfer with 4 data lines.
- * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
- *
- * \param device  A pointer to the structure describing the device.
- * \param data        The address in the chip where the data to be sent must be read.
- * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
- * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
- */
-static inline void pi_spi_send_qspi_async(struct pi_device *device, void *data, size_t len, pi_spi_cs_e cs_mode, pi_task_t *task);
-
-/** \brief Enqueue a read copy to the SPI using quad SPI (from Chip to SPI device).
- *
- * This function can be used to receive data from the SPI device using quad SPI.
- * The copy will make a synchronous transfer between the SPI and one of the chip memory.
- * This is using quad SPI transfer with 4 data lines.
- * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
- *
- * \param device  A pointer to the structure describing the device.
- * \param data        The address in the chip where the received data must be written.
- * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
- */
-static inline void pi_spi_receive_qspi(struct pi_device *device, void *data, size_t len, pi_spi_cs_e cs_mode);
-
-/** \brief Enqueue a read copy to the SPI using quad SPI (from Chip to SPI device).
- *
- * This function can be used to receive data from the SPI device using quad SPI.
- * The copy will make an asynchronous transfer between the SPI and one of the chip memory.
- * This is using quad SPI transfer with 4 data lines.
- * Due to hardware constraints, the address of the buffer must be aligned on 4 bytes and the size must be a multiple of 4.
- *
- * \param device  A pointer to the structure describing the device.
- * \param data        The address in the chip where the received data must be written.
- * \param len         The size in bits of the copy.
- * \param cs_mode     The mode for managing the chip select.
- * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
- */
-static inline void pi_spi_receive_qspi_async(struct pi_device *device, void *data, size_t len, pi_spi_cs_e cs_mode, pi_task_t *task);
-
-
+void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_flags_e flag, pi_task_t *task);
 
 //!@}
 
 /**
  * @} end of SPI master
  */
-
-/// @cond IMPLEM
-
-void __pi_spi_send(struct pi_device *device, void *data, size_t len, int qspi, pi_spi_cs_e mode);
-
-void __pi_spi_send_async(struct pi_device *device, void *data, size_t len, int qspi, pi_spi_cs_e mode, pi_task_t *task);
-
-void __pi_spi_receive(struct pi_device *device, void *data, size_t len, int qspi, pi_spi_cs_e mode);
-
-void __pi_spi_receive_async(struct pi_device *device, void *data, size_t len, int qspi, pi_spi_cs_e mode, pi_task_t *task);
-
-static inline void pi_spi_send(struct pi_device *device, void *data, size_t len, pi_spi_cs_e mode)
-{
-  __pi_spi_send(device, data, len, 0, mode);
-}
-
-static inline void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_cs_e mode, pi_task_t *task)
-{
-  __pi_spi_send_async(device, data, len, 0, mode, task);
-}
-
-static inline void pi_spi_receive(struct pi_device *device, void *data, size_t len, pi_spi_cs_e mode)
-{
-  __pi_spi_receive(device, data, len, 0, mode);
-}
-
-static inline void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_spi_cs_e mode, pi_task_t *task)
-{
-  __pi_spi_receive_async(device, data, len, 0, mode, task);
-}
-
-static inline void pi_spi_send_qspi(struct pi_device *device, void *data, size_t len, pi_spi_cs_e mode)
-{
-  __pi_spi_send(device, data, len, 1, mode);
-}
-
-static inline void pi_spi_send_qspi_async(struct pi_device *device, void *data, size_t len, pi_spi_cs_e mode, pi_task_t *task)
-{
-  __pi_spi_send_async(device, data, len, 1, mode, task);
-}
-
-static inline void pi_spi_receive_qspi(struct pi_device *device, void *data, size_t len, pi_spi_cs_e mode)
-{
-  __pi_spi_receive(device, data, len, 1, mode);
-}
-
-static inline void pi_spi_receive_qspi_async(struct pi_device *device, void *data, size_t len, pi_spi_cs_e mode, pi_task_t *task)
-{
-  __pi_spi_receive_async(device, data, len, 1, mode, task);
-}
-
-
-/// @endcond
 
 #endif

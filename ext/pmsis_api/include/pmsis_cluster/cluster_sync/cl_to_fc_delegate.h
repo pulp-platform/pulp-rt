@@ -19,7 +19,7 @@
 
 #include "cl_pmsis_types.h"
 #include "pmsis_hal.h"
-#include "malloc_internal.h"
+#include "pmsis_malloc_internal.h"
 
 /**
  * @ingroup groupCluster

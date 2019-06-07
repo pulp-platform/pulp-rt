@@ -77,6 +77,8 @@ typedef struct cluster_driver_api {
 } cluster_driver_api_t;
 
 typedef struct cluster_driver_conf {
+    // do not move this one, might be accessed in various hackish way
+    pi_device_e device_type;
     int id;
     void *heap_start;
     uint32_t heap_size;

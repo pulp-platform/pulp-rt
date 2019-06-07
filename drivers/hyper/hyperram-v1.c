@@ -63,6 +63,7 @@ static pi_cl_hyper_req_t *__pi_hyper_cluster_reqs_last;
 typedef struct {
   rt_extern_alloc_t alloc;
   int channel;
+  int cs;
 } pi_hyper_t;
 
 pi_hyper_t __rt_hyper;
@@ -118,11 +119,11 @@ static void exec_pending_task();
 // Try to trigger a copy. If there is already one pending, the copy is put on hold,
 // otherwise it is execute.
 static void __pi_hyper_copy(int channel,
-  uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event, int mbr);
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event, int cs);
 
 // Try to trigger a 2d copy. If there is already one pending, the copy is put on hold,
 // otherwise it is execute.
-static void __pi_hyper_copy_2d(int channel, uint32_t addr, uint32_t hyper_addr, uint32_t size, int stride, int length, pi_task_t *event, int mbr);
+static void __pi_hyper_copy_2d(int channel, uint32_t addr, uint32_t hyper_addr, uint32_t size, int stride, int length, pi_task_t *event, int cs);
 
 // This is called by the interrupt handler when a transfer is finished and a pending
 // misaligned transfer is detected, to continue it.
@@ -160,6 +161,8 @@ void pi_hyper_conf_init(struct pi_hyper_conf *conf)
 {
   conf->id = -1;
   conf->ram_size = 0;
+  conf->type = PI_HYPER_TYPE_RAM;
+  conf->cs = 0;
 }
 
 
@@ -228,6 +231,7 @@ int pi_hyper_open(struct pi_device *device)
     return -1;
 
   hyper->channel = periph_id;
+  hyper->cs = conf->cs;
 
   // Activate routing of UDMA hyper soc events to FC to trigger interrupts
   soc_eu_fcEventMask_setEvent(channel);
@@ -239,6 +243,12 @@ int pi_hyper_open(struct pi_device *device)
   // Redirect all UDMA hyper events to our callback
   __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy);
   __rt_udma_register_channel_callback(channel+1, __rt_hyper_handle_copy);
+
+  int dt_val = conf->type == PI_HYPER_TYPE_RAM ? 1 : 0;
+  if (conf->cs == 0)
+    hal_hyper_udma_dt0_set(dt_val);
+  else
+    hal_hyper_udma_dt1_set(dt_val);
 
   device->data = (void *)hyper;
 
@@ -276,7 +286,7 @@ void pi_hyper_read_async(struct pi_device *device,
 {
   pi_hyper_t *hyper = (pi_hyper_t *)device->data;
   __rt_task_init(task);
-  __pi_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + 0, (uint32_t)addr, hyper_addr, size, task, REG_MBR0);
+  __pi_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + 0, (uint32_t)addr, hyper_addr, size, task, hyper->cs);
 }
 
 
@@ -297,7 +307,7 @@ void pi_hyper_write_async(struct pi_device *device,
   pi_hyper_t *hyper = (pi_hyper_t *)device->data;
   __rt_task_init(task);
   task->done = 0;
-  __pi_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + 1, (uint32_t)addr, hyper_addr, size, task, REG_MBR0);
+  __pi_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + 1, (uint32_t)addr, hyper_addr, size, task, hyper->cs);
 }
 
 
@@ -316,7 +326,7 @@ void pi_hyper_read_2d_async(struct pi_device *device,
 {
   pi_hyper_t *hyper = (pi_hyper_t *)device->data;
   __rt_task_init(task);
-  __pi_hyper_copy_2d(UDMA_CHANNEL_ID(hyper->channel) + 0, (uint32_t)addr, hyper_addr, size, stride, length, task, REG_MBR0);
+  __pi_hyper_copy_2d(UDMA_CHANNEL_ID(hyper->channel) + 0, (uint32_t)addr, hyper_addr, size, stride, length, task, hyper->cs);
 }
 
 
@@ -336,7 +346,7 @@ void pi_hyper_write_2d_async(struct pi_device *device,
 {
   pi_hyper_t *hyper = (pi_hyper_t *)device->data;
   __rt_task_init(task);
-  __pi_hyper_copy_2d(UDMA_CHANNEL_ID(hyper->channel) + 1, (uint32_t)addr, hyper_addr, size, stride, length, task, REG_MBR0);
+  __pi_hyper_copy_2d(UDMA_CHANNEL_ID(hyper->channel) + 1, (uint32_t)addr, hyper_addr, size, stride, length, task, hyper->cs);
 }
 
 
@@ -796,11 +806,12 @@ static inline void *l2_memcpy(void *dst0, const void *src0, size_t len0)
 
 
 void __pi_hyper_copy(int channel,
-  uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event, int mbr)
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event, int cs)
 {
   int irq = rt_irq_disable();
 
-  hyper_addr |= mbr;
+  if (cs)
+    hyper_addr |= REG_MBR1;
 
   if (__rt_hyper_end_task != NULL || __rt_hyper_pending_emu_size != 0)
   {
@@ -827,11 +838,12 @@ void __pi_hyper_copy(int channel,
 
 
 void __pi_hyper_copy_2d(int channel,
-  uint32_t addr, uint32_t hyper_addr, uint32_t size, int stride, int length, pi_task_t *event, int mbr)
+  uint32_t addr, uint32_t hyper_addr, uint32_t size, int stride, int length, pi_task_t *event, int cs)
 {
   int irq = rt_irq_disable();
 
-  hyper_addr |= mbr;
+  if (cs)
+    hyper_addr |= REG_MBR1;
 
   if (__rt_hyper_end_task != NULL || __rt_hyper_pending_emu_size_2d != 0)
   {
@@ -893,9 +905,9 @@ static void __pi_hyper_cluster_req_exec(pi_cl_hyper_req_t *req)
   pi_task_callback(event, __pi_hyper_cluster_req_done, (void* )req);
 
   if(req->is_2d)
-    __pi_hyper_copy_2d(UDMA_CHANNEL_ID(hyper->channel) + req->is_write, (uint32_t)req->addr, req->hyper_addr, req->size, req->stride, req->length, event, REG_MBR0);
+    __pi_hyper_copy_2d(UDMA_CHANNEL_ID(hyper->channel) + req->is_write, (uint32_t)req->addr, req->hyper_addr, req->size, req->stride, req->length, event, hyper->cs);
   else
-    __pi_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + req->is_write, (uint32_t)req->addr, req->hyper_addr, req->size, event, REG_MBR0);
+    __pi_hyper_copy(UDMA_CHANNEL_ID(hyper->channel) + req->is_write, (uint32_t)req->addr, req->hyper_addr, req->size, event, hyper->cs);
 }
 
 static void __pi_hyper_cluster_req_done(void *_req)
@@ -908,7 +920,6 @@ static void __pi_hyper_cluster_req_done(void *_req)
   req = __pi_hyper_cluster_reqs_first;
   if (req)
   {
-    __pi_hyper_cluster_reqs_first = req->next;
     __pi_hyper_cluster_req_exec(req);
   }
 }

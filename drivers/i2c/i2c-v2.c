@@ -45,9 +45,10 @@ static int __rt_i2c_get_div(int i2c_freq)
 
 
 
-void pi_i2c_control(struct pi_device *device, pi_i2c_control_e cmd, uint32_t arg)
+void pi_i2c_ioctl(struct pi_device *device, uint32_t cmd, void *_arg)
 {
   pi_i2c_t *handle = (pi_i2c_t *)device->data;
+  uint32_t arg = (uint32_t)_arg;
   int irq = rt_irq_disable();
 
   int set_freq = (cmd >> __PI_I2C_CTRL_SET_MAX_BAUDRATE_BIT) & 1;
@@ -63,9 +64,12 @@ void pi_i2c_control(struct pi_device *device, pi_i2c_control_e cmd, uint32_t arg
 
 
 
-void __rt_i2c_write_common(struct pi_device *device, uint8_t *data, int length, int xfer_pending, pi_task_t *task, int start)
+void pi_i2c_write_async(struct pi_device *device, uint8_t *data, int length, pi_i2c_xfer_flags_e flags, pi_task_t *task)
 {
   int irq = rt_irq_disable();
+
+  int start = (flags & PI_I2C_XFER_NO_START) == 0;
+  int xfer_pending = flags & PI_I2C_XFER_NO_STOP;
 
   __rt_task_init(task);
 
@@ -75,8 +79,7 @@ void __rt_i2c_write_common(struct pi_device *device, uint8_t *data, int length, 
   {
     task->implem.data[0] = (unsigned int)data;
     task->implem.data[1] = (unsigned int)length;
-    task->implem.data[2] = (unsigned int)xfer_pending;
-    task->implem.data[3] = (unsigned int)start;
+    task->implem.data[2] = (unsigned int)flags;
 
     if (i2c->waiting_first)
       i2c->waiting_last->implem.next = task;
@@ -130,33 +133,18 @@ end:
   rt_irq_restore(irq);
 }
 
-void pi_i2c_write_async(struct pi_device *device, uint8_t *data, int length, int xfer_pending, pi_task_t *task)
-{
-  __rt_i2c_write_common(device, data, length, xfer_pending, task, 1);
-}
-
-void pi_i2c_write(struct pi_device *device, uint8_t *data, int length, int xfer_pending)
+void pi_i2c_write(struct pi_device *device, uint8_t *data, int length, pi_i2c_xfer_flags_e flags)
 {
   struct pi_task task;
-  pi_i2c_write_async(device, data, length, xfer_pending, pi_task(&task));
+  pi_i2c_write_async(device, data, length, flags, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
-void pi_i2c_write_append_async(struct pi_device *device, uint8_t *data, int length, int xfer_pending, pi_task_t *task)
-{
-  __rt_i2c_write_common(device, data, length, xfer_pending, task, 0);
-}
-
-void pi_i2c_write_append(struct pi_device *device, uint8_t *data, int length, int xfer_pending)
-{
-  struct pi_task task;
-  pi_i2c_write_append_async(device, data, length, xfer_pending, pi_task(&task));
-  pi_wait_on_task(&task);
-}
-
-void pi_i2c_read_async(struct pi_device *device, uint8_t *rx_buff, int length, int xfer_pending, pi_task_t *task)
+void pi_i2c_read_async(struct pi_device *device, uint8_t *rx_buff, int length, pi_i2c_xfer_flags_e flags, pi_task_t *task)
 {
   int irq = rt_irq_disable();
+
+  int xfer_pending = flags & PI_I2C_XFER_NO_STOP;
 
   __rt_task_init(task);
 
@@ -192,10 +180,10 @@ void pi_i2c_read_async(struct pi_device *device, uint8_t *rx_buff, int length, i
   rt_irq_restore(irq);
 }
 
-void pi_i2c_read(struct pi_device *device, uint8_t *data, int length, int xfer_pending)
+void pi_i2c_read(struct pi_device *device, uint8_t *data, int length, pi_i2c_xfer_flags_e flags)
 {
   struct pi_task task;
-  pi_i2c_read_async(device, data, length, xfer_pending, pi_task(&task));
+  pi_i2c_read_async(device, data, length, flags, pi_task(&task));
   pi_wait_on_task(&task);
 }
 
