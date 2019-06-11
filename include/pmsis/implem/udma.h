@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS__DATA__DATA_H__
-#define __PMSIS__DATA__DATA_H__
+#ifndef __PMSIS_IMPLEM_UDMA_H__
+#define __PMSIS_IMPLEM_UDMA_H__
 
-#include "rt/rt_api_decl.h"
-#include "udma.h"
-#include "cpi.h"
-#include "spi.h"
-#include "i2c.h"
+extern void __rt_udma_channel_init(int channel_id, rt_udma_channel_t *channel);
+
+extern void __rt_udma_copy_enqueue(pi_task_t *task, int channel_id, rt_udma_channel_t *channel, uint32_t buffer, uint32_t size, uint32_t cfg);
 
 #endif
-

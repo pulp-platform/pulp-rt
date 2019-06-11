@@ -27,6 +27,7 @@ endif
 
 ifeq '$(CONFIG_CAM_ENABLED)' '1'
 ifneq '$(udma/cpi/version)' ''
+PULP_CFLAGS += -D__RT_CPI_COPY_ASM=1
 PULP_LIB_FC_SRCS_rt += drivers/cpi/cpi-v1.c
 endif
 endif

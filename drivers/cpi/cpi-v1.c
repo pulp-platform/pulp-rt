@@ -24,6 +24,19 @@ static rt_cpi_t __rt_cpi[ARCHI_UDMA_NB_CAM];
 
 
 
+#ifndef __RT_CPI_COPY_ASM
+
+void __rt_udma_handle_copy()
+{
+}
+
+#else
+
+extern void __rt_udma_handle_copy();
+
+#endif
+
+
 
 void pi_cpi_conf_init(struct pi_cpi_conf *conf)
 {

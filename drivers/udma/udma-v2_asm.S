@@ -21,7 +21,7 @@
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
 
-#include "rt/data/udma.h"
+#include "pmsis/data/udma.h"
 
   // x9: channel, x10: event, x8,x11,x12:temp
   .global __rt_udma_handle_copy

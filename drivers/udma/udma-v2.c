@@ -67,7 +67,11 @@ void __rt_udma_channel_init(int channel_id, rt_udma_channel_t *channel)
 }
 
 
+#ifndef __ZEPHYR__
+
 void __rt_udma_channel_reg_data(int channel_id, void *data)
 {
   __rt_udma_channels[channel_id] = data;
 }
+
+#endif

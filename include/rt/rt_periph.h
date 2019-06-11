@@ -154,10 +154,14 @@ static inline void __rt_udma_register_channel_callback(unsigned int channel, voi
 #endif
 }
 
+#if defined(UDMA_VERSION) && UDMA_VERSION < 3
+
 static inline void __rt_udma_register_extra_callback(unsigned int event, void (*callback)(void *), void *arg)
 {
   __rt_udma_extra_callback[event - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT] = callback;
 }
+
+#endif
 
 #endif
 

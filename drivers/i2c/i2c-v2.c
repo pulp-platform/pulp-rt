@@ -21,7 +21,7 @@
 #include "pmsis.h"
 
 
-static RT_L2_DATA pi_i2c_t __rt_i2c[ARCHI_UDMA_NB_I2C];
+static L2_DATA pi_i2c_t __rt_i2c[ARCHI_UDMA_NB_I2C];
 
 
 void __rt_i2c_handle_tx_copy();
@@ -99,7 +99,6 @@ void pi_i2c_write_async(struct pi_device *device, uint8_t *data, int length, pi_
 
   // Compute the next step. If we have to generate a stop bit we must go through an
   // additional copy.
-  int next_step;
   if (xfer_pending)
     i2c->pending_next_step = (uint32_t)__rt_i2c_step3;
   else
