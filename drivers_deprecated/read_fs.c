@@ -350,7 +350,7 @@ int __rt_fs_read(rt_file_t *file, unsigned int buffer, unsigned int addr, int si
   // First handle beginning of buffer in case it is not aligned
   int prefix_size = addr & 0x7;
   if (prefix_size) {
-    prefix_size = 4 - prefix_size;
+    prefix_size = 8 - prefix_size;
     rt_trace(RT_TRACE_FS, "[FS] Reading block prefix (buffer: 0x%x, addr: 0x%x, size: 0x%x)\n", buffer, addr, prefix_size);
     int read_size = __rt_fs_read_cached(file, buffer, addr, prefix_size, pending, event);
     if (*pending) return read_size;

@@ -21,6 +21,11 @@
 
 #include "rt/rt_api.h"
 
+#ifdef ARCHI_FPGA_FREQUENCY
+extern int __rt_fpga_fc_frequency;
+extern int __rt_fpga_periph_frequency;
+#endif
+
 int __rt_freq_domains[RT_FREQ_NB_DOMAIN];
 
 int rt_freq_set_and_get(rt_freq_domain_e domain, unsigned int freq, unsigned int *out_freq)
@@ -59,9 +64,10 @@ void __rt_freq_init()
 #ifdef ARCHI_FPGA_FREQUENCY
   else
   {
-    __rt_freq_domains[RT_FREQ_DOMAIN_FC] = ARCHI_FPGA_FREQUENCY;
+    printf("FREQ %d\n", __rt_fpga_fc_frequency);
+    __rt_freq_domains[RT_FREQ_DOMAIN_FC] = __rt_fpga_fc_frequency;
 
-    __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = ARCHI_FPGA_FREQUENCY;
+    __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = __rt_fpga_periph_frequency;
 
   #if __RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
     __rt_freq_domains[RT_FREQ_DOMAIN_CL] = ARCHI_FPGA_FREQUENCY;
