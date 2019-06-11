@@ -45,6 +45,7 @@ endif
 
 ifeq '$(CONFIG_SPIM_ENABLED)' '1'
 ifneq '$(udma/spim/version)' ''
+PULP_CFLAGS += -D__RT_SPIM_COPY_ASM=1
 PULP_LIB_FC_SRCS_rt += drivers/spi/spim-v$(udma/spim/version).c
 PULP_LIB_FC_ASM_SRCS_rt += drivers/spi/spim-v$(udma/spim/version)_asm.S
 endif

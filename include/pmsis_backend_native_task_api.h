@@ -1,6 +1,8 @@
 #ifndef __PMSIS_BACKEND_NATIVE_TASK_API_H__
 #define __PMSIS_BACKEND_NATIVE_TASK_API_H__
 
+#include "string.h"
+
 typedef int __os_native_task_t;
 
 static inline int disable_irq(void) {return 0;}

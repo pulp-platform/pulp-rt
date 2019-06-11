@@ -57,7 +57,7 @@ int pi_cpi_open(struct pi_device *device)
     plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
 
     // Redirect all UDMA cpi events to the standard callback
-    __rt_udma_register_channel_callback(channel, __rt_udma_handle_copy);
+    __rt_udma_register_channel_callback(channel, __rt_udma_handle_copy, NULL);
   }
 
 

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS_IMPLEM_IMPLEM_H__
-#define __PMSIS_IMPLEM_IMPLEM_H__
+#ifndef __PMSIS__DATA__DATA_H__
+#define __PMSIS__DATA__DATA_H__
 
-#include "pmsis/implem/perf.h"
-#include "pmsis/implem/cpi.h"
-#include "rt/implem/implem.h"
+#include "rt/rt_api_decl.h"
+#include "udma.h"
+#include "cpi.h"
+#include "spi.h"
 
 #endif
+

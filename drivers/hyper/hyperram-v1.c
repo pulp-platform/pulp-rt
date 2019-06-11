@@ -241,8 +241,8 @@ int pi_hyper_open(struct pi_device *device)
   plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
 
   // Redirect all UDMA hyper events to our callback
-  __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy);
-  __rt_udma_register_channel_callback(channel+1, __rt_hyper_handle_copy);
+  __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy, NULL);
+  __rt_udma_register_channel_callback(channel+1, __rt_hyper_handle_copy, NULL);
 
   int dt_val = conf->type == PI_HYPER_TYPE_RAM ? 1 : 0;
   if (conf->cs == 0)

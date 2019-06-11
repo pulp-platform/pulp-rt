@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef __RT_DATA_UDMA_H__
-#define __RT_DATA_UDMA_H__
+#ifndef __RT_DATA_SPIM_H__
+#define __RT_DATA_SPIM_H__
 
 #ifndef LANGUAGE_ASSEMBLY
 
 typedef struct {
-  pi_task_t *pendings[2];
-  pi_task_t *waitings_first;
-  pi_task_t *waitings_last;
-} rt_udma_channel_t;
+  pi_task_t *pending_copy;
+  pi_task_t *waiting_first;
+  pi_task_t *waiting_last;
+  unsigned int udma_cmd[4];
+  int open_count;
+  int id;
+} pi_spim_t;
 
 #endif
 
-#define RT_UDMA_CHANNEL_T_PENDINGS_0     0
-#define RT_UDMA_CHANNEL_T_PENDINGS_1     4
-#define RT_UDMA_CHANNEL_T_PENDINGS_FIRST 8
-#define RT_UDMA_CHANNEL_T_PENDINGS_LAST  12
+#define PI_SPIM_T_PENDING_COPY      0
+#define PI_SPIM_T_WAITING_FIRST     4
+#define PI_SPIM_T_WAITING_LAST      8
 
 #endif

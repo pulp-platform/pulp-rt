@@ -207,8 +207,8 @@ int pi_i2c_open(struct pi_device *device)
     soc_eu_fcEventMask_setEvent(channel_id);
     soc_eu_fcEventMask_setEvent(channel_id + 1);
 
-    __rt_udma_register_channel_callback(channel_id, __rt_i2c_handle_rx_copy);
-    __rt_udma_register_channel_callback(channel_id+1, __rt_i2c_handle_tx_copy);
+    __rt_udma_register_channel_callback(channel_id, __rt_i2c_handle_rx_copy, NULL);
+    __rt_udma_register_channel_callback(channel_id+1, __rt_i2c_handle_tx_copy, NULL);
 
     i2c->pending_copy = NULL;
     i2c->waiting_first = NULL;

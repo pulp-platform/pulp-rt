@@ -17,9 +17,7 @@
 #ifndef __PMSIS__H__
 #define __PMSIS__H__
 
-#include "rt/rt_api_decl.h"
-
-#include "pmsis.h"
+#include "pmsis/data/data.h"
 
 #include "pmsis_cluster/cluster_sync/fc_to_cl_delegate.h"
 #include "pmsis_cluster/cl_malloc.h"
@@ -37,37 +35,6 @@
 #include "drivers/spi.h"
 
 #include "pmsis/implem/implem.h"
-#include "rt/implem/implem.h"
-
-extern int pmsis_exit_value;
-
-static inline int pmsis_kickoff(void *arg)
-{
-  ((void (*)())arg)();
-  return pmsis_exit_value;
-}
-
-static inline void pmsis_exit(int err)
-{
-  pmsis_exit_value = err;
-}
-
-static inline uint32_t __native_core_id() {
-  return rt_core_id();
-}
-
-static inline uint32_t __native_cluster_id() {
-  return rt_cluster_id();
-}
-
-static inline uint32_t __native_is_fc() {
-  return rt_is_fc();
-}
-
-static inline uint32_t __native_native_nb_cores() {
-  return rt_nb_pe();
-}
-
 
 #endif
 
