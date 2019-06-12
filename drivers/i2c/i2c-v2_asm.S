@@ -20,7 +20,7 @@
 
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
-#include "rt/data/i2c.h"
+#include "pmsis/data/i2c.h"
 
 
   // x9: channel, x10: event, x8,x11,x12:temp
