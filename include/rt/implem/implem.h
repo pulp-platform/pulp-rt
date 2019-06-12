@@ -25,7 +25,6 @@
 #include "rt/implem/dma.h"
 #include "rt/implem/cluster.h"
 #include "rt/implem/udma.h"
-#include "rt/implem/cpi.h"
 
 static inline struct pi_task *pi_task(struct pi_task *task)
 {
@@ -35,6 +34,36 @@ static inline struct pi_task *pi_task(struct pi_task *task)
   __rt_task_init(task);
   return task;
 }
+
+extern int pmsis_exit_value;
+
+static inline int pmsis_kickoff(void *arg)
+{
+  ((void (*)())arg)();
+  return pmsis_exit_value;
+}
+
+static inline void pmsis_exit(int err)
+{
+  pmsis_exit_value = err;
+}
+
+static inline uint32_t __native_core_id() {
+  return rt_core_id();
+}
+
+static inline uint32_t __native_cluster_id() {
+  return rt_cluster_id();
+}
+
+static inline uint32_t __native_is_fc() {
+  return rt_is_fc();
+}
+
+static inline uint32_t __native_native_nb_cores() {
+  return rt_nb_pe();
+}
+
 
 /// @endcond
 

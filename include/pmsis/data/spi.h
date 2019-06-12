@@ -25,6 +25,7 @@ typedef struct {
   pi_task_t *waiting_last;
   unsigned int udma_cmd[4];
   int open_count;
+  int id;
 } pi_spim_t;
 
 #endif

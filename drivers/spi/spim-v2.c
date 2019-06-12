@@ -19,14 +19,10 @@
  * Authors: Germain Haugou, GreenWaves Technologies (germain.haugou@greenwaves-technologies.com)
  */
 
-#include "rt/rt_api.h"
+#include "pmsis.h"
 #include <stdint.h>
 
-extern void __rt_spim_handle_tx_copy();
-extern void __rt_spim_handle_rx_copy();
-extern void __pi_spim_handle_eot();
-
-RT_L2_DATA static pi_spim_t __rt_spim[ARCHI_UDMA_NB_SPIM];
+L2_DATA static pi_spim_t __rt_spim[ARCHI_UDMA_NB_SPIM];
 
 typedef struct 
 {
@@ -47,6 +43,48 @@ typedef struct
 typedef struct {
     unsigned int cmd[4];
 } rt_spim_cmd_t;
+
+
+void __pi_handle_waiting_copy(pi_task_t *task);
+
+
+#ifndef __RT_SPIM_COPY_ASM
+
+void __pi_spim_handle_eot(int event, void *arg)
+{
+  pi_spim_t *spim = (pi_spim_t *)arg;
+
+  pi_task_t *task = spim->pending_copy;
+  spim->pending_copy = NULL;
+  __rt_event_handle_end_of_task(task);
+
+  task = spim->waiting_first;
+  if (task)
+  {
+    spim->waiting_first = task->implem.next;
+    __pi_handle_waiting_copy(task);
+  }
+}
+
+void __rt_spim_handle_rx_copy(int event, void *arg)
+{
+  soc_eu_fcEventMask_clearEvent(event);
+  __pi_spim_handle_eot(event, arg);
+}
+
+void __rt_spim_handle_tx_copy(int event, void *arg)
+{
+  soc_eu_fcEventMask_clearEvent(event);
+  __pi_spim_handle_eot(event, arg);
+}
+
+#else
+
+extern void __rt_spim_handle_tx_copy();
+extern void __rt_spim_handle_rx_copy();
+extern void __pi_spim_handle_eot(void *arg);
+
+#endif
 
 
 
@@ -76,7 +114,7 @@ static int __rt_spi_get_div(int spi_freq)
 
 static inline int __rt_spim_get_byte_align(int wordsize, int big_endian)
 {
-  return wordsize == RT_SPIM_WORDSIZE_32 && big_endian;
+  return wordsize == PI_SPI_WORDSIZE_32 && big_endian;
 }
 
 int pi_spi_open(struct pi_device *device)
@@ -90,7 +128,7 @@ int pi_spi_open(struct pi_device *device)
 
   pi_spim_t *spim = &__rt_spim[conf->itf];
 
-  pi_spim_cs_t *spim_cs = rt_alloc(RT_ALLOC_FC_DATA, sizeof(pi_spim_cs_t));
+  pi_spim_cs_t *spim_cs = pmsis_l2_malloc(sizeof(pi_spim_cs_t));
   if (spim_cs == NULL) goto error;
 
   device->data = (void *)spim_cs;
@@ -115,9 +153,9 @@ int pi_spi_open(struct pi_device *device)
   {
     plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
     soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_SPIM0_EOT + conf->itf);
-    __rt_udma_extra_callback[ARCHI_SOC_EVENT_SPIM0_EOT - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + conf->itf] = __pi_spim_handle_eot;
-    __rt_udma_register_channel_callback(channel_id, __rt_spim_handle_rx_copy);
-    __rt_udma_register_channel_callback(channel_id+1, __rt_spim_handle_tx_copy);
+    __rt_udma_register_extra_callback(ARCHI_SOC_EVENT_SPIM0_EOT + conf->itf, __pi_spim_handle_eot, (void *)spim);
+    __rt_udma_register_channel_callback(channel_id, __rt_spim_handle_rx_copy, (void *)spim);
+    __rt_udma_register_channel_callback(channel_id+1, __rt_spim_handle_tx_copy, (void *)spim);
   }
 
   rt_irq_restore(irq);
@@ -135,11 +173,11 @@ void pi_spi_ioctl(struct pi_device *device, uint32_t cmd, void *_arg)
   pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
   uint32_t arg = (uint32_t)_arg;
 
-  int polarity = (cmd >> __RT_SPIM_CTRL_CPOL_BIT) & 3;
-  int phase = (cmd >> __RT_SPIM_CTRL_CPHA_BIT) & 3;
-  int set_freq = (cmd >> __RT_SPIM_CTRL_SET_MAX_BAUDRATE_BIT) & 1;
-  int wordsize = (cmd >> __RT_SPIM_CTRL_WORDSIZE_BIT) & 3;
-  int big_endian = (cmd >> __RT_SPIM_CTRL_ENDIANNESS_BIT) & 3;
+  int polarity = (cmd >> __PI_SPI_CTRL_CPOL_BIT) & 3;
+  int phase = (cmd >> __PI_SPI_CTRL_CPHA_BIT) & 3;
+  int set_freq = (cmd >> __PI_SPI_CTRL_SET_MAX_BAUDRATE_BIT) & 1;
+  int wordsize = (cmd >> __PI_SPI_CTRL_WORDSIZE_BIT) & 3;
+  int big_endian = (cmd >> __PI_SPI_CTRL_ENDIANNESS_BIT) & 3;
 
   if (set_freq)
   {
@@ -225,7 +263,6 @@ void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_
   int size = (len + 7) >> 3;
   unsigned int base = hal_udma_channel_base(spim_cs->channel + 1);
 
-
   if (cs_mode == PI_SPI_CS_AUTO)
   {
     // CS auto mode. We handle the termination with an EOT so we have to enqueue
@@ -275,7 +312,7 @@ void pi_spi_send(struct pi_device *device, void *data, size_t len, pi_spi_flags_
 
 void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags, pi_task_t *task)
 {
-  rt_trace(RT_TRACE_SPIM, "[SPIM] Receive bitstream (handle: %p, buffer: %p, len: 0x%x, qspi: %d, keep_cs: %d, event: %p)\n", handle, data, len, qspi, cs_mode, event);
+  //rt_trace(RT_TRACE_SPIM, "[SPIM] Receive bitstream (handle: %p, buffer: %p, len: 0x%x, qspi: %d, keep_cs: %d, event: %p)\n", handle, data, len, qspi, cs_mode, event);
 
   int irq = rt_irq_disable();
 
@@ -343,7 +380,7 @@ void pi_spi_receive(struct pi_device *device, void *data, size_t len, pi_spi_fla
 
 void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_flags_e flags, pi_task_t *task)
 {
-  rt_trace(RT_TRACE_SPIM, "[SPIM] Transfering bitstream (handle: %p, tx_buffer: %p, rx_buffer: %p, len: 0x%x, flags: 0x%x, event: %p)\n", handle, tx_data, rx_data, len, flags, event);
+  //rt_trace(RT_TRACE_SPIM, "[SPIM] Transfering bitstream (handle: %p, tx_buffer: %p, rx_buffer: %p, len: 0x%x, flags: 0x%x, event: %p)\n", handle, tx_data, rx_data, len, flags, event);
 
   int irq = rt_irq_disable();
 
@@ -430,7 +467,7 @@ void __pi_handle_waiting_copy(pi_task_t *task)
 
 void pi_spi_conf_init(struct pi_spi_conf *conf)
 {
-  conf->wordsize = RT_SPIM_WORDSIZE_8;
+  conf->wordsize = PI_SPI_WORDSIZE_8;
   conf->big_endian = 0;
   conf->max_baudrate = 10000000;
   conf->cs_gpio = -1;
@@ -440,14 +477,48 @@ void pi_spi_conf_init(struct pi_spi_conf *conf)
   conf->phase = 0;
 }
 
-static RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_spim_init()
+static void __attribute__((constructor)) __rt_spim_init()
 {
   for (int i=0; i<ARCHI_UDMA_NB_SPIM; i++)
   {
     __rt_spim[i].open_count = 0;
     __rt_spim[i].pending_copy = NULL;
     __rt_spim[i].waiting_first = NULL;
+    __rt_spim[i].id = i;
     __rt_udma_channel_reg_data(UDMA_EVENT_ID(ARCHI_UDMA_SPIM_ID(0) + i), &__rt_spim[i]);
     __rt_udma_channel_reg_data(UDMA_EVENT_ID(ARCHI_UDMA_SPIM_ID(0) + i)+1, &__rt_spim[i]);
   }
 }
+
+#ifdef __ZEPHYR__
+
+#include <zephyr.h>
+#include <device.h>
+#include <init.h>
+
+static int spi_init(struct device *device)
+{
+  ARG_UNUSED(device);
+
+  __rt_spim_init();
+
+  return 0;
+}
+
+struct spi_config {
+};
+
+struct spi_data {
+};
+
+static const struct spi_config spi_cfg = {
+};
+
+static struct spi_data spi_data = {
+};
+
+DEVICE_INIT(spi, "spi", &spi_init,
+    &spi_data, &spi_cfg,
+    PRE_KERNEL_2, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
+
+#endif

@@ -676,10 +676,6 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #include "rt/data/rt_data_spim.h"
 #include "rt/data/rt_data_camera.h"
 #include "rt/data/rt_data_i2c.h"
-#include "rt/data/udma.h"
-#include "rt/data/cpi.h"
-#include "rt/data/i2c.h"
-#include "rt/data/spi.h"
 
 #endif
 

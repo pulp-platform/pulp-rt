@@ -27,6 +27,7 @@ endif
 
 ifeq '$(CONFIG_CAM_ENABLED)' '1'
 ifneq '$(udma/cpi/version)' ''
+PULP_CFLAGS += -D__RT_CPI_COPY_ASM=1
 PULP_LIB_FC_SRCS_rt += drivers/cpi/cpi-v1.c
 endif
 endif
@@ -36,6 +37,7 @@ endif
 
 ifeq '$(CONFIG_I2C_ENABLED)' '1'
 ifneq '$(udma/i2c/version)' ''
+PULP_CFLAGS += -D__RT_I2C_COPY_ASM=1
 PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c-v$(udma/i2c/version).c drivers/i2c/i2c-v$(udma/i2c/version)_asm.c
 endif
 endif
@@ -54,6 +56,7 @@ endif
 
 ifeq '$(CONFIG_SPIM_ENABLED)' '1'
 ifneq '$(udma/spim/version)' ''
+PULP_CFLAGS += -D__RT_SPIM_COPY_ASM=1
 PULP_LIB_FC_SRCS_rt += drivers/spi/spim-v$(udma/spim/version).c
 PULP_LIB_FC_ASM_SRCS_rt += drivers/spi/spim-v$(udma/spim/version)_asm.S
 endif

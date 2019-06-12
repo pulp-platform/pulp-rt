@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef __RT_IMPLEM_CPI_H__
-#define __RT_IMPLEM_CPI_H__
+#ifndef __PMSIS_IMPLEM_CPI_H__
+#define __PMSIS_IMPLEM_CPI_H__
 
 #ifdef ARCHI_UDMA_HAS_CAM
+
+#include "archi/udma/cpi/udma_cpi_v1.h"
 
 static inline void pi_cpi_control_start(struct pi_device *device)
 {

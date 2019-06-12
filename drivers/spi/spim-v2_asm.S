@@ -18,7 +18,7 @@
  * Authors: Germain Haugou, GreenWaves Technologies (germain.haugou@greenwaves-technologies.com)
  */
 
-#include "rt/data/spi.h"
+#include "pmsis/data/spi.h"
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
 

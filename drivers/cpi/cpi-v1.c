@@ -24,6 +24,19 @@ static rt_cpi_t __rt_cpi[ARCHI_UDMA_NB_CAM];
 
 
 
+#ifndef __RT_CPI_COPY_ASM
+
+void __rt_udma_handle_copy()
+{
+}
+
+#else
+
+extern void __rt_udma_handle_copy();
+
+#endif
+
+
 
 void pi_cpi_conf_init(struct pi_cpi_conf *conf)
 {
@@ -57,7 +70,7 @@ int pi_cpi_open(struct pi_device *device)
     plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
 
     // Redirect all UDMA cpi events to the standard callback
-    __rt_udma_register_channel_callback(channel, __rt_udma_handle_copy);
+    __rt_udma_register_channel_callback(channel, __rt_udma_handle_copy, NULL);
   }
 
 
