@@ -30,7 +30,7 @@
  * limitations under the License.
  */
 
-/* 
+/*
  * Authors: Eric Flamand, GreenWaves Technologies (eric.flamand@greenwaves-technologies.com)
  *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
@@ -40,7 +40,7 @@
 #include <string.h>
 #include <stdio.h>
 
-// Allocate at least 4 bytes to avoid misaligned accesses when parsing free blocks 
+// Allocate at least 4 bytes to avoid misaligned accesses when parsing free blocks
 // and actually 8 to fit free chunk header size and make sure a e free block to always have
 // at least the size of the header.
 // This also requires the initial chunk to be correctly aligned.
@@ -61,7 +61,9 @@ rt_alloc_t __rt_alloc_l2[__RT_NB_ALLOC_L2];
 #define ALIGN_UP(addr,size)   (((addr) + (size) - 1) & ~((size) - 1))
 #define ALIGN_DOWN(addr,size) ((addr) & ~((size) - 1))
 
+#ifndef Max
 #define Max(x, y) (((x)>(y))?(x):(y))
+#endif
 
 /*
   A semi general purpose memory allocator based on the assumption that when something is freed it's size is known.
@@ -116,7 +118,7 @@ void rt_user_alloc_init(rt_alloc_t *a, void *_chunk, int size)
 void *rt_user_alloc(rt_alloc_t *a, int size)
 {
   rt_trace(RT_TRACE_ALLOC, "Allocating memory chunk (alloc: %p, size: 0x%8x)\n", a, size);
-  
+
   rt_alloc_chunk_t *pt = a->first_free, *prev = 0;
 
   size = ALIGN_UP(size, MIN_CHUNK_SIZE);
@@ -139,7 +141,7 @@ void *rt_user_alloc(rt_alloc_t *a, int size)
     }
   } else {
     rt_trace(RT_TRACE_ALLOC, "Not enough memory to allocate\n");
-  
+
     //rt_warning("Not enough memory to allocate\n");
     return NULL;
   }
@@ -182,13 +184,13 @@ void __attribute__((noinline)) rt_user_free(rt_alloc_t *a, void *_chunk, int siz
 
 {
   rt_trace(RT_TRACE_ALLOC, "Freeing memory chunk (alloc: %p, base: %p, size: 0x%8x)\n", a, _chunk, size);
-  
+
   rt_alloc_chunk_t *chunk = (rt_alloc_chunk_t *)_chunk;
   rt_alloc_chunk_t *next = a->first_free, *prev = 0, *new;
   size = ALIGN_UP(size, MIN_CHUNK_SIZE);
 
   while (next && next < chunk) {
-    prev = next; next = next->next; 
+    prev = next; next = next->next;
   }
 
   if (((char *)chunk + size) == (char *)next) {
@@ -284,7 +286,7 @@ void *rt_alloc_align(rt_alloc_e flags, int size, int align)
 #else
     return rt_user_alloc_align(rt_alloc_l2(), size, align);
 #endif
-  } 
+  }
 }
 
 #if defined(ARCHI_HAS_L1)

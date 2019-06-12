@@ -30,7 +30,7 @@
  * limitations under the License.
  */
 
-/* 
+/*
  * Authors: Eric Flamand, GreenWaves Technologies (eric.flamand@greenwaves-technologies.com)
  *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
@@ -39,7 +39,7 @@
 #include <string.h>
 #include <stdio.h>
 
-// Allocate at least 4 bytes to avoid misaligned accesses when parsing free blocks 
+// Allocate at least 4 bytes to avoid misaligned accesses when parsing free blocks
 // and actually 8 to fit free chunk header size and make sure a e free block to always have
 // at least the size of the header.
 // This also requires the initial chunk to be correctly aligned.
@@ -48,7 +48,9 @@
 #define ALIGN_UP(addr,size)   (((addr) + (size) - 1) & ~((size) - 1))
 #define ALIGN_DOWN(addr,size) ((addr) & ~((size) - 1))
 
+#ifndef Max
 #define Max(x, y) (((x)>(y))?(x):(y))
+#endif
 
 /*
   A semi general purpose memory allocator based on the assumption that when something is freed it's size is known.
@@ -201,7 +203,7 @@ int __attribute__((noinline)) rt_extern_free(rt_extern_alloc_t *a, void *addr, i
   size = ALIGN_UP(size, MIN_CHUNK_SIZE);
 
   while (next && next->addr < (unsigned int)addr) {
-    prev = next; next = next->next; 
+    prev = next; next = next->next;
   }
 
   if (next && ((char *)addr + size) == (char *)next->addr) {
