@@ -37,6 +37,7 @@ endif
 
 ifeq '$(CONFIG_I2C_ENABLED)' '1'
 ifneq '$(udma/i2c/version)' ''
+PULP_CFLAGS += -D__RT_I2C_COPY_ASM=1
 PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c-v$(udma/i2c/version).c drivers/i2c/i2c-v$(udma/i2c/version)_asm.c
 endif
 endif
