@@ -179,6 +179,13 @@ typedef struct rt_alloc_block_extern_s {
 
 typedef struct {
   rt_alloc_chunk_t *first_free;
+#ifdef ARCHI_MEMORY_POWER
+  uint32_t track_pwd;
+  uint32_t *pwd_count;
+  uint32_t *ret_count;
+  uint32_t bank_size_log2;
+  uint32_t first_bank_addr;
+#endif
 } rt_alloc_t;
 
 typedef struct {

@@ -294,6 +294,8 @@ void rt_free(rt_alloc_e flags, void *chunk, int size);
  */
 void *rt_alloc_align(rt_alloc_e flags, int size, int align);
 
+
+
 //!@}
 
 /**        
@@ -391,6 +393,16 @@ static inline void rt_free_cluster_wait(rt_free_req_t *req);
 
 
 /// @cond IMPLEM
+
+// TODO experimental feature, integrate it into the visible API once it is well tested
+typedef enum {
+  RT_ALLOC_CONF_POWER_DOWN = 1,
+  RT_ALLOC_CONF_POWER_UP = 2,
+  RT_ALLOC_CONF_POWER_RET = 3,
+  RT_ALLOC_CONF_POWER_NON_RET = 4
+} rt_alloc_conf_e;
+
+void rt_alloc_conf(rt_alloc_e flags, void *chunk, int size, rt_alloc_conf_e conf);
 
 #if defined(ARCHI_HAS_L2)
 #ifdef __RT_ALLOC_L2_MULTI

@@ -26,6 +26,10 @@
 #include "rt/implem/cluster.h"
 #include "rt/implem/udma.h"
 
+#if PULP_CHIP == CHIP_VEGA
+#include "rt/implem/vega.h"
+#endif
+
 static inline struct pi_task *pi_task(struct pi_task *task)
 {
   task->id = FC_TASK_NONE_ID;
