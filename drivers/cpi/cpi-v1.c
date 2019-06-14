@@ -26,8 +26,24 @@ static rt_cpi_t __rt_cpi[ARCHI_UDMA_NB_CAM];
 
 #ifndef __RT_CPI_COPY_ASM
 
-void __rt_udma_handle_copy()
+void __rt_udma_handle_copy(int event, void *arg)
 {
+  rt_udma_channel_t *channel = __rt_udma_channels[event];
+  pi_task_t *pending_1 = channel->pendings[1];
+  pi_task_t *pending_0 = channel->pendings[0];
+  pi_task_t *pending_first = channel->waitings_first;
+  channel->pendings[0] = pending_1;
+
+  if (pending_first)
+  {
+    // TODO
+  }
+  else
+  {
+    channel->pendings[1] = NULL;
+  }
+
+  __rt_event_handle_end_of_task(pending_0);
 }
 
 #else
@@ -70,7 +86,7 @@ int pi_cpi_open(struct pi_device *device)
     plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
 
     // Redirect all UDMA cpi events to the standard callback
-    __rt_udma_register_channel_callback(channel, __rt_udma_handle_copy, NULL);
+    __rt_udma_register_channel_callback(channel, __rt_udma_handle_copy, (void *)cpi);
   }
 
 
@@ -129,3 +145,38 @@ static void __attribute__((constructor)) __rt_cpi_init()
     __rt_udma_channel_init(UDMA_EVENT_ID(ARCHI_UDMA_CAM_ID(0) + i), &__rt_cpi[i].channel);
   }
 }
+
+
+
+#ifdef __ZEPHYR__
+
+#include <zephyr.h>
+#include <device.h>
+#include <init.h>
+
+static int cpi_init(struct device *device)
+{
+  ARG_UNUSED(device);
+
+  __rt_cpi_init();
+
+  return 0;
+}
+
+struct cpi_config {
+};
+
+struct cpi_data {
+};
+
+static const struct cpi_config cpi_cfg = {
+};
+
+static struct cpi_data cpi_data = {
+};
+
+DEVICE_INIT(cpi, "cpi", &cpi_init,
+    &cpi_data, &cpi_cfg,
+    PRE_KERNEL_2, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
+
+#endif

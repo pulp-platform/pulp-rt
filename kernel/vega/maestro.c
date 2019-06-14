@@ -56,6 +56,8 @@ RT_FC_TINY_DATA uint32_t __rt_alloc_l2_btrim_stdby;
 
 RT_FC_TINY_DATA uint32_t __rt_alloc_l2_pwr_ctrl;
 
+RT_FC_DATA static apb_soc_safe_l1_pwr_ctrl_t __rt_alloc_l1_pwr_ctrl;
+
 
 
 
@@ -108,6 +110,10 @@ void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 int __rt_pmu_cluster_power_up(rt_event_t *event, int *pending)
 {
   __rt_pmu_change_domain_power(event, pending, RT_PMU_CLUSTER_ID, RT_PMU_STATE_ON, 0);
+
+  __rt_alloc_l2_pwr_ctrl = 0;
+  __rt_alloc_l1_pwr_ctrl.raw = 0;
+  __rt_alloc_l1_pwr_ctrl.stdby_n = -1;
 
   return 1;
 }
@@ -289,6 +295,27 @@ int rt_voltage_force(rt_voltage_domain_e domain, unsigned int new_voltage, rt_ev
   rt_irq_restore(irq);
 
   return 0;
+}
+
+
+void rt_l1_power_ctrl(unsigned int banks, rt_l1_power_ctrl_e flags)
+{
+  if (flags == RT_L1_POWER_CTRL_POWER_DOWN)
+  {
+    __rt_alloc_l1_pwr_ctrl.pwd |= banks;
+  }
+  else if (flags == RT_L1_POWER_CTRL_POWER_RET)
+  {
+    __rt_alloc_l1_pwr_ctrl.pwd &= ~banks;
+    __rt_alloc_l1_pwr_ctrl.stdby_n &= ~banks;
+  }
+  else
+  {
+    __rt_alloc_l1_pwr_ctrl.pwd &= ~banks;
+    __rt_alloc_l1_pwr_ctrl.stdby_n |= banks;
+  }
+  
+  apb_soc_safe_l1_pwr_ctrl_set(ARCHI_APB_SOC_CTRL_ADDR, __rt_alloc_l1_pwr_ctrl.raw);
 }
 
 

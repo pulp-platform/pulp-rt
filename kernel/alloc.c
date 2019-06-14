@@ -219,11 +219,25 @@ void *rt_user_alloc(rt_alloc_t *a, int size)
       return (void *)pt;
     } else {
       // The free block is bigger than needed
-      // Return the end of the block in order to just update the free block size
-      void *result = (void *)((char *)pt + pt->size - size);
-      pt->size = pt->size - size;
+      // Return the beginning of the block to be contiguous with statically allocated data
+      // and simplify memory power management
+      void *result = (void *)((char *)pt);
+      rt_alloc_chunk_t *new_pt = (rt_alloc_chunk_t *)((char *)pt + size);
+      new_pt->size = pt->size - size;
+      new_pt->next = pt->next;
+
+      if (prev)
+        prev->next = new_pt;
+      else
+        a->first_free = new_pt;
+
       rt_trace(RT_TRACE_ALLOC, "Allocated memory chunk (alloc: %p, base: %p)\n", a, result);
-      __rt_alloc_account_alloc(a, result, size);
+      // Don't account the metadata which were in the newly allocated block as they were
+      // already accounted when the block was freed
+      __rt_alloc_account_alloc(a, (void *)((uint32_t)result+ sizeof(rt_alloc_chunk_t)), size - sizeof(rt_alloc_chunk_t));
+      // Instead account the metadata of the new free block
+      __rt_alloc_account_alloc(a, new_pt, sizeof(rt_alloc_chunk_t));
+
       return result;
     }
   } else {
