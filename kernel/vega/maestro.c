@@ -52,6 +52,10 @@ RT_FC_DATA static uint32_t __rt_pmu_sleep_ctrl_extwake;
 RT_FC_TINY_DATA rt_event_t *__rt_pmu_scu_event;
 
 
+RT_FC_TINY_DATA uint32_t __rt_alloc_l2_btrim_stdby;
+
+RT_FC_TINY_DATA uint32_t __rt_alloc_l2_pwr_ctrl;
+
 
 
 
@@ -307,4 +311,7 @@ void __rt_pmu_init()
   PMU_WRITE(MAESTRO_DLC_IMR_OFFSET, 0x7);
 
   __rt_pmu_scu_event = NULL;
+
+  __rt_alloc_l2_btrim_stdby = 0xFFFF << 4;
+  __rt_alloc_l2_pwr_ctrl = 0;
 }

@@ -27,38 +27,38 @@
 #define CONFIG_ALLOC_L2_PWD_NB_BANKS 12
 #define CONFIG_ALLOC_L2_PWD_BANK_SIZE_LOG2 17
 
-static inline void __rt_alloc_power_ctrl(uint32_t bank, uint32_t power, uint32_t standby)
+extern RT_FC_TINY_DATA uint32_t __rt_alloc_l2_btrim_stdby;
+extern RT_FC_TINY_DATA uint32_t __rt_alloc_l2_pwr_ctrl;
+
+static inline void __rt_alloc_power_ctrl(uint32_t banks, uint32_t power, uint32_t standby)
 {
   uint32_t base = ARCHI_APB_SOC_CTRL_ADDR;
   if (standby)
   {
-    apb_soc_safe_l2_btrim_stdby_t l2_btrim_stdby = { .raw = apb_soc_safe_l2_btrim_stdby_get(base) };
-    l2_btrim_stdby.btrim = 0;
     if (power)
     {
-      l2_btrim_stdby.stdby_n |= 1UL<<bank;
+      __rt_alloc_l2_btrim_stdby |= (banks << 4);
     }
     else
     {
-      l2_btrim_stdby.stdby_n &= ~(1UL<<bank);
+      __rt_alloc_l2_btrim_stdby &= ~(banks << 4);
     }
-    apb_soc_safe_l2_btrim_stdby_set(base, l2_btrim_stdby.raw);
+    apb_soc_safe_l2_btrim_stdby_set(base, __rt_alloc_l2_btrim_stdby);
   }
 
-  apb_soc_safe_l2_pwr_ctrl_t l2_pwr_ctrl = { .raw = apb_soc_safe_l2_pwr_ctrl_get(base) };
   if (power)
   {
-    l2_pwr_ctrl.vddde_n &= ~(1UL<<bank);
+    __rt_alloc_l2_pwr_ctrl &= ~(banks << 0);
     if (!standby)
-      l2_pwr_ctrl.vddme_n &= ~(1UL<<bank);
+      __rt_alloc_l2_pwr_ctrl &= ~(banks << 16);
   }
   else
   {
-    l2_pwr_ctrl.vddde_n |= 1UL<<bank;
+    __rt_alloc_l2_pwr_ctrl |= (banks << 0);
     if (!standby)
-      l2_pwr_ctrl.vddme_n |= 1UL<<bank;
+      __rt_alloc_l2_pwr_ctrl |= (banks << 16);
   }
-  apb_soc_safe_l2_pwr_ctrl_set(base, l2_pwr_ctrl.raw);
+  apb_soc_safe_l2_pwr_ctrl_set(base, __rt_alloc_l2_pwr_ctrl);
 }
 
 #endif

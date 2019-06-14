@@ -113,6 +113,7 @@ static __attribute__((noinline)) void __rt_alloc_account(rt_alloc_t *a, void *ch
   uint32_t addr = ((uint32_t)chunk_addr) & ~(bank_size - 1);
   uint32_t iter_size = addr + bank_size - ((uint32_t)chunk_addr);
   uint32_t bank = addr >> bank_size_log2;
+  uint32_t banks_ctrl = 0;
 
   if (iter_size > size)
     iter_size = size;
@@ -123,14 +124,14 @@ static __attribute__((noinline)) void __rt_alloc_account(rt_alloc_t *a, void *ch
 
     if (factor == -1 && *count == bank_size)
     {
-      __rt_alloc_power_ctrl(bank, 1, standby);
+      banks_ctrl |= 1<<bank;
     }
     
     *count += iter_size*factor;
 
     if (*count == bank_size)
     {
-      __rt_alloc_power_ctrl(bank, 0, standby);
+      banks_ctrl |= 1<<bank;
     }
 
     addr += bank_size;
@@ -140,6 +141,9 @@ static __attribute__((noinline)) void __rt_alloc_account(rt_alloc_t *a, void *ch
     if (iter_size > size)
       iter_size = size;
   }
+
+  if (banks_ctrl)
+    __rt_alloc_power_ctrl(banks_ctrl, factor == -1 ? 1 : 0, standby);
 }
 #endif
 
