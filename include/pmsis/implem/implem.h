@@ -17,7 +17,9 @@
 #ifndef __PMSIS_IMPLEM_IMPLEM_H__
 #define __PMSIS_IMPLEM_IMPLEM_H__
 
+#ifdef UDMA_VERSION
 #include "pmsis/implem/udma.h"
+#endif
 #include "pmsis/implem/perf.h"
 #include "pmsis/implem/cpi.h"
 #include "rt/implem/implem.h"
