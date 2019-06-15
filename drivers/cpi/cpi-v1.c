@@ -121,7 +121,7 @@ void pi_cpi_capture(struct pi_device *device, void *buffer, size_t size)
 {
   struct pi_task task;
   pi_cpi_capture_async(device, buffer, size, pi_task(&task));
-  pi_wait_on_task(&task);
+  pi_task_wait_on(&task);
 }
 
 

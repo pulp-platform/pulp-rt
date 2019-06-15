@@ -122,6 +122,11 @@ void rt_time_wait_us(int time_us)
   rt_event_wait(event);
 }
 
+void pi_time_wait_us(int time_us)
+{
+  rt_time_wait_us(time_us);
+}
+
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
 {
   int err = 0;

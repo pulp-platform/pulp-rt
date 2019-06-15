@@ -156,7 +156,7 @@ int pi_cluster_send_task_to_cl(struct pi_device *device, struct pi_cluster_task 
     return -1;
   }
 
-  pi_wait_on_task(&fc_task);
+  pi_task_wait_on(&fc_task);
 
   return 0;
 }

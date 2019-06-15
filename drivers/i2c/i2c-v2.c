@@ -180,7 +180,7 @@ void pi_i2c_write(struct pi_device *device, uint8_t *data, int length, pi_i2c_xf
 {
   struct pi_task task;
   pi_i2c_write_async(device, data, length, flags, pi_task(&task));
-  pi_wait_on_task(&task);
+  pi_task_wait_on(&task);
 }
 
 void pi_i2c_read_async(struct pi_device *device, uint8_t *rx_buff, int length, pi_i2c_xfer_flags_e flags, pi_task_t *task)
@@ -227,7 +227,7 @@ void pi_i2c_read(struct pi_device *device, uint8_t *data, int length, pi_i2c_xfe
 {
   struct pi_task task;
   pi_i2c_read_async(device, data, length, flags, pi_task(&task));
-  pi_wait_on_task(&task);
+  pi_task_wait_on(&task);
 }
 
 int pi_i2c_open(struct pi_device *device)
