@@ -39,6 +39,22 @@ static inline void pmsis_task_suspend(__os_native_task_t *task);
 
 pi_task_t *pi_task_callback(pi_task_t *callback_task, void (*callback)(void*), void *arg);
 
+pi_task_t *pi_task_block(pi_task_t *callback_task);
+
+static inline struct pi_task *pi_task(struct pi_task *task);
+
+void pi_task_push(pi_task_t *task);
+
+void pi_task_push_delayed_us(pi_task_t *task, uint32_t delay);
+
+void pi_task_release(pi_task_t *task);
+
+/**
+ * Wait on the execution of the task associated to pi_task_t
+ * Task must already have been initialized
+ **/
+void pi_task_wait_on(pi_task_t *task);
+
 static inline struct pi_task *pi_task(struct pi_task *task);
 
 static inline void pmsis_exit(int err);
@@ -51,7 +67,7 @@ void pi_yield();
 
 static inline struct pi_task *pi_task(struct pi_task *task)
 {
-  task->id = FC_TASK_NONE_ID;
+  task->id = PI_TASK_NONE_ID;
   task->arg[0] = (uint32_t)0;
   return task;
 }
@@ -113,6 +129,7 @@ static inline void pmsis_mutex_release(pmsis_mutex_t *mutex)
     restore_irq(irq_enabled);
 #else
     mutex->release(mutex->mutex_object);
+    hal_compiler_barrier();
 #endif
 }
 
