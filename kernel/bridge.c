@@ -816,8 +816,6 @@ void __rt_bridge_req_shutdown()
       __rt_bridge_wait();
     }
   #endif
-
-    debug_struct->bridge.connected = 0;
   }
 }
 
