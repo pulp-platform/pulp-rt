@@ -35,6 +35,12 @@
 
 /// @cond IMPLEM
 
+#if PULP_CHIP_FAMILY == CHIP_GAP
+#include "rt/chips/gap/config.h"
+#elif PULP_CHIP == CHIP_VEGA
+#include "rt/chips/vega/config.h"
+#endif
+
 #define INLINE static inline
 #define PMSIS_USE_EXTERNAL_TYPES
 #define PMSIS_NO_INLINE_INCLUDE
