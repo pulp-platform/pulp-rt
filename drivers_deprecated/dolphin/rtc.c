@@ -162,11 +162,8 @@ static void  rt_rtc_calendar_stop(){
 }
 
 static void  rt_rtc_calendar(rt_rtc_calendar_t *calendar){
-  if (calendar->time != (unsigned int)-1)
-    rt_rtc_reg_config(RTC_Calendar_TIME_Addr, calendar->time);
-
-  if (calendar->date != (unsigned int)-1)
-    rt_rtc_reg_config(RTC_Calendar_DATE_Addr, calendar->date);
+  rt_rtc_reg_config(RTC_Calendar_TIME_Addr, calendar->time);
+  rt_rtc_reg_config(RTC_Calendar_DATE_Addr, calendar->date);
 }
 
 static void  rt_rtc_getTime(rt_rtc_calendar_t *calendar){
@@ -226,8 +223,6 @@ static void  rt_rtc_set_alarm(rt_rtc_alarm_t* alarm){
 void rt_rtc_conf_init(rt_rtc_conf_t *conf)
 {
   conf->clkDivider = 0x8000;
-  conf->calendar.date = (unsigned int)-1;
-  conf->calendar.time = (unsigned int)-1;
 }
 
 
@@ -263,8 +258,6 @@ static void rt_rtc_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
     memcpy(&rtc->conf, rtc_conf, sizeof(rt_rtc_conf_t));
   else
     rt_rtc_conf_init(&rtc->conf);
-
-  rt_rtc_calendar(&rtc->conf.calendar);
 
 
   rtc->conf.mode = MODE_CALENDAR;
@@ -384,6 +377,7 @@ void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_
       rt_rtc_calendar(&rtc->conf.calendar);
       break;
     case RTC_CALENDAR_START:
+      rt_rtc_calendar(&rtc->conf.calendar);
       rt_rtc_calendar_start();
       rtc->conf.mode = MODE_CALENDAR;
       break;

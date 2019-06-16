@@ -542,8 +542,8 @@ void exit(int status)
 
 void exit(int status)
 {
-  __rt_exit_debug_bridge(status);
   apb_soc_status_set(status);
+  __rt_exit_debug_bridge(status);
   __wait_forever();
 }
 
