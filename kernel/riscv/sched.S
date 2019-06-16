@@ -192,7 +192,6 @@ __rt_remote_enqueue_event_loop_cluster_continue:
 
 __rt_remote_enqueue_event_loop_next_cluster:
     la   x9, __rt_fc_cluster_data
-    lw   x9, 0(x9)
     li   a1, RT_FC_CLUSTER_DATA_T_SIZEOF
     mul  a1, x8, a1
     add  x9, x9, a1
