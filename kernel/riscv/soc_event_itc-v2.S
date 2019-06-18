@@ -79,6 +79,7 @@ __rt_fc_socevents_no_udma:
   // SOC event status register
   //
 
+  .global __rt_fc_socevents_register
 __rt_fc_socevents_register:
   // If the event is not handled, store it in the soc event status mask
   srli    x11, x10, 5

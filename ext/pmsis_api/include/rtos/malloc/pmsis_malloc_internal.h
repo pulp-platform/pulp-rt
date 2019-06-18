@@ -51,7 +51,6 @@
 
 #define ALIGN_UP(addr,size)   (((addr) + (size) - 1) & ~((size) - 1))
 #define ALIGN_DOWN(addr,size) ((addr) & ~((size) - 1))
-#define Max(x, y)             (((x)>(y))?(x):(y))
 
 /*! @brief Type od memory.  */
 #define INTERNAL_MALLOC (0)
