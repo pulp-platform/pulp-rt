@@ -37,7 +37,7 @@
 
 #include "archi/pulp_defs.h"
 
-#if PULP_CHIP_FAMILY == CHIP_GAP
+#if PULP_CHIP == CHIP_GAP
 #include "rt/chips/gap/config.h"
 #elif PULP_CHIP == CHIP_VEGA
 #include "rt/chips/vega/config.h"
