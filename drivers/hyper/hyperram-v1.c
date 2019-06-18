@@ -58,15 +58,16 @@ static struct pi_task __pi_hyper_cluster_task;
 static pi_cl_hyper_req_t *__pi_hyper_cluster_reqs_first;
 static pi_cl_hyper_req_t *__pi_hyper_cluster_reqs_last;
 
+static int __rt_hyper_open_count;
+
 
 // Hyper structure allocated when opening the driver
 typedef struct {
   rt_extern_alloc_t alloc;
   int channel;
   int cs;
+  int type;
 } pi_hyper_t;
-
-pi_hyper_t __rt_hyper;
 
 
 
@@ -218,7 +219,6 @@ static void __rt_hyper_handle_copy()
 int pi_hyper_open(struct pi_device *device)
 {
   struct pi_hyper_conf *conf = (struct pi_hyper_conf *)device->config;
-  pi_hyper_t *hyper = &__rt_hyper;
   int periph_id;
   int channel;
   int ramsize;
@@ -227,32 +227,55 @@ int pi_hyper_open(struct pi_device *device)
   channel = UDMA_EVENT_ID(periph_id);
   ramsize = conf->ram_size;
 
-  if (__pi_hyper_init(hyper, ramsize))
-    return -1;
+  pi_hyper_t *hyper = pmsis_l2_malloc(sizeof(pi_hyper_t));
+  if (hyper == NULL) return -1;
+
+  if (conf->type == PI_HYPER_TYPE_RAM)
+  {
+    if (__pi_hyper_init(hyper, ramsize))
+      goto error;
+  }
 
   hyper->channel = periph_id;
   hyper->cs = conf->cs;
+  hyper->type = conf->type;
 
-  // Activate routing of UDMA hyper soc events to FC to trigger interrupts
-  soc_eu_fcEventMask_setEvent(channel);
-  soc_eu_fcEventMask_setEvent(channel+1);
+  __rt_hyper_open_count++;
+  if (__rt_hyper_open_count == 1)
+  {
+    // Activate routing of UDMA hyper soc events to FC to trigger interrupts
+    soc_eu_fcEventMask_setEvent(channel);
+    soc_eu_fcEventMask_setEvent(channel + 1);
 
-  // Deactivate Hyper clock-gating
-  plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
+    // Deactivate Hyper clock-gating
+    plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
 
-  // Redirect all UDMA hyper events to our callback
-  __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy, NULL);
-  __rt_udma_register_channel_callback(channel+1, __rt_hyper_handle_copy, NULL);
+    // Redirect all UDMA hyper events to our callback
+    __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy, NULL);
+    __rt_udma_register_channel_callback(channel+1, __rt_hyper_handle_copy, NULL);
+  }
 
   int dt_val = conf->type == PI_HYPER_TYPE_RAM ? 1 : 0;
   if (conf->cs == 0)
+  {
     hal_hyper_udma_dt0_set(dt_val);
+    hal_hyper_udma_mbr0_set(REG_MBR0);
+    hal_hyper_udma_crt0_set(MEM_ACCESS);
+  }
   else
+  {
     hal_hyper_udma_dt1_set(dt_val);
+    hal_hyper_udma_mbr1_set(REG_MBR1>>24);
+    hal_hyper_udma_crt1_set(MEM_ACCESS);
+  }
 
   device->data = (void *)hyper;
 
   return 0;
+
+error:
+  pmsis_l2_malloc_free(hyper, sizeof(pi_hyper_t));
+  return -1;
 }
 
 
@@ -260,7 +283,23 @@ int pi_hyper_open(struct pi_device *device)
 void pi_hyper_close(struct pi_device *device)
 {
   pi_hyper_t *hyper = (pi_hyper_t *)device->data;
+
+  __rt_hyper_open_count--;
+  if (__rt_hyper_open_count == 0)
+  {
+    int periph_id = hyper->channel;
+    int channel = UDMA_EVENT_ID(periph_id);
+
+    // Deactivate event routing
+    soc_eu_fcEventMask_clearEvent(channel);
+    soc_eu_fcEventMask_clearEvent(channel + 1);
+
+    // Reactivate clock-gating
+    plp_udma_cg_set(plp_udma_cg_get() & ~(1<<periph_id));
+  }
+
   __pi_hyper_free(hyper);
+  pmsis_l2_malloc_free(hyper, sizeof(pi_hyper_t));
 }
 
 
@@ -373,7 +412,10 @@ static int __pi_hyper_init(pi_hyper_t *hyper, int ramsize)
 
 static void __pi_hyper_free(pi_hyper_t *hyper)
 {
-  rt_extern_alloc_deinit(&hyper->alloc);
+  if (hyper->type == PI_HYPER_TYPE_RAM)
+  {
+    rt_extern_alloc_deinit(&hyper->alloc);
+  }
 }
 
 
@@ -892,6 +934,7 @@ static void __attribute__((constructor)) __rt_hyper_init()
   __rt_hyper_pending_tasks = NULL;
   __pi_hyper_cluster_reqs_first = NULL;
   __rt_hyper_pending_emu_channel = -1;
+  __rt_hyper_open_count = 0;
 }
 
 

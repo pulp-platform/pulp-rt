@@ -35,6 +35,8 @@
 
 /// @cond IMPLEM
 
+#include "archi/pulp_defs.h"
+
 #if PULP_CHIP_FAMILY == CHIP_GAP
 #include "rt/chips/gap/config.h"
 #elif PULP_CHIP == CHIP_VEGA

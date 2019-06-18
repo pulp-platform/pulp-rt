@@ -33,12 +33,10 @@
 #define PULP
 #define __PULP__
 #define __ri5cy__ 1
-#ifndef PULP_CHIP
 #define PULP_CHIP CHIP_GAP
-#define PULP_CHIP_STR gap
-#endif
-#define CONFIG_GAP 1
 #define PULP_CHIP_FAMILY CHIP_GAP
+#define CONFIG_GAP 1
+#define PULP_CHIP_STR gap
 #define PULP_CHIP_FAMILY_STR gap
 #define PULP_CHIP_VERSION 0
 #define PULP_CORE CORE_RISCV_V4

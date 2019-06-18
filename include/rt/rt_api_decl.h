@@ -18,13 +18,14 @@
 #ifndef __RT_RT_API_DECL_H__
 #define __RT_RT_API_DECL_H__
 
+#include "rt/rt_data.h"
+
 #include "rt/chips/rt_default.h"
 #include "rt/chips/rt_gap.h"
 #include "rt/chips/rt_wolfe.h"
 #include "rt/chips/rt_vega.h"
 #include "rt/chips/rt_pulpissimo.h"
 
-#include "rt/rt_data.h"
 #include "rt/rt_irq.h"
 #include "rt/rt_utils.h"
 #include "rt/rt_extern_alloc.h"
