@@ -17,6 +17,8 @@
 #ifndef __PMSIS_IMPLEM_UDMA_H__
 #define __PMSIS_IMPLEM_UDMA_H__
 
+extern RT_FC_TINY_DATA rt_udma_channel_t *__rt_udma_channels[ARCHI_NB_PERIPH*2];
+
 extern void __rt_udma_channel_init(int channel_id, rt_udma_channel_t *channel);
 
 extern void __rt_udma_copy_enqueue(pi_task_t *task, int channel_id, rt_udma_channel_t *channel, uint32_t buffer, uint32_t size, uint32_t cfg);

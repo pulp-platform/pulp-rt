@@ -229,7 +229,7 @@ void rt_rtc_conf_init(rt_rtc_conf_t *conf)
 
 static void __rt_rtc_cold_init(rt_rtc_t *rtc, rt_rtc_conf_t *rtc_conf)
 {
-  rt_rtc_reg_config(RTC_IRQ_Mask_Addr, RTC_Timer1_Irq_Enable | RTC_Alarm1_Irq_Enable);     // Enable the countdown timer 1 interruption
+  rt_rtc_reg_config(RTC_IRQ_Mask_Addr, (RTC_Timer1_Irq_Enable << 4) | (RTC_Alarm1_Irq_Enable << 0));     // Enable the countdown timer 1 interruption
 
   // config the RTC in calendar mode.
   rt_rtc_set_clk(rtc->conf.clkDivider);
@@ -377,6 +377,7 @@ void rt_rtc_control( rt_rtc_t *rtc, rt_rtc_cmd_e rtc_cmd, void *value, rt_event_
       rt_rtc_calendar(&rtc->conf.calendar);
       break;
     case RTC_CALENDAR_START:
+      rt_rtc_calendar(&rtc->conf.calendar);
       rt_rtc_calendar_start();
       rtc->conf.mode = MODE_CALENDAR;
       break;

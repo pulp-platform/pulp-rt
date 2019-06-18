@@ -266,8 +266,12 @@ void __rt_event_sched_init()
   rt_event_alloc(&__rt_sched, 1);
 }
 
+void pi_task_push(pi_task_t *task)
+{
+  rt_event_enqueue(task);
+}
 
-void pi_wait_on_task(struct pi_task *task)
+void pi_task_wait_on(struct pi_task *task)
 {
   while(!task->done)
     rt_event_yield(NULL);
@@ -276,4 +280,9 @@ void pi_wait_on_task(struct pi_task *task)
 void pi_yield()
 {
   rt_event_yield(NULL);
+}
+
+void pi_task_push_delayed_us(pi_task_t *task, uint32_t delay)
+{
+  rt_event_push_delayed(task, delay);
 }

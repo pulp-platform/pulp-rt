@@ -26,28 +26,43 @@ static L2_DATA pi_i2c_t __rt_i2c[ARCHI_UDMA_NB_I2C];
 
 #ifndef __RT_I2C_COPY_ASM
 
-void __rt_i2c_handle_tx_copy()
-{
+void __rt_i2c_handle_tx_copy(int event, void *arg)
+{ 
+  pi_i2c_t *i2c = (pi_i2c_t *)arg;
+
+  void (*cb)(pi_i2c_t *) = (void (*)(pi_i2c_t *))i2c->pending_step;
+
+  cb(i2c);
 }
 
 void __rt_i2c_handle_rx_copy()
 {
 }
 
-void __rt_i2c_step1()
+void __rt_i2c_step1(pi_i2c_t *i2c)
 {
+  plp_udma_enqueue(i2c->pending_base, i2c->pending_data, i2c->pending_length, UDMA_CHANNEL_CFG_EN);
+  i2c->pending_step = i2c->pending_next_step;
 }
 
-void __rt_i2c_step2()
+void __rt_i2c_step3(pi_i2c_t *i2c)
 {
+  pi_task_t *task = i2c->pending_copy;
+  i2c->pending_copy = NULL;
+  __rt_event_handle_end_of_task(task);
 }
 
-void __rt_i2c_step3()
+void __rt_i2c_step2(pi_i2c_t *i2c)
 {
+  i2c->pending_step = (uint32_t)__rt_i2c_step3;
+  plp_udma_enqueue(i2c->pending_base, i2c->udma_stop_cmd, 1, UDMA_CHANNEL_CFG_EN);
 }
 
-void udma_event_handler_end()
+void udma_event_handler_end(pi_i2c_t *i2c)
 {
+  pi_task_t *task = i2c->pending_copy;
+  i2c->pending_copy = NULL;
+  __rt_event_handle_end_of_task(task);
 }
 
 #else
@@ -165,7 +180,7 @@ void pi_i2c_write(struct pi_device *device, uint8_t *data, int length, pi_i2c_xf
 {
   struct pi_task task;
   pi_i2c_write_async(device, data, length, flags, pi_task(&task));
-  pi_wait_on_task(&task);
+  pi_task_wait_on(&task);
 }
 
 void pi_i2c_read_async(struct pi_device *device, uint8_t *rx_buff, int length, pi_i2c_xfer_flags_e flags, pi_task_t *task)
@@ -212,7 +227,7 @@ void pi_i2c_read(struct pi_device *device, uint8_t *data, int length, pi_i2c_xfe
 {
   struct pi_task task;
   pi_i2c_read_async(device, data, length, flags, pi_task(&task));
-  pi_wait_on_task(&task);
+  pi_task_wait_on(&task);
 }
 
 int pi_i2c_open(struct pi_device *device)
@@ -235,8 +250,8 @@ int pi_i2c_open(struct pi_device *device)
     soc_eu_fcEventMask_setEvent(channel_id);
     soc_eu_fcEventMask_setEvent(channel_id + 1);
 
-    __rt_udma_register_channel_callback(channel_id, __rt_i2c_handle_rx_copy, NULL);
-    __rt_udma_register_channel_callback(channel_id+1, __rt_i2c_handle_tx_copy, NULL);
+    __rt_udma_register_channel_callback(channel_id, __rt_i2c_handle_rx_copy, (void *)i2c);
+    __rt_udma_register_channel_callback(channel_id+1, __rt_i2c_handle_tx_copy, (void *)i2c);
 
     i2c->pending_copy = NULL;
     i2c->waiting_first = NULL;

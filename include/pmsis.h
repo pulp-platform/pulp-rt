@@ -24,6 +24,7 @@
 #include "rtos/pmsis_driver_core_api/pmsis_driver_core_api.h"
 #include "rtos/event_kernel/event_kernel.h"
 #include "rtos/os_frontend_api/pmsis_task.h"
+#include "rtos/os_frontend_api/pmsis_time.h"
 #include "rtos/malloc/pmsis_malloc.h"
 #include "rtos/malloc/pmsis_l1_malloc.h"
 #include "rtos/malloc/pmsis_l2_malloc.h"
@@ -33,6 +34,7 @@
 #include "drivers/cpi.h"
 #include "drivers/i2c.h"
 #include "drivers/spi.h"
+#include "drivers/gpio.h"
 
 #include "pmsis/implem/implem.h"
 

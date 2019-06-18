@@ -400,7 +400,7 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
 
 struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), void *arg)
 {
-  task->id = FC_TASK_CALLBACK_ID;
+  task->id = PI_TASK_CALLBACK_ID;
   task->arg[0] = (uint32_t)callback;
   task->arg[1] = (uint32_t)arg;
   task->implem.keep = 1;

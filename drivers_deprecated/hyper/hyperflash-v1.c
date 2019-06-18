@@ -91,7 +91,9 @@ static rt_flash_t *__rt_hyperflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt
 
   pi_hyper_conf_init(&hyper_conf);
 
+  hyper_conf.type = PI_HYPER_TYPE_FLASH;
   hyper_conf.id = hyper->channel - ARCHI_UDMA_HYPER_ID(0);
+  hyper_conf.cs = 1;
 
   pi_open_from_conf(&hyper->device, &hyper_conf);
 

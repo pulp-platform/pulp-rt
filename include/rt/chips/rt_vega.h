@@ -368,4 +368,18 @@ typedef enum {
 
 #endif
 
+
+
+/// @cond IMPLEM
+
+typedef enum {
+  RT_L1_POWER_CTRL_POWER_DOWN = 1,
+  RT_L1_POWER_CTRL_POWER_UP = 2,
+  RT_L1_POWER_CTRL_POWER_RET = 3
+} rt_l1_power_ctrl_e;
+
+void rt_l1_power_ctrl(unsigned int banks, rt_l1_power_ctrl_e flags);
+
+/// @endcond
+
 #endif

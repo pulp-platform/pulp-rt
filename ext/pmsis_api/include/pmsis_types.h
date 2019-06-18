@@ -41,14 +41,15 @@
 
 /**@{*/
 
+struct pi_device;
+struct pmsis_event_kernel_wrap;
+
+// device type placed at the top of conf
 typedef enum {
     PI_DEVICE_CLUSTER_TYPE,
     PI_DEVICE_HYPERBUS_TYPE,
     PI_DEVICE_SPI_TYPE
 } pi_device_e;
-
-struct pi_device;
-struct pmsis_event_kernel_wrap;
 
 typedef struct pi_task pi_task_t;
 
@@ -131,8 +132,8 @@ struct pmsis_event_kernel_wrap {
 };
 
 enum pi_task_id {
-    FC_TASK_CALLBACK_ID,
-    FC_TASK_NONE_ID,
+    PI_TASK_CALLBACK_ID,
+    PI_TASK_NONE_ID,
 };
 
 #ifndef PI_TASK_IMPLEM

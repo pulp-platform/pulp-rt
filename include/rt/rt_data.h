@@ -35,6 +35,12 @@
 
 /// @cond IMPLEM
 
+#if PULP_CHIP_FAMILY == CHIP_GAP
+#include "rt/chips/gap/config.h"
+#elif PULP_CHIP == CHIP_VEGA
+#include "rt/chips/vega/config.h"
+#endif
+
 #define INLINE static inline
 #define PMSIS_USE_EXTERNAL_TYPES
 #define PMSIS_NO_INLINE_INCLUDE
@@ -179,6 +185,13 @@ typedef struct rt_alloc_block_extern_s {
 
 typedef struct {
   rt_alloc_chunk_t *first_free;
+#ifdef ARCHI_MEMORY_POWER
+  uint32_t track_pwd;
+  uint32_t *pwd_count;
+  uint32_t *ret_count;
+  uint32_t bank_size_log2;
+  uint32_t first_bank_addr;
+#endif
 } rt_alloc_t;
 
 typedef struct {

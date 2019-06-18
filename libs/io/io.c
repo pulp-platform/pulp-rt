@@ -512,7 +512,19 @@ static void __rt_exit_debug_bridge(int status)
   // Notify debug tools about the termination
   __rt_bridge_printf_flush();
   hal_debug_exit(hal_debug_struct_get(), status);
+
   __rt_bridge_send_notif();
+
+  hal_debug_struct_t *debug_struct = hal_debug_struct_get();
+
+  if (debug_struct->bridge.connected)
+  {
+    while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) != 7)
+    {
+    }
+
+    __rt_bridge_clear_notif();
+  }
 }
 
 
@@ -530,8 +542,8 @@ void exit(int status)
 
 void exit(int status)
 {
-  __rt_exit_debug_bridge(status);
   apb_soc_status_set(status);
+  __rt_exit_debug_bridge(status);
   __wait_forever();
 }
 

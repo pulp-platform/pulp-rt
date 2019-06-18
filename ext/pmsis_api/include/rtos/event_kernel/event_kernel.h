@@ -31,14 +31,13 @@ int pmsis_event_free(struct pmsis_event_kernel_wrap *wrap, int nb_events);
  **/
 int pmsis_event_push(struct pmsis_event_kernel_wrap *event_kernel, pi_task_t *task);
 
-/**
- * Wait on the execution of the task associated to pi_task_t
- * Task must already have been initialized
- **/
-void pi_wait_on_task(pi_task_t *task);
-
 void pmsis_event_kernel_mutex_release(struct pmsis_event_kernel_wrap *wrap);
 
 void pmsis_event_lock_cl_to_fc_init(struct pmsis_event_kernel_wrap *wrap);
 
+struct pmsis_event_kernel_wrap *pmsis_event_get_default_scheduler(void);
+
+void pmsis_event_set_default_scheduler(struct pmsis_event_kernel_wrap *wrap);
+
+void pmsis_event_destroy_default_scheduler(struct pmsis_event_kernel_wrap *wrap);
 #endif

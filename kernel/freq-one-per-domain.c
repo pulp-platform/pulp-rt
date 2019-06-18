@@ -64,7 +64,6 @@ void __rt_freq_init()
 #ifdef ARCHI_FPGA_FREQUENCY
   else
   {
-    printf("FREQ %d\n", __rt_fpga_fc_frequency);
     __rt_freq_domains[RT_FREQ_DOMAIN_FC] = __rt_fpga_fc_frequency;
 
     __rt_freq_domains[RT_FREQ_DOMAIN_PERIPH] = __rt_fpga_periph_frequency;
