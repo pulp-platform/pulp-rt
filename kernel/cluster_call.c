@@ -81,7 +81,7 @@ int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster
   {
     if (task->stack_size == 0)
     {
-      task->stack_size = 0x400;
+      task->stack_size = 0x800;
       task->slave_stack_size = 0x400;
     }
 
