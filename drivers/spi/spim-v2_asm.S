@@ -40,6 +40,17 @@ __pi_spim_handle_copy:
   slli   x8, x10, 2  
   lw     x8, %tiny(__rt_udma_channels)(x8)
 
+  // Check if we have to repeat the current transfer
+  lw     x11, PI_SPIM_T_REPEAT_LEN(x8)
+  beqz   x11, __rt_spim_no_repeat
+
+  la     x9, udma_event_handler_end
+  la     x12, __rt_spi_handle_repeat
+  mv     x10, x8
+
+  j      __rt_call_external_c_function
+
+__rt_spim_no_repeat:
   // Check if we have to handle a waiting copy
   lw     x11, PI_SPIM_T_WAITING_FIRST(x8)
   bnez   x11, __rt_spim_handle_waiting

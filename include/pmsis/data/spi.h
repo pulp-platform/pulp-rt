@@ -23,9 +23,17 @@ typedef struct {
   pi_task_t *pending_copy;
   pi_task_t *waiting_first;
   pi_task_t *waiting_last;
+  unsigned int pending_repeat_len;
   unsigned int udma_cmd[4];
   int open_count;
   int id;
+  pi_task_t task;
+  unsigned int pending_repeat_addr;
+  unsigned int pending_repeat_dup_addr;
+  unsigned int pending_repeat_base;
+  unsigned int pending_repeat_send;
+  unsigned int pending_repeat_flags;
+  struct pi_device *pending_repeat_device;
 } pi_spim_t;
 
 #endif
@@ -33,5 +41,6 @@ typedef struct {
 #define PI_SPIM_T_PENDING_COPY      0
 #define PI_SPIM_T_WAITING_FIRST     4
 #define PI_SPIM_T_WAITING_LAST      8
+#define PI_SPIM_T_REPEAT_LEN        12
 
 #endif

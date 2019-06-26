@@ -156,6 +156,8 @@ int pi_spi_open(struct pi_device *device)
     __rt_udma_register_extra_callback(ARCHI_SOC_EVENT_SPIM0_EOT + conf->itf, __pi_spim_handle_eot, (void *)spim);
     __rt_udma_register_channel_callback(channel_id, __rt_spim_handle_rx_copy, (void *)spim);
     __rt_udma_register_channel_callback(channel_id+1, __rt_spim_handle_tx_copy, (void *)spim);
+
+    spim->pending_repeat_len = 0;
   }
 
   rt_irq_restore(irq);
@@ -220,6 +222,96 @@ void pi_spi_close(struct pi_device *device)
   rt_irq_restore(irq);
 }
 
+void __rt_spi_handle_repeat(void *arg)
+{
+  int irq = rt_irq_disable();
+
+  pi_spim_t *spim = (pi_spim_t *)arg;
+  pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)spim->pending_repeat_device->data;
+  unsigned int len = spim->pending_repeat_len;
+  int cs_mode = (spim->pending_repeat_flags >> 0) & 0x3;
+  int qspi = ((spim->pending_repeat_flags >> 2) & 0x3) == PI_SPI_LINES_QUAD;
+  if (len > 8192*8)
+  {
+    len = 8192*8;
+  }
+  spim->pending_repeat_len -= len;
+  int size = (len + 7) >> 3;
+
+  if (spim->pending_repeat_send == 1)
+  {
+    spim->udma_cmd[0] = SPI_CMD_TX_DATA(len, qspi, spim_cs->byte_align);
+
+    plp_udma_enqueue(spim->pending_repeat_base, (unsigned int)spim->udma_cmd, 1*4, UDMA_CHANNEL_CFG_EN);
+    while(plp_udma_busy(spim->pending_repeat_base));
+
+    if (spim->pending_repeat_len == 0 && cs_mode == PI_SPI_CS_AUTO)
+    {
+      plp_udma_enqueue(spim->pending_repeat_base, spim->pending_repeat_addr, size, UDMA_CHANNEL_CFG_EN);
+      spim->udma_cmd[0] = SPI_CMD_EOT(1);
+      plp_udma_enqueue(spim->pending_repeat_base, (unsigned int)spim->udma_cmd, 1*4, UDMA_CHANNEL_CFG_EN);
+    }
+    else
+    {
+      soc_eu_fcEventMask_setEvent(spim_cs->channel + 1);
+      plp_udma_enqueue(spim->pending_repeat_base, spim->pending_repeat_addr, size, UDMA_CHANNEL_CFG_EN);
+      spim->pending_repeat_addr += size;
+    }
+  }
+  else if (spim->pending_repeat_send == 2)
+  {
+    unsigned int tx_base = hal_udma_channel_base(spim_cs->channel + 1);
+    unsigned int rx_base = hal_udma_channel_base(spim_cs->channel);
+
+    spim->udma_cmd[0] = SPI_CMD_FUL(len, spim_cs->byte_align);
+
+    plp_udma_enqueue(tx_base, (unsigned int)spim->udma_cmd, 1*4, UDMA_CHANNEL_CFG_EN);
+
+    if (spim->pending_repeat_len == 0 && cs_mode == PI_SPI_CS_AUTO)
+    {
+      plp_udma_enqueue(rx_base, (unsigned int)spim->pending_repeat_addr, size, UDMA_CHANNEL_CFG_EN | (2<<1));
+      plp_udma_enqueue(tx_base, (unsigned int)spim->pending_repeat_dup_addr, size, UDMA_CHANNEL_CFG_EN);
+      while(!plp_udma_canEnqueue(tx_base));
+      spim->udma_cmd[0] = SPI_CMD_EOT(1);
+      plp_udma_enqueue(tx_base, (unsigned int)spim->udma_cmd, 1*4, UDMA_CHANNEL_CFG_EN);
+    }
+    else
+    {
+      while(plp_udma_busy(tx_base));
+      soc_eu_fcEventMask_setEvent(spim_cs->channel);
+      plp_udma_enqueue(rx_base, (unsigned int)spim->pending_repeat_addr, size, UDMA_CHANNEL_CFG_EN | (2<<1));
+      plp_udma_enqueue(tx_base, (unsigned int)spim->pending_repeat_dup_addr, size, UDMA_CHANNEL_CFG_EN);
+      spim->pending_repeat_addr += size;
+      spim->pending_repeat_dup_addr += size;
+    }
+  }
+  else
+  {
+    int cmd_size = 0;
+    unsigned int tx_base = hal_udma_channel_base(spim_cs->channel + 1);
+    unsigned int rx_base = hal_udma_channel_base(spim_cs->channel);
+
+    spim->udma_cmd[cmd_size++] = SPI_CMD_RX_DATA(len, qspi, spim_cs->byte_align);
+
+    if (spim->pending_repeat_len == 0 && cs_mode == PI_SPI_CS_AUTO)
+    {
+      spim->udma_cmd[cmd_size++] = SPI_CMD_EOT(1);
+    }
+    else
+    {
+      soc_eu_fcEventMask_setEvent(spim_cs->channel);
+    }
+
+    plp_udma_enqueue(rx_base, (unsigned int)spim->pending_repeat_addr, size, UDMA_CHANNEL_CFG_EN | (2<<1));
+    plp_udma_enqueue(tx_base, (unsigned int)spim->udma_cmd, cmd_size*4, UDMA_CHANNEL_CFG_EN);
+
+    spim->pending_repeat_addr += size;
+  }
+
+  rt_irq_restore(irq);
+}
+
+
 void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags, pi_task_t *task)
 {
   int irq = rt_irq_disable();
@@ -250,7 +342,22 @@ void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_
     goto end;
   }
 
+  unsigned int base = hal_udma_channel_base(spim_cs->channel + 1);
+
+  if (len > 8192*8)
+  {
+    spim->pending_repeat_len = len - 8192*8;
+    spim->pending_repeat_addr = (uint32_t)data + 8192;
+    spim->pending_repeat_base = base;
+    spim->pending_repeat_device = device;
+    spim->pending_repeat_send = 1;
+    spim->pending_repeat_flags = flags;
+    len = 8192*8;
+  }
+  
   spim->pending_copy = task;
+
+  int size = (len + 7) >> 3;
 
   // First enqueue the header with SPI config, cs, and send command.
   // The rest will be sent by the assembly code.
@@ -260,10 +367,8 @@ void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_
   spim->udma_cmd[1] = SPI_CMD_SOT(spim_cs->cs);
   spim->udma_cmd[2] = SPI_CMD_TX_DATA(len, qspi, spim_cs->byte_align);
 
-  int size = (len + 7) >> 3;
-  unsigned int base = hal_udma_channel_base(spim_cs->channel + 1);
 
-  if (cs_mode == PI_SPI_CS_AUTO)
+  if (cs_mode == PI_SPI_CS_AUTO && spim->pending_repeat_len == 0)
   {
     // CS auto mode. We handle the termination with an EOT so we have to enqueue
     // 3 transfers.
@@ -283,6 +388,8 @@ void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_
   else
   {
     // CS keep mode.
+    // Note this is also used for CS auto mode when we need to repeat the transfer to overcome
+    // HW limitation, as CS must be kept low.
     // We cannot use EOT due to HW limitations (generating EOT is always releasing CS)
     // so we have to use TX event instead.
     // TX event is current inactive, enqueue first transfer first EOT.
@@ -344,27 +451,39 @@ void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_s
 
   spim->pending_copy = task;
 
-  int cmd_size = 3*4;
-  spim->udma_cmd[0] = spim_cs->cfg;
-  spim->udma_cmd[1] = SPI_CMD_SOT(spim_cs->cs);
-  spim->udma_cmd[2] = SPI_CMD_RX_DATA(len, qspi, spim_cs->byte_align);
-  if (cs_mode == PI_SPI_CS_AUTO)
-  {
-    spim->udma_cmd[3] = SPI_CMD_EOT(1);
-    cmd_size += 4;
-  }
-
-  int size = (len + 7) >> 3;
   unsigned int rx_base = hal_udma_channel_base(spim_cs->channel);
 
-  if (cs_mode != PI_SPI_CS_AUTO)
+  if (len > 8192*8)
+  {
+    spim->pending_repeat_len = len - 8192*8;
+    spim->pending_repeat_addr = (uint32_t)data + 8192;
+    spim->pending_repeat_base = rx_base;
+    spim->pending_repeat_device = device;
+    spim->pending_repeat_send = 0;
+    spim->pending_repeat_flags = flags;
+    len = 8192*8;
+  }
+  
+  int size = (len + 7) >> 3;
+
+  int cmd_size = 0;
+  spim->udma_cmd[cmd_size++] = spim_cs->cfg;
+  spim->udma_cmd[cmd_size++] = SPI_CMD_SOT(spim_cs->cs);
+  spim->udma_cmd[cmd_size++] = SPI_CMD_RX_DATA(len, qspi, spim_cs->byte_align);
+
+  if (cs_mode == PI_SPI_CS_AUTO && !spim->pending_repeat_len)
+  {
+    spim->udma_cmd[cmd_size++] = SPI_CMD_EOT(1);
+  }
+
+  if (cs_mode != PI_SPI_CS_AUTO || spim->pending_repeat_len)
   {
     soc_eu_fcEventMask_setEvent(spim_cs->channel);
   }
 
   unsigned int tx_base = hal_udma_channel_base(spim_cs->channel + 1);
   plp_udma_enqueue(rx_base, (unsigned int)data, size, UDMA_CHANNEL_CFG_EN | (2<<1));
-  plp_udma_enqueue(tx_base, (unsigned int)spim->udma_cmd, cmd_size, UDMA_CHANNEL_CFG_EN);
+  plp_udma_enqueue(tx_base, (unsigned int)spim->udma_cmd, cmd_size*4, UDMA_CHANNEL_CFG_EN);
 
 end:
   rt_irq_restore(irq);
@@ -410,6 +529,23 @@ void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_dat
     goto end;
   }
 
+  int channel_id = spim_cs->channel;
+
+  unsigned int rx_base = hal_udma_channel_base(channel_id);
+  unsigned int tx_base = hal_udma_channel_base(channel_id+1);
+
+  if (len > 8192*8)
+  {
+    spim->pending_repeat_len = len - 8192*8;
+    spim->pending_repeat_base = tx_base;
+    spim->pending_repeat_addr = (uint32_t)rx_data + 8192;
+    spim->pending_repeat_dup_addr = (uint32_t)tx_data + 8192;
+    spim->pending_repeat_device = device;
+    spim->pending_repeat_send = 2;
+    spim->pending_repeat_flags = flags;
+    len = 8192*8;
+  }
+  
   spim->pending_copy = task;
 
   // First enqueue the header with SPI config, cs, and send command.
@@ -419,13 +555,9 @@ void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_dat
   spim->udma_cmd[1] = SPI_CMD_SOT(spim_cs->cs);
   spim->udma_cmd[2] = SPI_CMD_FUL(len, spim_cs->byte_align);
 
-  int channel_id = spim_cs->channel;
-
   int size = (len + 7) >> 3;
-  unsigned int rx_base = hal_udma_channel_base(channel_id);
-  unsigned int tx_base = hal_udma_channel_base(channel_id+1);
 
-  if (cs_mode == PI_SPI_CS_AUTO)
+  if (cs_mode == PI_SPI_CS_AUTO && spim->pending_repeat_len == 0)
   {
     plp_udma_enqueue(tx_base, (unsigned int)spim->udma_cmd, 3*4, UDMA_CHANNEL_CFG_EN);
     plp_udma_enqueue(rx_base, (unsigned int)rx_data, size, UDMA_CHANNEL_CFG_EN | (2<<1));
@@ -439,6 +571,7 @@ void pi_spi_transfer_async(struct pi_device *device, void *tx_data, void *rx_dat
   else
   {
     plp_udma_enqueue(tx_base, (unsigned int)spim->udma_cmd, 3*4, UDMA_CHANNEL_CFG_EN);
+    while(plp_udma_busy(tx_base));
     soc_eu_fcEventMask_setEvent(channel_id);
     plp_udma_enqueue(rx_base, (unsigned int)rx_data, size, UDMA_CHANNEL_CFG_EN | (2<<1));
     plp_udma_enqueue(tx_base, (unsigned int)tx_data, size, UDMA_CHANNEL_CFG_EN);
