@@ -42,7 +42,7 @@ RT_OBJECTS       = $(RT_S_OBJECTS) $(RT_C_OBJECTS)
 
 IO_C_OBJECTS     = $(patsubst %.c, $(BUILD_RT)/%.o, $(wildcard $(shell find $(RUNTIME_PATH)/pulp-rt/libs/io -name "*.c")))
 
-INC_DEFINE    = -include $(TARGET_INSTALL_DIR)/include/$(TARGET_NAME)_config.h
+INC_DEFINE    = -include $(TARGET_INSTALL_DIR)/include/rt/chips/$(TARGET_NAME)/config.h
 
 INC           = $(TARGET_INSTALL_DIR)/include/ \
 				$(TARGET_INSTALL_DIR)/include/io \
@@ -63,7 +63,7 @@ install_rt_gap8: install_headers
 	make -C  $(GAP_SDK_HOME)/pulp-os/pulp-rt MK_ROOT=$(GAP_SDK_HOME)/pulp-os/pulp-rt/mk/gap header pmsis build install
 
 install_rt_vega: install_headers
-	make -C  $(GAP_SDK_HOME)/pulp-os/pulp-rt MK_ROOT=$(GAP_SDK_HOME)/pulp-os/pulp-rt/mk/vega header build install
+	make -C  $(GAP_SDK_HOME)/pulp-os/pulp-rt MK_ROOT=$(GAP_SDK_HOME)/pulp-os/pulp-rt/mk/vega header pmsis build install
 
 # Rules for creating the libs.
 #------------------------------------------
@@ -71,7 +71,7 @@ gap: install_headers install_rt_gap8
 
 gap_rev1: install_headers install_rt_gap8
 
-vega: install_headers install_rt_vega
+gap9: install_headers install_rt_vega
 
 #all: install_headers $(TARGET_CHIP)
 
