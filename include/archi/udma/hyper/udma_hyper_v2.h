@@ -187,7 +187,7 @@
 #define HYPER_TIMING_CFG_RW_RECOVERY_WIDTH                           4
 #define HYPER_TIMING_CFG_RW_RECOVERY_MASK                            0x3c00
 
-// Delay of RWDS for center aligned read: - 3'b000: 0 logic delay - 3'b001: 1 logic delay - 3'b010: 2 logic delay … - 3'b111: 7 logic delay (access: R/W)
+// Delay of RWDS for center aligned read: - 3'b000: 0 logic delay - 3'b001: 1 logic delay - 3'b010: 2 logic delay  - 3'b111: 7 logic delay (access: R/W)
 #define HYPER_TIMING_CFG_RWDS_DELAY_BIT                              14
 #define HYPER_TIMING_CFG_RWDS_DELAY_WIDTH                            3
 #define HYPER_TIMING_CFG_RWDS_DELAY_MASK                             0x1c000
@@ -197,7 +197,7 @@
 #define HYPER_TIMING_CFG_ADDITIONAL_LATENCY_AUTOCHECK_EN_WIDTH       1
 #define HYPER_TIMING_CFG_ADDITIONAL_LATENCY_AUTOCHECK_EN_MASK        0x20000
 
-// Maximum chip select low time for self-refresh HYPERRAM to valid the data transfer : - 14'h0000: 1 CK - 14'h0001: 2 CK - 14'h0011: 3 CK - … - 14'h3FFF: 16383 CK (access: R/W)
+// Maximum chip select low time for self-refresh HYPERRAM to valid the data transfer : - 14'h0000: 1 CK - 14'h0001: 2 CK - 14'h0011: 3 CK -  - 14'h3FFF: 16383 CK (access: R/W)
 #define HYPER_TIMING_CFG_CS_MAX_BIT                                  18
 #define HYPER_TIMING_CFG_CS_MAX_WIDTH                                16
 #define HYPER_TIMING_CFG_CS_MAX_MASK                                 0x3fffc0000
@@ -227,7 +227,7 @@
 #define HYPER_DEVICE_DT1_WIDTH                                       1
 #define HYPER_DEVICE_DT1_MASK                                        0x4
 
-// Octo SPI command size :  - 2’b0: 0 byte -  2'b1: 1 byte -  2'b2: 2 byte (access: R/W)
+// Octo SPI command size :  - 2b0: 0 byte -  2'b1: 1 byte -  2'b2: 2 byte (access: R/W)
 #define HYPER_OSPI_CFG_CMD_SIZE_BIT                                  0
 #define HYPER_OSPI_CFG_CMD_SIZE_WIDTH                                2
 #define HYPER_OSPI_CFG_CMD_SIZE_MASK                                 0x3
@@ -282,7 +282,7 @@
 #define HYPER_IRQ_EN_EN_WIDTH                                        1
 #define HYPER_IRQ_EN_EN_MASK                                         0x1
 
-// Clock divide data, form 0 – 255, frequency divide table is : -8’h0 – IO_FREQUENCY / 1 -8’h1 – IO_FREQUENCY / 2 -8’h2 – IO_FREQUENCY / 4 …  (access: R/W)
+// Clock divide data, form 0  255, frequency divide table is : -8h0  IO_FREQUENCY / 1 -8h1  IO_FREQUENCY / 2 -8h2  IO_FREQUENCY / 4   (access: R/W)
 #define HYPER_CLK_DIV_DATA_BIT                                       0
 #define HYPER_CLK_DIV_DATA_WIDTH                                     8
 #define HYPER_CLK_DIV_DATA_MASK                                      0xff
@@ -378,9 +378,9 @@ typedef union {
     unsigned int latency0        :5 ; // Latency Cycle value for both HyperRAM and HyperFLASH for chip select 0. When using HyperRAM memory, this bit should be set to the same value as the read latency in configuration register of HyperRAM memory the read latency in configuration register of HyperRAM memory. For SPI, is the dummy cycle after ADDRESS stage : - 4'b0000: 16 CK - 4'b0001: 1 CK - 4'b0001: 2 CK ... - 4'b1111: 15 CK
     unsigned int latency1        :5 ; // Latency Cycle value for both HyperRAM and HyperFLASH for chip select 1. When using HyperRAM memory, this bit should be set to the same value as the read latency in configuration register of HyperRAM memory the read latency in configuration register of HyperRAM memory. For SPI, is the dummy cycle after ADDRESS stage : - 5'b00000: 0 CK - 5'b00001: 1 CK - 5'b000001: 2 CK ... - 5'b11111: 31 CK
     unsigned int rw_recovery     :4 ; // Some HyperBus devices may require a minimum time between the end of a prior transaction and the start of a new access. This time is referred to as Read-Write-Recovery time (tRWR). The master interface must start driving CS# Low only at a time when the CA1 transfer will complete after tRWR is satisfied. - 5'b00000: 0 CK - 5'b00001: 1 CK - 5'b000001: 2 CK ... - 5'b11111: 31 CK
-    unsigned int rwds_delay      :3 ; // Delay of RWDS for center aligned read: - 3'b000: 0 logic delay - 3'b001: 1 logic delay - 3'b010: 2 logic delay … - 3'b111: 7 logic delay
+    unsigned int rwds_delay      :3 ; // Delay of RWDS for center aligned read: - 3'b000: 0 logic delay - 3'b001: 1 logic delay - 3'b010: 2 logic delay  - 3'b111: 7 logic delay
     unsigned int additional_latency_autocheck_en:1 ; // Auto check for RWDS high or low for additional latency : - 1'b0: additional latency no autocheck - 1'b1: additional latency autocheck
-    unsigned int cs_max          :16; // Maximum chip select low time for self-refresh HYPERRAM to valid the data transfer : - 14'h0000: 1 CK - 14'h0001: 2 CK - 14'h0011: 3 CK - … - 14'h3FFF: 16383 CK
+    unsigned int cs_max          :16; // Maximum chip select low time for self-refresh HYPERRAM to valid the data transfer : - 14'h0000: 1 CK - 14'h0001: 2 CK - 14'h0011: 3 CK -  - 14'h3FFF: 16383 CK
   };
   unsigned int raw;
 } __attribute__((packed)) hyper_timing_cfg_t;
@@ -424,7 +424,7 @@ typedef union {
 
 typedef union {
   struct {
-    unsigned int cmd_size        :2 ; // Octo SPI command size :  - 2’b0: 0 byte -  2'b1: 1 byte -  2'b2: 2 byte
+    unsigned int cmd_size        :2 ; // Octo SPI command size :  - 2b0: 0 byte -  2'b1: 1 byte -  2'b2: 2 byte
     unsigned int padding0:2 ;
     unsigned int addr_size       :3 ; // Octo SPI address size :  - 3'b000: 0 byte (Jump ADDRESS stage) -  3'b001: 1 byte -  3'b010: 2 byte -  3'b011: 3 byte -  3'b100: 4 byte
     unsigned int padding1:1 ;
@@ -469,7 +469,7 @@ typedef union {
 
 typedef union {
   struct {
-    unsigned int data            :8 ; // Clock divide data, form 0 – 255, frequency divide table is : -8’h0 – IO_FREQUENCY / 1 -8’h1 – IO_FREQUENCY / 2 -8’h2 – IO_FREQUENCY / 4 … 
+    unsigned int data            :8 ; // Clock divide data, form 0  255, frequency divide table is : -8h0  IO_FREQUENCY / 1 -8h1  IO_FREQUENCY / 2 -8h2  IO_FREQUENCY / 4  
     unsigned int valid           :1 ; // Clock divide valid, user can not control. Every time there is clock divide write access, set 1 by default, then when clock divide is finished, set 0. 
   };
   unsigned int raw;

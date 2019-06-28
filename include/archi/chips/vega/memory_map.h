@@ -36,6 +36,14 @@
 
 
 /*
+ * MRAM
+ */
+
+#define ARCHI_MRAM_ADDR  0x1D000000
+
+
+
+/*
  * SOC PERIPHERALS
  */
 

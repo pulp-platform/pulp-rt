@@ -115,13 +115,25 @@ static inline void hwce_w_base_addr_set(unsigned int value) {
 static inline void hwce_gen_config0_set(unsigned int value) {
   HWCE_WRITE(value, HWCE_GEN_CONFIG0);
 }
+
+static inline unsigned int hwce_gen_config0_get() {
+  return HWCE_READ(HWCE_GEN_CONFIG0);
+}
  
 static inline void hwce_gen_config1_set(unsigned int value) {
   HWCE_WRITE(value, HWCE_GEN_CONFIG1);
 }
  
+static inline unsigned int hwce_gen_config1_get() {
+  return HWCE_READ(HWCE_GEN_CONFIG1);
+}
+ 
 static inline void hwce_gen_config2_set(unsigned int value) {
   HWCE_WRITE(value, HWCE_GEN_CONFIG2);
+}
+ 
+static inline unsigned int hwce_gen_config2_get() {
+  return HWCE_READ(HWCE_GEN_CONFIG2);
 }
  
 static inline void hwce_job_config0_set(unsigned int value) {
@@ -159,7 +171,7 @@ static inline unsigned int hwce_gen_config0_value(unsigned int wstride, unsigned
   res = __hwce_bitinsert(res, ncp    , 1 , 13);
   res = __hwce_bitinsert(res, conv   , 2 , 11);
   res = __hwce_bitinsert(res, vect   , 2 , 9);
-  res = __hwce_bitinsert(res, uns    , 1 , 8);
+  res = __hwce_bitinsert(res, 0      , 1 , 8);
   res = __hwce_bitinsert(res, ny     , 1 , 7);
   res = __hwce_bitinsert(res, nf     , 1 , 6);
   res = __hwce_bitinsert(res, qf     , 6 , 0);
@@ -176,10 +188,11 @@ static inline unsigned int hwce_gen_config1_value(unsigned int qmodex, unsigned 
   return res;
 }
  
-static inline unsigned int hwce_gen_config2_value(unsigned int qmodew, unsigned int qshiftw) {
+static inline unsigned int hwce_gen_config2_value(unsigned int qmodew, unsigned int qshiftw, unsigned int wait_nfeat) {
   unsigned int res = 0;
-  res = __hwce_bitinsert(res, qmodew,   3, 29);
-  res = __hwce_bitinsert(res, qshiftw,  5, 24);
+  res = __builtin_bitinsert(res, qmodew,     3, 29);
+  res = __builtin_bitinsert(res, qshiftw,    5, 24);
+  res = __builtin_bitinsert(res, wait_nfeat, 8, 16);
   return res;
 }
  
@@ -221,6 +234,10 @@ static inline void hwce_wait_event() {
 
 static inline void hwce_trigger_job() {
   HWCE_WRITE(0, HWCE_TRIGGER);
+}
+
+static inline void hwce_sw_evt() {
+  HWCE_WRITE(0, HWCE_SW_EVT);
 }
 
 static inline int hwce_acquire_job() {

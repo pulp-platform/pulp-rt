@@ -20,7 +20,7 @@
 
 #include "archi/chips/vega/properties.h"
 
-#include "archi/riscv/priv_1_9.h"
+#include "archi/riscv/priv_1_10.h"
 #include "archi/riscv/pcer_v2.h"
 
 #include "archi/chips/vega/memory_map.h"
@@ -29,6 +29,7 @@
 #include "archi/chips/vega/apb_soc.h"
 #include "archi/chips/vega/apb_soc_ctrl.h"
 #include "archi/stdout/stdout_v3.h"
+#include "archi/gpio/gpio_v3.h"
 
 #include "archi/udma/cpi/udma_cpi_v1.h"
 #include "archi/udma/csi2/udma_csi2_v1.h"
@@ -37,5 +38,7 @@
 #include "archi/udma/i2s/udma_i2s_v2.h"
 #include "archi/udma/spim/udma_spim_v3.h"
 #include "archi/udma/uart/udma_uart_v1.h"
+#include "archi/udma/mram/udma_mram_v1.h"
+#include "archi/udma/udma_v3.h"
 
 #endif

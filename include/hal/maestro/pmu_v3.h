@@ -41,6 +41,7 @@ static inline void maestro_picl_write(unsigned int island, unsigned int addr, un
 
 static inline __attribute__((always_inline)) void maestro_trigger_sequence(unsigned int seq)
 {
+  // Compute the right register ID / bit shift as each WIU IFR register is 8 bits wide
   int reg_id = MAESTRO_WIU_IFR_0_OFFSET + (seq >> 3);
   int seq_id = seq & 0x7;
 
@@ -85,8 +86,6 @@ static inline void maestro_icu_set_state(int island, unsigned int state)
 #define ARCHI_PMU_CS_ICU1     0x03
 #define ARCHI_PMU_CS_ICU2     0x04
 #define ARCHI_PMU_CS_ICU3     0x05
-#define ARCHI_PMU_CS_DMU0     0x20
-#define ARCHI_PMU_CS_DMU1     0x21
 
 #define ARCHI_PMU_WIU_ISPMR_0 0x00
 #define ARCHI_PMU_WIU_ISPMR_1 0x01

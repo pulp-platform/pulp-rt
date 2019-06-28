@@ -174,26 +174,29 @@
 // Enables and configures WatchDog Timer
 #define APB_SOC_SAFE_WD_OFFSET                   0x110
 
-// Sleep config register (pad 0-15)
+// Sleep config register (pad 0-7)
 #define APB_SOC_SAFE_SLEEPPADCFG0_OFFSET         0x150
 
-// Mux config register (pad 16-31)
+// Sleep config register (pad 8-15)
 #define APB_SOC_SAFE_SLEEPPADCFG1_OFFSET         0x154
-
-// Mux config register (pad 32-47)
-#define APB_SOC_SAFE_SLEEPPADCFG2_OFFSET         0x158
-
-// Mux config register (pad 48-63)
-#define APB_SOC_SAFE_SLEEPPADCFG3_OFFSET         0x15c
-
-// Enable Sleep mode for pads
-#define APB_SOC_SAFE_PADSLEEP_OFFSET             0x160
 
 // Config timings for NEVA
 #define APB_SOC_SAFE_NEVACF_OFFSET               0x164
 
 // General purpouse register AO
 #define APB_SOC_SAFE_GPREG_OFFSET                0x170
+
+// L2 standby configuration
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_OFFSET       0x174
+
+// FLL2 and FLL3 power control
+#define APB_SOC_SAFE_FLL_CTRL_OFFSET             0x178
+
+// L1 power control
+#define APB_SOC_SAFE_L1_PWR_CTRL_OFFSET          0x17c
+
+// L2 power control
+#define APB_SOC_SAFE_L2_PWR_CTRL_OFFSET          0x180
 
 // GPIO power domain pad input isolation register
 #define APB_SOC_REG_GPIO_ISO_OFFSET              0x1c0
@@ -275,12 +278,12 @@
 #define APB_SOC_CORESTATUS_RO_STATUS_WIDTH                           32
 #define APB_SOC_CORESTATUS_RO_STATUS_MASK                            0xffffffff
 
-// SoC domain clock selection: - 1’b0: First FLL is used (FLL1) - 1’b1: Second FLL is used (FLL2) (access: R/W)
+// SoC domain clock selection: - 1b0: First FLL is used (FLL1) - 1b1: Second FLL is used (FLL2) (access: R/W)
 #define APB_SOC_CLK_SEL_CLK_SOC_BIT                                  0
 #define APB_SOC_CLK_SEL_CLK_SOC_WIDTH                                1
 #define APB_SOC_CLK_SEL_CLK_SOC_MASK                                 0x1
 
-// Cluster domain clock selection: - 2’b00: First FLL is used (FLL1) - 2’b01: Second FLL is used (FLL2) - 2’b10: Third FLL is used (FLL3) (access: R/W)
+// Cluster domain clock selection: - 2b00: First FLL is used (FLL1) - 2b01: Second FLL is used (FLL2) - 2b10: Third FLL is used (FLL3) (access: R/W)
 #define APB_SOC_CLK_SEL_CLK_CLUSTER_BIT                              1
 #define APB_SOC_CLK_SEL_CLK_CLUSTER_WIDTH                            2
 #define APB_SOC_CLK_SEL_CLK_CLUSTER_MASK                             0x6
@@ -325,10 +328,65 @@
 #define APB_SOC_SAFE_PMU_SLEEPCTRL_RET_MEM_WIDTH                     16
 #define APB_SOC_SAFE_PMU_SLEEPCTRL_RET_MEM_MASK                      0xffff0000
 
-// Enable pad sleep mode: 1'b0: disable 1'b1: enable (access: R/W)
-#define APB_SOC_SAFE_PADSLEEP_EN_BIT                                 0
-#define APB_SOC_SAFE_PADSLEEP_EN_WIDTH                               1
-#define APB_SOC_SAFE_PADSLEEP_EN_MASK                                0x1
+// Pad state when the chip is down with low-speed IOs ON: - 4b0000: Tristate with no pull-up and no pull-down - 4b0001: Tristate with pull-up - 4b0010: Tristate with pull-down - 4b0011: Drive 0 - 4b0100: Drive 1 (access: R/W)
+#define APB_SOC_SAFE_SLEEPPADCFG0_STATE_BIT                          0
+#define APB_SOC_SAFE_SLEEPPADCFG0_STATE_WIDTH                        4
+#define APB_SOC_SAFE_SLEEPPADCFG0_STATE_MASK                         0xf
+
+// L2 cuts bias trim. This code is forwarded to all cuts and defines the level of current when the cut is in standby mode. 4b0000 is the least amount of current and 4b1110 is the most amount. 4bxxx1 is disabling the bias. (access: R/W)
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_BIT                        0
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_WIDTH                      4
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_MASK                       0xf
+
+// L2 cuts standby active low. One bit per L2 cut for 16 cuts, the cut is in standby when its corresponding bit is 0. The 4 last bits are for the private banks and the rest for the shared banks. (access: R/W)
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_BIT                      4
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_WIDTH                    16
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_MASK                     0xffff0
+
+// FLL2 power down. The FLL is powered down when this bit is 1b1. (access: R/W)
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_BIT                           0
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_WIDTH                         1
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_MASK                          0x1
+
+// FLL3 power down. The FLL is powered down when this bit is 1b1. (access: R/W)
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_BIT                           1
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_WIDTH                         1
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_MASK                          0x2
+
+// FLL2 reset active low. The FLL is reset when this bit is 1b0. (access: R/W)
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_BIT                          2
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_WIDTH                        1
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_MASK                         0x4
+
+// FLL3 reset active low. The FLL is reset when this bit is 1b0. (access: R/W)
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_BIT                          3
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_WIDTH                        1
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_MASK                         0x8
+
+// L1 cuts bias trim. This code is forwarded to all cuts and defines the level of current when the cut is in standby mode. 4b0000 is the least amount of current and 4b1110 is the most amount. 4bxxx1 is disabling the bias. (access: R/W)
+#define APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_BIT                           0
+#define APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_WIDTH                         4
+#define APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_MASK                          0xf
+
+// L1 cuts standby active low. First bit is for first L1 64Kbytes and second bit for second L1 64Kbytes. (access: R/W)
+#define APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_BIT                         4
+#define APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_WIDTH                       2
+#define APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_MASK                        0x30
+
+// L1 power down. The corresponding L1 part is powered down when this bit is 1b1. First bit is for first L1 64Kbytes and second bit for second L1 64Kbytes. (access: R/W)
+#define APB_SOC_SAFE_L1_PWR_CTRL_PWD_BIT                             6
+#define APB_SOC_SAFE_L1_PWR_CTRL_PWD_WIDTH                           2
+#define APB_SOC_SAFE_L1_PWR_CTRL_PWD_MASK                            0xc0
+
+// L2 VDDDE active low. One bit per L2 cut for 16 cuts, the cut periphery is supplied when its corresponding bit is 0. The 4 last bits are for the private banks and the rest for the shared banks. (access: R/W)
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_BIT                         0
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_WIDTH                       16
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_MASK                        0xffff
+
+// L2 VDDME active low. One bit per L2 cut for 16 cuts, the cut array is supplied when its corresponding bit is 0. The 4 last bits are for the private banks and the rest for the shared banks. (access: R/W)
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_BIT                         16
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_WIDTH                       16
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_MASK                        0xffff0000
 
 
 
@@ -546,8 +604,8 @@ typedef union {
 
 typedef union {
   struct {
-    unsigned int clk_soc         :1 ; // SoC domain clock selection: - 1’b0: First FLL is used (FLL1) - 1’b1: Second FLL is used (FLL2)
-    unsigned int clk_cluster     :2 ; // Cluster domain clock selection: - 2’b00: First FLL is used (FLL1) - 2’b01: Second FLL is used (FLL2) - 2’b10: Third FLL is used (FLL3)
+    unsigned int clk_soc         :1 ; // SoC domain clock selection: - 1b0: First FLL is used (FLL1) - 1b1: Second FLL is used (FLL2)
+    unsigned int clk_cluster     :2 ; // Cluster domain clock selection: - 2b00: First FLL is used (FLL1) - 2b01: Second FLL is used (FLL2) - 2b10: Third FLL is used (FLL3)
   };
   unsigned int raw;
 } __attribute__((packed)) apb_soc_clk_sel_t;
@@ -641,6 +699,7 @@ typedef union {
 
 typedef union {
   struct {
+    unsigned int state           :4 ; // Pad state when the chip is down with low-speed IOs ON: - 4b0000: Tristate with no pull-up and no pull-down - 4b0001: Tristate with pull-up - 4b0010: Tristate with pull-down - 4b0011: Drive 0 - 4b0100: Drive 1
   };
   unsigned int raw;
 } __attribute__((packed)) apb_soc_safe_sleeppadcfg0_t;
@@ -655,25 +714,6 @@ typedef union {
   struct {
   };
   unsigned int raw;
-} __attribute__((packed)) apb_soc_safe_sleeppadcfg2_t;
-
-typedef union {
-  struct {
-  };
-  unsigned int raw;
-} __attribute__((packed)) apb_soc_safe_sleeppadcfg3_t;
-
-typedef union {
-  struct {
-    unsigned int en              :1 ; // Enable pad sleep mode: 1'b0: disable 1'b1: enable
-  };
-  unsigned int raw;
-} __attribute__((packed)) apb_soc_safe_padsleep_t;
-
-typedef union {
-  struct {
-  };
-  unsigned int raw;
 } __attribute__((packed)) apb_soc_safe_nevacf_t;
 
 typedef union {
@@ -681,6 +721,41 @@ typedef union {
   };
   unsigned int raw;
 } __attribute__((packed)) apb_soc_safe_gpreg_t;
+
+typedef union {
+  struct {
+    unsigned int btrim           :4 ; // L2 cuts bias trim. This code is forwarded to all cuts and defines the level of current when the cut is in standby mode. 4b0000 is the least amount of current and 4b1110 is the most amount. 4bxxx1 is disabling the bias.
+    unsigned int stdby_n         :16; // L2 cuts standby active low. One bit per L2 cut for 16 cuts, the cut is in standby when its corresponding bit is 0. The 4 last bits are for the private banks and the rest for the shared banks.
+  };
+  unsigned int raw;
+} __attribute__((packed)) apb_soc_safe_l2_btrim_stdby_t;
+
+typedef union {
+  struct {
+    unsigned int fll2_pwd        :1 ; // FLL2 power down. The FLL is powered down when this bit is 1b1.
+    unsigned int fll3_pwd        :1 ; // FLL3 power down. The FLL is powered down when this bit is 1b1.
+    unsigned int fll2_rstb       :1 ; // FLL2 reset active low. The FLL is reset when this bit is 1b0.
+    unsigned int fll3_rstb       :1 ; // FLL3 reset active low. The FLL is reset when this bit is 1b0.
+  };
+  unsigned int raw;
+} __attribute__((packed)) apb_soc_safe_fll_ctrl_t;
+
+typedef union {
+  struct {
+    unsigned int btrim           :4 ; // L1 cuts bias trim. This code is forwarded to all cuts and defines the level of current when the cut is in standby mode. 4b0000 is the least amount of current and 4b1110 is the most amount. 4bxxx1 is disabling the bias.
+    unsigned int stdby_n         :2 ; // L1 cuts standby active low. First bit is for first L1 64Kbytes and second bit for second L1 64Kbytes.
+    unsigned int pwd             :2 ; // L1 power down. The corresponding L1 part is powered down when this bit is 1b1. First bit is for first L1 64Kbytes and second bit for second L1 64Kbytes.
+  };
+  unsigned int raw;
+} __attribute__((packed)) apb_soc_safe_l1_pwr_ctrl_t;
+
+typedef union {
+  struct {
+    unsigned int vddde_n         :16; // L2 VDDDE active low. One bit per L2 cut for 16 cuts, the cut periphery is supplied when its corresponding bit is 0. The 4 last bits are for the private banks and the rest for the shared banks.
+    unsigned int vddme_n         :16; // L2 VDDME active low. One bit per L2 cut for 16 cuts, the cut array is supplied when its corresponding bit is 0. The 4 last bits are for the private banks and the rest for the shared banks.
+  };
+  unsigned int raw;
+} __attribute__((packed)) apb_soc_safe_l2_pwr_ctrl_t;
 
 typedef union {
   struct {
@@ -989,28 +1064,13 @@ public:
 class vp_apb_soc_safe_sleeppadcfg0 : public vp::reg_32
 {
 public:
+  inline void state_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_SLEEPPADCFG0_STATE_BIT, APB_SOC_SAFE_SLEEPPADCFG0_STATE_WIDTH); }
+  inline uint32_t state_get() { return this->get_field(APB_SOC_SAFE_SLEEPPADCFG0_STATE_BIT, APB_SOC_SAFE_SLEEPPADCFG0_STATE_WIDTH); }
 };
 
 class vp_apb_soc_safe_sleeppadcfg1 : public vp::reg_32
 {
 public:
-};
-
-class vp_apb_soc_safe_sleeppadcfg2 : public vp::reg_32
-{
-public:
-};
-
-class vp_apb_soc_safe_sleeppadcfg3 : public vp::reg_32
-{
-public:
-};
-
-class vp_apb_soc_safe_padsleep : public vp::reg_32
-{
-public:
-  inline void en_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_PADSLEEP_EN_BIT, APB_SOC_SAFE_PADSLEEP_EN_WIDTH); }
-  inline uint32_t en_get() { return this->get_field(APB_SOC_SAFE_PADSLEEP_EN_BIT, APB_SOC_SAFE_PADSLEEP_EN_WIDTH); }
 };
 
 class vp_apb_soc_safe_nevacf : public vp::reg_32
@@ -1021,6 +1081,48 @@ public:
 class vp_apb_soc_safe_gpreg : public vp::reg_32
 {
 public:
+};
+
+class vp_apb_soc_safe_l2_btrim_stdby : public vp::reg_32
+{
+public:
+  inline void btrim_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_BIT, APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_WIDTH); }
+  inline uint32_t btrim_get() { return this->get_field(APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_BIT, APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_WIDTH); }
+  inline void stdby_n_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_BIT, APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_WIDTH); }
+  inline uint32_t stdby_n_get() { return this->get_field(APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_BIT, APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_WIDTH); }
+};
+
+class vp_apb_soc_safe_fll_ctrl : public vp::reg_32
+{
+public:
+  inline void fll2_pwd_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_BIT, APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_WIDTH); }
+  inline uint32_t fll2_pwd_get() { return this->get_field(APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_BIT, APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_WIDTH); }
+  inline void fll3_pwd_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_BIT, APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_WIDTH); }
+  inline uint32_t fll3_pwd_get() { return this->get_field(APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_BIT, APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_WIDTH); }
+  inline void fll2_rstb_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_BIT, APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_WIDTH); }
+  inline uint32_t fll2_rstb_get() { return this->get_field(APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_BIT, APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_WIDTH); }
+  inline void fll3_rstb_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_BIT, APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_WIDTH); }
+  inline uint32_t fll3_rstb_get() { return this->get_field(APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_BIT, APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_WIDTH); }
+};
+
+class vp_apb_soc_safe_l1_pwr_ctrl : public vp::reg_32
+{
+public:
+  inline void btrim_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_BIT, APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_WIDTH); }
+  inline uint32_t btrim_get() { return this->get_field(APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_BIT, APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_WIDTH); }
+  inline void stdby_n_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_BIT, APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_WIDTH); }
+  inline uint32_t stdby_n_get() { return this->get_field(APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_BIT, APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_WIDTH); }
+  inline void pwd_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_L1_PWR_CTRL_PWD_BIT, APB_SOC_SAFE_L1_PWR_CTRL_PWD_WIDTH); }
+  inline uint32_t pwd_get() { return this->get_field(APB_SOC_SAFE_L1_PWR_CTRL_PWD_BIT, APB_SOC_SAFE_L1_PWR_CTRL_PWD_WIDTH); }
+};
+
+class vp_apb_soc_safe_l2_pwr_ctrl : public vp::reg_32
+{
+public:
+  inline void vddde_n_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_BIT, APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_WIDTH); }
+  inline uint32_t vddde_n_get() { return this->get_field(APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_BIT, APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_WIDTH); }
+  inline void vddme_n_set(uint32_t value) { this->set_field(value, APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_BIT, APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_WIDTH); }
+  inline uint32_t vddme_n_get() { return this->get_field(APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_BIT, APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_WIDTH); }
 };
 
 class vp_apb_soc_reg_gpio_iso : public vp::reg_32
@@ -1095,13 +1197,14 @@ typedef struct {
   unsigned int rwm_grp6        ; // nan
   unsigned int safe_pmu_sleepctrl; // Sleep modes configuration register
   unsigned int safe_wd         ; // Enables and configures WatchDog Timer
-  unsigned int safe_sleeppadcfg0; // Sleep config register (pad 0-15)
-  unsigned int safe_sleeppadcfg1; // Mux config register (pad 16-31)
-  unsigned int safe_sleeppadcfg2; // Mux config register (pad 32-47)
-  unsigned int safe_sleeppadcfg3; // Mux config register (pad 48-63)
-  unsigned int safe_padsleep   ; // Enable Sleep mode for pads
+  unsigned int safe_sleeppadcfg0; // Sleep config register (pad 0-7)
+  unsigned int safe_sleeppadcfg1; // Sleep config register (pad 8-15)
   unsigned int safe_nevacf     ; // Config timings for NEVA
   unsigned int safe_gpreg      ; // General purpouse register AO
+  unsigned int safe_l2_btrim_stdby; // L2 standby configuration
+  unsigned int safe_fll_ctrl   ; // FLL2 and FLL3 power control
+  unsigned int safe_l1_pwr_ctrl; // L1 power control
+  unsigned int safe_l2_pwr_ctrl; // L2 power control
   unsigned int reg_gpio_iso    ; // GPIO power domain pad input isolation register
   unsigned int reg_cam_iso     ; // CAM power domain pad input isolation register
   unsigned int reg_lvds_iso    ; // LVDS power domain pad input isolation register
@@ -1261,20 +1364,23 @@ static inline void apb_soc_safe_sleeppadcfg0_set(uint32_t base, uint32_t value) 
 static inline uint32_t apb_soc_safe_sleeppadcfg1_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_SLEEPPADCFG1_OFFSET); }
 static inline void apb_soc_safe_sleeppadcfg1_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_SLEEPPADCFG1_OFFSET, value); }
 
-static inline uint32_t apb_soc_safe_sleeppadcfg2_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_SLEEPPADCFG2_OFFSET); }
-static inline void apb_soc_safe_sleeppadcfg2_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_SLEEPPADCFG2_OFFSET, value); }
-
-static inline uint32_t apb_soc_safe_sleeppadcfg3_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_SLEEPPADCFG3_OFFSET); }
-static inline void apb_soc_safe_sleeppadcfg3_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_SLEEPPADCFG3_OFFSET, value); }
-
-static inline uint32_t apb_soc_safe_padsleep_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_PADSLEEP_OFFSET); }
-static inline void apb_soc_safe_padsleep_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_PADSLEEP_OFFSET, value); }
-
 static inline uint32_t apb_soc_safe_nevacf_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_NEVACF_OFFSET); }
 static inline void apb_soc_safe_nevacf_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_NEVACF_OFFSET, value); }
 
 static inline uint32_t apb_soc_safe_gpreg_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_GPREG_OFFSET); }
 static inline void apb_soc_safe_gpreg_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_GPREG_OFFSET, value); }
+
+static inline uint32_t apb_soc_safe_l2_btrim_stdby_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_L2_BTRIM_STDBY_OFFSET); }
+static inline void apb_soc_safe_l2_btrim_stdby_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_L2_BTRIM_STDBY_OFFSET, value); }
+
+static inline uint32_t apb_soc_safe_fll_ctrl_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_FLL_CTRL_OFFSET); }
+static inline void apb_soc_safe_fll_ctrl_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_FLL_CTRL_OFFSET, value); }
+
+static inline uint32_t apb_soc_safe_l1_pwr_ctrl_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_L1_PWR_CTRL_OFFSET); }
+static inline void apb_soc_safe_l1_pwr_ctrl_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_L1_PWR_CTRL_OFFSET, value); }
+
+static inline uint32_t apb_soc_safe_l2_pwr_ctrl_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_SAFE_L2_PWR_CTRL_OFFSET); }
+static inline void apb_soc_safe_l2_pwr_ctrl_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_SAFE_L2_PWR_CTRL_OFFSET, value); }
 
 static inline uint32_t apb_soc_reg_gpio_iso_get(uint32_t base) { return ARCHI_READ(base, APB_SOC_REG_GPIO_ISO_OFFSET); }
 static inline void apb_soc_reg_gpio_iso_set(uint32_t base, uint32_t value) { ARCHI_WRITE(base, APB_SOC_REG_GPIO_ISO_OFFSET, value); }
@@ -1410,10 +1516,65 @@ static inline void apb_soc_reg_lvds_iso_set(uint32_t base, uint32_t value) { ARC
 #define APB_SOC_SAFE_PMU_SLEEPCTRL_RET_MEM_SET(value,field) (ARCHI_BINSERT((value),(field),16,16))
 #define APB_SOC_SAFE_PMU_SLEEPCTRL_RET_MEM(val)            ((val) << 16)
 
-#define APB_SOC_SAFE_PADSLEEP_EN_GET(value)                (ARCHI_BEXTRACTU((value),1,0))
-#define APB_SOC_SAFE_PADSLEEP_EN_GETS(value)               (ARCHI_BEXTRACT((value),1,0))
-#define APB_SOC_SAFE_PADSLEEP_EN_SET(value,field)          (ARCHI_BINSERT((value),(field),1,0))
-#define APB_SOC_SAFE_PADSLEEP_EN(val)                      ((val) << 0)
+#define APB_SOC_SAFE_SLEEPPADCFG0_STATE_GET(value)         (ARCHI_BEXTRACTU((value),4,0))
+#define APB_SOC_SAFE_SLEEPPADCFG0_STATE_GETS(value)        (ARCHI_BEXTRACT((value),4,0))
+#define APB_SOC_SAFE_SLEEPPADCFG0_STATE_SET(value,field)   (ARCHI_BINSERT((value),(field),4,0))
+#define APB_SOC_SAFE_SLEEPPADCFG0_STATE(val)               ((val) << 0)
+
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_GET(value)       (ARCHI_BEXTRACTU((value),4,0))
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_GETS(value)      (ARCHI_BEXTRACT((value),4,0))
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM_SET(value,field) (ARCHI_BINSERT((value),(field),4,0))
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_BTRIM(val)             ((val) << 0)
+
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_GET(value)     (ARCHI_BEXTRACTU((value),16,4))
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_GETS(value)    (ARCHI_BEXTRACT((value),16,4))
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N_SET(value,field) (ARCHI_BINSERT((value),(field),16,4))
+#define APB_SOC_SAFE_L2_BTRIM_STDBY_STDBY_N(val)           ((val) << 4)
+
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_GET(value)          (ARCHI_BEXTRACTU((value),1,0))
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_GETS(value)         (ARCHI_BEXTRACT((value),1,0))
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_PWD_SET(value,field)    (ARCHI_BINSERT((value),(field),1,0))
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_PWD(val)                ((val) << 0)
+
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_GET(value)          (ARCHI_BEXTRACTU((value),1,1))
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_GETS(value)         (ARCHI_BEXTRACT((value),1,1))
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_PWD_SET(value,field)    (ARCHI_BINSERT((value),(field),1,1))
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_PWD(val)                ((val) << 1)
+
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_GET(value)         (ARCHI_BEXTRACTU((value),1,2))
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_GETS(value)        (ARCHI_BEXTRACT((value),1,2))
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB_SET(value,field)   (ARCHI_BINSERT((value),(field),1,2))
+#define APB_SOC_SAFE_FLL_CTRL_FLL2_RSTB(val)               ((val) << 2)
+
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_GET(value)         (ARCHI_BEXTRACTU((value),1,3))
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_GETS(value)        (ARCHI_BEXTRACT((value),1,3))
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB_SET(value,field)   (ARCHI_BINSERT((value),(field),1,3))
+#define APB_SOC_SAFE_FLL_CTRL_FLL3_RSTB(val)               ((val) << 3)
+
+#define APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_GET(value)          (ARCHI_BEXTRACTU((value),4,0))
+#define APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_GETS(value)         (ARCHI_BEXTRACT((value),4,0))
+#define APB_SOC_SAFE_L1_PWR_CTRL_BTRIM_SET(value,field)    (ARCHI_BINSERT((value),(field),4,0))
+#define APB_SOC_SAFE_L1_PWR_CTRL_BTRIM(val)                ((val) << 0)
+
+#define APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_GET(value)        (ARCHI_BEXTRACTU((value),2,4))
+#define APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_GETS(value)       (ARCHI_BEXTRACT((value),2,4))
+#define APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N_SET(value,field)  (ARCHI_BINSERT((value),(field),2,4))
+#define APB_SOC_SAFE_L1_PWR_CTRL_STDBY_N(val)              ((val) << 4)
+
+#define APB_SOC_SAFE_L1_PWR_CTRL_PWD_GET(value)            (ARCHI_BEXTRACTU((value),2,6))
+#define APB_SOC_SAFE_L1_PWR_CTRL_PWD_GETS(value)           (ARCHI_BEXTRACT((value),2,6))
+#define APB_SOC_SAFE_L1_PWR_CTRL_PWD_SET(value,field)      (ARCHI_BINSERT((value),(field),2,6))
+#define APB_SOC_SAFE_L1_PWR_CTRL_PWD(val)                  ((val) << 6)
+
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_GET(value)        (ARCHI_BEXTRACTU((value),16,0))
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_GETS(value)       (ARCHI_BEXTRACT((value),16,0))
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N_SET(value,field)  (ARCHI_BINSERT((value),(field),16,0))
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDDE_N(val)              ((val) << 0)
+
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_GET(value)        (ARCHI_BEXTRACTU((value),16,16))
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_GETS(value)       (ARCHI_BEXTRACT((value),16,16))
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N_SET(value,field)  (ARCHI_BINSERT((value),(field),16,16))
+#define APB_SOC_SAFE_L2_PWR_CTRL_VDDME_N(val)              ((val) << 16)
 
 #endif
 

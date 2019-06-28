@@ -23,18 +23,19 @@ typedef struct {
   union {
     struct {
       unsigned int platform:3;
-      unsigned int bootmode:3;
+      unsigned int bootmode:8;
       unsigned int encrypted:1;
       unsigned int wait_xtal:1;
+      unsigned int icache_enabled:1;
     } __attribute__((packed));
-    uint8_t raw;
+    uint32_t raw;
   } info;
   union {
     struct {
       unsigned int fll_freq_set:1;
       unsigned int fll_conf:1;
-      unsigned int fll_bypass_lock:1;
-      unsigned int spim_clkdiv:2;
+      unsigned int fll_lock:1;
+      unsigned int clkdiv:2;
       unsigned int jtag_spis_lock:1;
       unsigned int ref_clk_wait:1;
       unsigned int pad_config:1;
@@ -54,8 +55,7 @@ typedef struct {
   uint16_t ref_clk_wait_cycles;
   union {
     struct {
-      unsigned int flash_type:1;
-      unsigned int set_clkdiv:1;
+      unsigned int flash_type:2;
       unsigned int flash_reset:1;
       unsigned int flash_wait:1;
       unsigned int flash_wakeup:1;
@@ -96,6 +96,8 @@ typedef struct {
       unsigned int i2c_pad_config:2;
       unsigned int signature:1;
       unsigned int flash_id:1;
+      unsigned int mram_trim:1;
+      unsigned int set_clkdiv:1;
     } __attribute__((packed));
     uint8_t raw;
   } info6;
@@ -104,13 +106,14 @@ typedef struct {
   uint8_t flash_cmd3;
   uint8_t flash_cmd4;
   uint8_t flash_wait;
-  uint8_t hyperchip_size;
+  uint32_t hyperchip_size;
   uint16_t i2c_div;
   uint8_t i2c_cs;
   uint8_t flash_reset_wait;
   uint8_t hyper_latency;
   uint16_t ref_clk_wait_cycles_deep_sleep;
   uint16_t flash_id;
+  uint16_t mram_trim_size;
   uint8_t padding[8];
 } __attribute__((packed)) efuse_t;
 
@@ -124,7 +127,6 @@ typedef struct {
 #define PLP_EFUSE_BOOT_JTAG      0
 #define PLP_EFUSE_BOOT_STOP      1
 #define PLP_EFUSE_BOOT_FLASH     2
-#define PLP_EFUSE_BOOT_SPIS      3
 #define PLP_EFUSE_BOOT_WAIT      4
 #define PLP_EFUSE_BOOT_WAIT_END  5
 
@@ -165,6 +167,9 @@ typedef struct {
 #define EFUSE_REF_CLK_WAIT_CYCLES_DEEP_SLEEP_MSB 53
 #define EFUSE_FLASH_ID_LSB                       54
 #define EFUSE_FLASH_ID_MSB                       55
+#define EFUSE_MRAM_TRIM_SIZE                     56
+#define EFUSE_MRAM_TRIM_START                    57
+// DONT PUT ANYTHING AFTER THIS EFUSE AS IT IS A VARIABLE SIZE ARRAY
 
 static inline unsigned int plp_efuse_readShort(int lsb, int msb) {
   return plp_efuse_readByte(lsb) | (plp_efuse_readByte(msb) << 8);

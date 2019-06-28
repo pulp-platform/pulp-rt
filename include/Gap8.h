@@ -628,6 +628,7 @@ static inline unsigned int __attribute__ ((always_inline)) ExtInsMaskSafe(unsign
 
 #else
 
+#ifdef CONFIG_GAP
 #ifdef __pulp__
 
 /* Task dispatch */
@@ -687,6 +688,7 @@ static inline unsigned int __attribute__ ((always_inline)) ExtInsMaskSafe(unsign
 #define gap8_dma_memcpy_2d(ext, loc, size, stride, length, ext2loc, merge, copy)	rt_dma_memcpy_2d((ext), (loc), (size), (stride), (length), (ext2loc), (merge), (copy))
 #define gap8_dma_wait(copy)						rt_dma_wait(&(copy))
 #define gap8_dma_type                               rt_dma_copy_t
+#endif
 #endif
 
 #endif
