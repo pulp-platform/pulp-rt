@@ -217,24 +217,20 @@ SECTIONS
    * Contains other data such as peripheral data and cluster code and data
    */
 
-  .text.cluster MAX(0x1c010000,ALIGN(4)) :
+  .l2_data MAX(0x1c010000,ALIGN(4)) :
   {
+    . = ALIGN(4);
     __cluster_text_start = .;
     *(.cluster.text)
     *(.cluster.text.*)
+    . = ALIGN(4);
     __cluster_text_end = .;
-    . = ALIGN(4);
-  } > L2
-
-  .l2_data : {
-    . = ALIGN(4);
     *(.l2_data)
     *(.l2_data.*)
     *(.data_fc_shared)
     *(.data_fc_shared.*)
     . = ALIGN(4);
   } > L2
-
 
   __l2_shared_end = LOADADDR(.l2_data) + SIZEOF(.l2_data);
 

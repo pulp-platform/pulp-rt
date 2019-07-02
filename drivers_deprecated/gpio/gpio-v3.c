@@ -25,6 +25,16 @@ extern void __rt_gpio_handler();
 
 void rt_gpio_init(uint8_t group, int gpio)
 {
+#if PULP_CHIP == CHIP_ARNOLD
+  int reg = gpio / (32 / GPIO_PADCFG0_GPIO0_CFG_WIDTH);
+  int bit = (gpio % (32 / GPIO_PADCFG0_GPIO0_CFG_WIDTH)) * GPIO_PADCFG0_GPIO0_CFG_WIDTH;
+  uint32_t value = ARCHI_READ(ARCHI_GPIO_ADDR, GPIO_PADCFG0_OFFSET + reg * 4);
+
+  value &= ((1<<GPIO_PADCFG0_GPIO0_CFG_WIDTH)-1) << bit;
+  value |= 1 << bit;
+
+  ARCHI_WRITE(ARCHI_GPIO_ADDR, GPIO_PADCFG0_OFFSET + reg * 4, value);
+#endif
 }
 
 void rt_gpio_deinit(uint8_t group, int gpio)
