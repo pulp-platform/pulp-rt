@@ -51,8 +51,8 @@
  */
 typedef enum
 {
-  PI_HYPER_TYPE_RAM,   /*!< Device is a RAM. */
-  PI_HYPER_TYPE_FLASH  /*!< Device is a flash. */
+    PI_HYPER_TYPE_FLASH,  /*!< Device is a flash. */
+    PI_HYPER_TYPE_RAM   /*!< Device is a RAM. */
 } pi_hyper_type_e;
 
 
@@ -61,7 +61,7 @@ typedef enum
  *
  * This structure is used to pass the desired Hyperbus configuration to the runtime when opening the device.
  */
-struct pi_hyper_conf 
+struct pi_hyper_conf
 {
     pi_device_e device;  /* Device type. */
     uint32_t cs;         /*!< Chip select where the device is connected. */
@@ -118,7 +118,7 @@ void pi_hyper_conf_init(struct pi_hyper_conf *conf);
  * \param device    The device structure of the device to open.
  * \return          0 if the operation is successfull, -1 if there was an error
  */
-int pi_hyper_open(struct pi_device *device);
+int32_t pi_hyper_open(struct pi_device *device);
 
 /** \brief Close an opened Hyperbus device.
  *
@@ -137,8 +137,8 @@ void pi_hyper_close(struct pi_device *device);
  * The calller is blocked until the transfer is finished.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  */
 void pi_hyper_read(struct pi_device *device,
@@ -150,8 +150,8 @@ void pi_hyper_read(struct pi_device *device,
  * A task can be specified in order to be notified when the transfer is finished.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
@@ -164,8 +164,8 @@ void pi_hyper_read_async(struct pi_device *device,
  * The calller is blocked until the transfer is finished.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  */
 void pi_hyper_write(struct pi_device *device,
@@ -177,8 +177,8 @@ void pi_hyper_write(struct pi_device *device,
  * A task can be specified in order to be notified when the transfer is finished.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param task        The task used to notify the end of transfer. See the documentation of pi_task for more details.
  */
@@ -191,8 +191,8 @@ void pi_hyper_write_async(struct pi_device *device,
  * The calller is blocked until the transfer is finished.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line.
@@ -206,8 +206,8 @@ void pi_hyper_read_2d(struct pi_device *device,
  * A task can be specified in order to be notified when the transfer is finished.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line.
@@ -222,8 +222,8 @@ void pi_hyper_read_2d_async(struct pi_device *device,
  * The calller is blocked until the transfer is finished.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line.
@@ -237,8 +237,8 @@ void pi_hyper_write_2d(struct pi_device *device,
  * A task can be specified in order to be notified when the transfer is finished.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line.
@@ -271,7 +271,7 @@ uint32_t pi_hyperram_alloc(struct pi_device *device, uint32_t size);
  * \param size   The size in bytes of the memory chunk which was allocated
  * \return 0 if the operation was successful, -1 otherwise
  */
-int pi_hyperram_free(struct pi_device *device, uint32_t chunk, uint32_t size);
+int32_t pi_hyperram_free(struct pi_device *device, uint32_t chunk, uint32_t size);
 
 /** \brief Enqueue a read copy to the Hyperbus from cluster side (from Hyperbus to processor).
  *
@@ -282,8 +282,8 @@ int pi_hyperram_free(struct pi_device *device, uint32_t chunk, uint32_t size);
  * Can only be called from cluster side.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param req         A pointer to the HyperBus request structure. It must be allocated by the caller and kept alive until the copy is finished.
  */
@@ -299,8 +299,8 @@ static inline void pi_cl_hyper_read(struct pi_device *device,
  * Can only be called from cluster side.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line.
@@ -326,8 +326,8 @@ static inline void pi_cl_hyper_read_wait(pi_cl_hyper_req_t *req);
  * Can only be called from cluster side.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param req         A pointer to the HyperBus request structure. It must be allocated by the caller and kept alive until the copy is finished.
  */
@@ -343,8 +343,8 @@ static inline void pi_cl_hyper_write(struct pi_device *device,
  * Can only be called from cluster side.
  *
  * \param device      The device descriptor of the Hyperbus chip on which to do the copy.
- * \param addr        The address of the copy in the processor.
  * \param hyper_addr  The address of the copy in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
  * \param size        The size in bytes of the copy
  * \param stride      2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one.
  * \param length      2D length, which is the number of transfered bytes after which the driver will switch to the next line.
@@ -440,6 +440,52 @@ static inline uint32_t pi_cl_hyperram_alloc_wait(pi_cl_hyperram_alloc_req_t *req
  * \return 0        if the operation was successful, -1 otherwise
  */
 static inline void pi_cl_hyperram_free_wait(pi_cl_hyperram_free_req_t *req);
+
+
+/** \brief Enqueue a sector erase command to the Hyperbus Flash.
+ *
+ * This command will erase a sector in order to program the Hyperflash.
+ * The caller is blocked until the transfer is finished.
+ *
+ * \param device      The device descriptor of the Hyperbus chip.
+ * \param hyper_addr  The address of the sector in the Hyperbus.
+ */
+void pi_hyper_flash_erase(struct pi_device *device, uint32_t hyper_addr);
+
+/** \brief Enqueue a program command to the Hyperbus Flash.
+ *
+ * This command will write the content of the given buffer inside the Hyperflash.
+ * The caller is blocked until the transfer is finished.
+ *
+ * \param device      The device descriptor of the Hyperbus chip.
+ * \param hyper_addr  The address of the sector in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
+ * \param size        The size in bytes of the copy
+ */
+void pi_hyper_flash_write(struct pi_device *device, uint32_t hyper_addr,
+                          void *addr, uint32_t size);
+
+/** \brief Enqueue a read to the Hyperbus Flash.
+ *
+ * This command will read from the Hyperflash to the buffer.
+ * The caller is blocked until the transfer is finished.
+ *
+ * \param device      The device descriptor of the Hyperbus chip.
+ * \param hyper_addr  The address of the sector in the Hyperbus.
+ * \param addr        The address of the copy in the processor.
+ * \param size        The size in bytes of the copy
+ */
+void pi_hyper_flash_read(struct pi_device *device, uint32_t hyper_addr,
+                         void *addr, uint32_t size);
+
+/** \brief Synchronize programming/erase commands to the Hyperflash.
+ *
+ * This function synchronizes the programming and erase sequences, it waits the end
+ * of previous command.
+ *
+ * \param device      The device descriptor of the Hyperbus chip.
+ */
+void pi_hyper_flash_sync(struct pi_device *device);
 
 //!@}
 

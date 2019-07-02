@@ -42,4 +42,24 @@ static inline void cl_dma_wait(void *copy)
   rt_dma_wait(copy);
 }
 
+struct cl_dma_cmd_s
+{
+  int id;
+};
+
+static inline void cl_dma_cmd(uint32_t ext, uint32_t loc, uint32_t size, cl_dma_dir_e dir, cl_dma_cmd_t *cmd)
+{
+  rt_dma_memcpy(ext, loc, size, dir, 0, (rt_dma_copy_t *)cmd);
+}
+
+static inline void cl_dma_cmd_2d(uint32_t ext, uint32_t loc, uint32_t size, uint32_t stride, uint32_t length, cl_dma_dir_e dir, cl_dma_cmd_t *cmd)
+{
+  rt_dma_memcpy_2d(ext, loc, size, stride, length, dir, 0, (rt_dma_copy_t *)cmd);
+}
+
+static inline void cl_dma_cmd_wait(cl_dma_cmd_t *cmd)
+{
+  rt_dma_wait((rt_dma_copy_t *)cmd);
+}
+
 #endif

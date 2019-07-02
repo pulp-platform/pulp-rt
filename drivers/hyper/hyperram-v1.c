@@ -216,7 +216,7 @@ static void __rt_hyper_handle_copy()
 
 #endif
 
-int pi_hyper_open(struct pi_device *device)
+int32_t pi_hyper_open(struct pi_device *device)
 {
   struct pi_hyper_conf *conf = (struct pi_hyper_conf *)device->config;
   int periph_id;
@@ -312,7 +312,7 @@ uint32_t pi_hyperram_alloc(struct pi_device *device, uint32_t size)
 
 
 
-int pi_hyperram_free(struct pi_device *device, uint32_t chunk, uint32_t size)
+int32_t pi_hyperram_free(struct pi_device *device, uint32_t chunk, uint32_t size)
 {
   pi_hyper_t *hyper = (pi_hyper_t *)device->data;
   return rt_extern_free(&hyper->alloc, (void *)chunk, size);
