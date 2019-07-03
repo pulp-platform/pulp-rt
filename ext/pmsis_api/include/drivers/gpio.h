@@ -25,10 +25,11 @@ typedef enum {
 } pi_gpio_flags_e;
 
 typedef enum {
-  PI_GPIO_TASK_EDGE = 3,    /*!< Notifications are sent when there is both a rising edge or a falling edge on the GPIO value. */
-  PI_GPIO_TASK_RISE = 2,    /*!< Notifications are sent when there is a rising edge on the GPIO value. */
-  PI_GPIO_TASK_FALL = 1,    /*!< Notifications are sent when there is a falling edge on the GPIO value. */
-} pi_gpio_task_flags_e;
+  PI_GPIO_NOTIF_EDGE = 3,    /*!< Notifications are sent when there is both a rising edge or a falling edge on the GPIO value. */
+  PI_GPIO_NOTIF_RISE = 2,    /*!< Notifications are sent when there is a rising edge on the GPIO value. */
+  PI_GPIO_NOTIF_FALL = 1,    /*!< Notifications are sent when there is a falling edge on the GPIO value. */
+  PI_GPIO_NOTIF_NONE = 0	
+} pi_gpio_notif_e;
 
 
 struct pi_gpio_conf {
@@ -45,9 +46,15 @@ int pi_gpio_pin_write(struct pi_device *device, int pin, uint32_t value);
 
 int pi_gpio_pin_read(struct pi_device *device, int pin, uint32_t *value);
 
-int pi_gpio_pin_task_add(struct pi_device *device, int pin, pi_task_t *task, pi_gpio_task_flags_e flags);
+int pi_gpio_pin_task_add(struct pi_device *device, int pin, pi_task_t *task, pi_gpio_notif_e flags);
 
 int pi_gpio_pin_task_remove(struct pi_device *device, int pin);
+
+void pi_gpio_pin_notif_configure(struct pi_device *device, int pin, pi_gpio_notif_e flags);
+
+void pi_gpio_pin_notif_clear(struct pi_device *device, int pin);
+
+int pi_gpio_pin_notif_get(struct pi_device *device, int pin);
 
 int pi_gpio_mask_configure(struct pi_device *device, uint32_t mask, pi_gpio_flags_e flags);
 
@@ -55,7 +62,7 @@ int pi_gpio_mask_write(struct pi_device *device, uint32_t mask, uint32_t value);
 
 int pi_gpio_mask_read(struct pi_device *device, uint32_t mask, uint32_t *value);
 
-int pi_gpio_mask_task_add(struct pi_device *device, uint32_t mask, pi_task_t *task, pi_gpio_task_flags_e flags);
+int pi_gpio_mask_task_add(struct pi_device *device, uint32_t mask, pi_task_t *task, pi_gpio_notif_e flags);
 
 int pi_gpio_mask_task_remove(struct pi_device *device, uint32_t mask);
 

@@ -306,6 +306,16 @@ struct pi_task_implem
 #define CLUSTER_TASK_IMPLEM struct pi_cluster_task_implem implem
 #define PI_TASK_IMPLEM struct pi_task_implem implem
 
+typedef struct pi_task{
+    // Warning, might be accessed inline in asm, and thus can not be moved
+    uintptr_t arg[4];
+    int8_t done;
+    int id;
+
+    PI_TASK_IMPLEM;
+
+} pi_task_t;
+
 #include "pmsis_types.h"
 #include "pmsis_cluster/cl_pmsis_types.h"
 

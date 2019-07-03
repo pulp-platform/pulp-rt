@@ -22,13 +22,14 @@
 
 #include "rt/implem/utils.h"
 #include "rt/implem/hyperram.h"
-#include "rt/implem/dma.h"
 #include "rt/implem/cluster.h"
 #include "rt/implem/udma.h"
 
 #if PULP_CHIP == CHIP_VEGA
 #include "rt/implem/vega.h"
 #endif
+
+extern void __pi_yield();
 
 static inline struct pi_task *pi_task(struct pi_task *task)
 {
@@ -50,6 +51,11 @@ static inline int pmsis_kickoff(void *arg)
 static inline void pmsis_exit(int err)
 {
   pmsis_exit_value = err;
+}
+
+static inline void pi_yield()
+{
+  rt_event_yield(NULL);
 }
 
 static inline uint32_t __native_core_id() {

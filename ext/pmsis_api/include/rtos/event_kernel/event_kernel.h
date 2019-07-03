@@ -14,18 +14,6 @@ int pmsis_event_kernel_init(struct pmsis_event_kernel_wrap **event_kernel,
 void pmsis_event_kernel_destroy(struct pmsis_event_kernel_wrap **event_kernel);
 
 /**
- * Allocate a set number of events in the scheduler
- **/
-int pmsis_event_alloc(struct pmsis_event_kernel_wrap *event_kernel, int nb_events);
-
-/**
-  * Free up to the specified number of events
-  * Might be less if nb_events is greater than the actual allocated nb of events
-  * Freeing might also be delayed if some events are in use
-  **/
-int pmsis_event_free(struct pmsis_event_kernel_wrap *wrap, int nb_events);
-
-/**
  * Affect task to an allocated event
  * May be called from either cluster or fc
  **/

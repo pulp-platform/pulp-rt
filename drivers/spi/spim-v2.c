@@ -47,12 +47,20 @@ typedef struct {
 
 void __pi_handle_waiting_copy(pi_task_t *task);
 
+void __rt_spi_handle_repeat(void *arg);
+
 
 #ifndef __RT_SPIM_COPY_ASM
 
 void __pi_spim_handle_eot(int event, void *arg)
 {
   pi_spim_t *spim = (pi_spim_t *)arg;
+
+  if (spim->pending_repeat_len)
+  {
+    __rt_spi_handle_repeat((void *)spim);
+    return;
+  }
 
   pi_task_t *task = spim->pending_copy;
   spim->pending_copy = NULL;

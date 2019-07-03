@@ -18,6 +18,7 @@
 
 #define NB_GPIO_PORT ((ARCHI_NB_GPIO+31)/32)
 
+extern RT_FC_TINY_DATA uint32_t __rt_gpio_status;
 
 typedef struct 
 {
@@ -79,7 +80,7 @@ int pi_gpio_pin_read(struct pi_device *device, int pin, uint32_t *value)
   return 0;
 }
 
-int pi_gpio_pin_task_add(struct pi_device *device, int pin, pi_task_t *task, pi_gpio_task_flags_e flags)
+int pi_gpio_pin_task_add(struct pi_device *device, int pin, pi_task_t *task, pi_gpio_notif_e flags)
 {
   return 0;
 }
@@ -117,7 +118,7 @@ int pi_gpio_mask_read(struct pi_device *device, uint32_t mask, uint32_t *value)
   return 0;
 }
 
-int pi_gpio_mask_task_add(struct pi_device *device, uint32_t mask, pi_task_t *task, pi_gpio_task_flags_e flags)
+int pi_gpio_mask_task_add(struct pi_device *device, uint32_t mask, pi_task_t *task, pi_gpio_notif_e flags)
 {
   return 0;
 }
@@ -125,4 +126,37 @@ int pi_gpio_mask_task_add(struct pi_device *device, uint32_t mask, pi_task_t *ta
 int pi_gpio_mask_task_remove(struct pi_device *device, uint32_t mask)
 {
   return 0;
+}
+
+void pi_gpio_pin_notif_configure(struct pi_device *device, int pin, pi_gpio_notif_e flags)
+{
+  int irq = rt_irq_disable();
+  if (flags == PI_GPIO_NOTIF_NONE)
+  {
+    hal_gpio_inten_set(hal_gpio_inten_get() & ~(1<<pin));
+  }
+  else
+  {
+    hal_gpio_inten_set(hal_gpio_inten_get() | (1<<pin));
+    int inttype = ARCHI_GPIO_INTTYPE_NO(pin);
+    int mode =
+      flags == PI_GPIO_NOTIF_RISE ? ARCHI_GPIO_INTTYPE_RISE : 
+      flags == PI_GPIO_NOTIF_FALL ? ARCHI_GPIO_INTTYPE_FALL :
+      ARCHI_GPIO_INTTYPE_RISE_AND_FALL;
+    uint32_t prev = hal_gpio_inttype_get(inttype) & ~(((1<<ARCHI_GPIO_INTTYPE_SIZE) - 1) << ARCHI_GPIO_INTTYPE_BIT(pin));
+    hal_gpio_inttype_set(inttype, prev | (mode << ARCHI_GPIO_INTTYPE_BIT(pin)));
+  }
+  rt_irq_restore(irq);
+}
+
+void pi_gpio_pin_notif_clear(struct pi_device *device, int pin)
+{
+  int irq = rt_irq_disable();
+  __rt_gpio_status &= ~(1<<pin);
+  rt_irq_restore(irq);
+}
+
+int pi_gpio_pin_notif_get(struct pi_device *device, int pin)
+{
+  return (__rt_gpio_status >> pin) & 1;
 }

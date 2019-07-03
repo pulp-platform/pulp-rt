@@ -277,11 +277,6 @@ void pi_task_wait_on(struct pi_task *task)
     rt_event_yield(NULL);
 }
 
-void pi_yield()
-{
-  rt_event_yield(NULL);
-}
-
 void pi_task_push_delayed_us(pi_task_t *task, uint32_t delay)
 {
   rt_event_push_delayed(task, delay);

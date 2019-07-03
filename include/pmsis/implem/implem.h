@@ -22,6 +22,7 @@
 #endif
 #include "pmsis/implem/perf.h"
 #include "pmsis/implem/cpi.h"
+#include "pmsis/implem/dma.h"
 #include "rt/implem/implem.h"
 
 #endif
