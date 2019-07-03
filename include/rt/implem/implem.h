@@ -22,7 +22,6 @@
 
 #include "rt/implem/utils.h"
 #include "rt/implem/hyperram.h"
-#include "rt/implem/dma.h"
 #include "rt/implem/cluster.h"
 #include "rt/implem/udma.h"
 
