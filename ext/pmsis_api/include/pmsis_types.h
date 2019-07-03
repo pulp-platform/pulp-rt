@@ -136,6 +136,8 @@ enum pi_task_id {
     PI_TASK_NONE_ID,
 };
 
+#ifndef PMSIS_USE_EXTERNAL_TYPES
+
 #ifndef PI_TASK_IMPLEM
 #define PI_TASK_IMPLEM \
     struct pi_task *next;\
@@ -146,15 +148,14 @@ typedef struct pi_task{
     // Warning, might be accessed inline in asm, and thus can not be moved
     uintptr_t arg[4];
     volatile int8_t done;
-#ifndef PI_TASK_IMPLEM
-    // TODO should be moved to implem
     pmsis_mutex_t wait_on;
-#endif
     int id;
 
     PI_TASK_IMPLEM;
 
 } pi_task_t;
+
+#endif
 
 /// @endcond
 #endif

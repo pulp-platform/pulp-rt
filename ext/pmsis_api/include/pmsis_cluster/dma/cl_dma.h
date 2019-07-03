@@ -186,12 +186,18 @@ static inline void cl_dma_memcpy_2d(cl_dma_copy_2d_t *copy)
 static inline void cl_dma_flush()
 {
     while(hal_read32(&DMAMCHAN->STATUS));
+
+    // Free all counters
+    hal_write32(&DMAMCHAN->STATUS, -1);
 }
 
 static inline void cl_dma_wait(void *copy)
 {
     cl_dma_copy_t *_copy = (cl_dma_copy_t *) copy;
     while((hal_read32(&DMAMCHAN->STATUS) >> _copy->id ) & 0x1 );
+
+    // Free this copy counter
+    hal_write32(&DMAMCHAN->STATUS, 1<<_copy->id);
 }
 
 struct cl_dma_cmd_s
@@ -199,7 +205,7 @@ struct cl_dma_cmd_s
   int id;
 };
 
-static inline void cl_dma_cmd(uint32_t ext, uint32_t loc, uint32_t size, cl_dma_transfer_dir_e dir, cl_dma_cmd_t *cmd)
+static inline void cl_dma_cmd(uint32_t ext, uint32_t loc, uint32_t size, cl_dma_dir_e dir, cl_dma_cmd_t *cmd)
 {
   cl_dma_copy_t copy;
   copy.merge = 0;
@@ -211,7 +217,7 @@ static inline void cl_dma_cmd(uint32_t ext, uint32_t loc, uint32_t size, cl_dma_
   cmd->id = copy.id;
 }
 
-static inline void cl_dma_cmd_2d(uint32_t ext, uint32_t loc, uint32_t size, uint32_t stride, uint32_t length, cl_dma_cmd_dir_e dir, rt_dma_cmd_t *cmd)
+static inline void cl_dma_cmd_2d(uint32_t ext, uint32_t loc, uint32_t size, uint32_t stride, uint32_t length, cl_dma_dir_e dir, cl_dma_cmd_t *cmd)
 {
   cl_dma_copy_2d_t copy;
   copy.merge = 0;
