@@ -22,7 +22,7 @@
 #endif
 #include "pmsis/implem/perf.h"
 #include "pmsis/implem/cpi.h"
-#ifdef DMA_VERSION
+#ifdef MCHAN_VERSION
 #include "pmsis/implem/dma.h"
 #endif
 #include "rt/implem/implem.h"
