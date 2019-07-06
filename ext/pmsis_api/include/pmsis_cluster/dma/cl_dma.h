@@ -81,6 +81,9 @@ typedef uint8_t cl_dma_dir_e;
 typedef struct cl_dma_copy_s
 {
     CL_DMA_COMMON
+    // 2d transfers args
+    uint32_t stride;
+    uint32_t length;
 } cl_dma_copy_t;
 
 /** \brief DMA 2D copy structure.
@@ -92,13 +95,7 @@ typedef struct cl_dma_copy_s
  * a local one on the stack,
  * or through the memory allocator.
  */
-typedef struct cl_dma_copy_2d_s
-{
-    CL_DMA_COMMON
-    // 2d transfers args
-    uint32_t stride;
-    uint32_t length;
-}cl_dma_copy_2d_t;
+typedef cl_dma_copy_t cl_dma_copy_2d_t;
 
 /** \brief 1D DMA memory transfer.
  *
@@ -160,24 +157,26 @@ static inline void cl_dma_memcpy(cl_dma_copy_t *copy)
     }
     hal_write32(&DMAMCHAN->CMD,copy->size
             | (copy->dir << DMAMCHAN_CMD_TYP_Pos)
-            | (!copy->merge << (DMAMCHAN_CMD_INC_Pos)));
+            | (!copy->merge << (DMAMCHAN_CMD_INC_Pos))
+            | (1 << 19)
+            | (1 << 21)
+            );
     hal_write32(&DMAMCHAN->CMD,copy->loc);
     hal_write32(&DMAMCHAN->CMD,copy->ext);
 }
 
-static inline void cl_dma_memcpy_2d(cl_dma_copy_2d_t *copy)
+static inline void cl_dma_memcpy_2d(cl_dma_copy_t *copy)
 {
-    cl_dma_copy_t *_copy = (cl_dma_copy_t *) copy;
-    if(!_copy->merge)
+    if(!copy->merge)
     {// if copy is unique, give it an id
-        _copy->id = hal_read32(&DMAMCHAN->CMD);
+        copy->id = hal_read32(&DMAMCHAN->CMD);
     }
-    hal_write32(&DMAMCHAN->CMD,_copy->size
-            | (_copy->dir << DMAMCHAN_CMD_TYP_Pos)
-            | (!_copy->merge << DMAMCHAN_CMD_INC_Pos)
+    hal_write32(&DMAMCHAN->CMD,copy->size
+            | (copy->dir << DMAMCHAN_CMD_TYP_Pos)
+            | (!copy->merge << DMAMCHAN_CMD_INC_Pos)
             | (1 << DMAMCHAN_CMD_2D_Pos)); // 2d transfer
-    hal_write32(&DMAMCHAN->CMD,_copy->loc);
-    hal_write32(&DMAMCHAN->CMD,_copy->ext);
+    hal_write32(&DMAMCHAN->CMD,copy->loc);
+    hal_write32(&DMAMCHAN->CMD,copy->ext);
     // 2d part of the transfer
     hal_write32(&DMAMCHAN->CMD, copy->length
             | (copy->stride << DMAMCHAN_CMD_2D_STRIDE_Pos));
@@ -196,8 +195,7 @@ static inline void cl_dma_wait(void *copy)
     cl_dma_copy_t *_copy = (cl_dma_copy_t *) copy;
     while((hal_read32(&DMAMCHAN->STATUS) >> _copy->id ) & 0x1 );
 
-    // Free this copy counter
-    hal_write32(&DMAMCHAN->STATUS, 1<<_copy->id);
+    hal_write32(&DMAMCHAN->STATUS, (0x1<<_copy->id));
 }
 
 struct cl_dma_cmd_s

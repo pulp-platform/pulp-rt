@@ -31,8 +31,6 @@
 #define _PMSIS_UART_H_
 
 #include "pmsis.h"
-#include "udma_core.h"
-#include "udma_ctrl.h"
 
 /*!
  * @addtogroup uart_driver
@@ -60,7 +58,6 @@ struct pi_uart_conf
     uint8_t uart_id;
     uint8_t enable_rx;
     uint8_t enable_tx;
-    uint8_t nb_event;
 };
 
 typedef struct pi_cl_uart_req_s pi_cl_uart_req_t;
