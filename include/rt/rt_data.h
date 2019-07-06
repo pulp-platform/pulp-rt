@@ -467,7 +467,6 @@ typedef struct rt_uart_s {
   int active;
 } rt_uart_t;
 
-
 typedef struct rt_dma_copy_s {
   int id;
 } rt_dma_copy_t;

@@ -65,3 +65,14 @@ PULP_LIB_FC_SRCS_rt += drivers/gpio/gpio-v$(gpio/version).c
 endif
 endif
 endif
+
+
+
+# UART
+
+ifeq '$(CONFIG_UART_ENABLED)' '1'
+ifneq '$(udma/uart/version)' ''
+PULP_LIB_FC_SRCS_rt += drivers/uart/uart.c
+endif
+endif
+

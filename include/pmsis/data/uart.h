@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS__DATA__DATA_H__
-#define __PMSIS__DATA__DATA_H__
+#ifndef __RT_DATA_UART_H__
+#define __RT_DATA_UART_H__
 
-#include "rt/rt_api_decl.h"
-#include "udma.h"
-#include "cpi.h"
-#include "spi.h"
-#include "i2c.h"
-#include "uart.h"
+typedef struct pi_uart_s {
+  int open_count;
+  int channel;
+  unsigned int baudrate;
+  int active;
+  rt_udma_channel_t rx_channel;
+  rt_udma_channel_t tx_channel;
+} pi_uart_t;
 
 #endif
-

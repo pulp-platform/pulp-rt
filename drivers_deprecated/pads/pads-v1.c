@@ -36,6 +36,12 @@ void rt_pad_set_function(rt_pad_e pad, rt_pad_func_e function)
   rt_irq_restore(irq);
 }
 
+void pi_pad_set_function(pi_pad_e pad, pi_pad_func_e function)
+{
+  int irq = rt_irq_disable();
+  hal_apb_soc_pad_set_function(pad, function);
+  rt_irq_restore(irq);
+}
 
 void __rt_padframe_init()
 {
