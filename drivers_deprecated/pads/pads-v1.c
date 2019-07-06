@@ -43,6 +43,14 @@ void pi_pad_set_function(pi_pad_e pad, pi_pad_func_e function)
   rt_irq_restore(irq);
 }
 
+void pi_pad_init(unsigned int pad_values[])
+{
+  for (int i=0; i<ARCHI_APB_SOC_PADFUN_NB; i++)
+  {
+    hal_apb_soc_padfun_set(i, pad_values[i]);
+  }  
+}
+
 void __rt_padframe_init()
 {
   rt_padframe_set(&__rt_padframe_profiles[0]);

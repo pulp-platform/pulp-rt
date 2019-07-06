@@ -203,6 +203,7 @@ typedef enum {
 
 void pi_pad_set_function(pi_pad_e pad, pi_pad_func_e function);
 
+void pi_pad_init(uint32_t pad_values[]);
 
 
 #endif
