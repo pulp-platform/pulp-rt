@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __RT_IMPLEM_DMA_H__
-#define __RT_IMPLEM_DMA_H__
+#ifndef __PMSIS_IMPLEM_DMA_H__
+#define __PMSIS_IMPLEM_DMA_H__
 
 #include "pmsis.h"
 #include "hal/pulp.h"

@@ -35,6 +35,8 @@
 #include "drivers/i2c.h"
 #include "drivers/spi.h"
 #include "drivers/gpio.h"
+#include "drivers/uart.h"
+#include "drivers/pad.h"
 #include "pmsis_cluster/dma/cl_dma.h"
 
 #include "pmsis/implem/implem.h"
