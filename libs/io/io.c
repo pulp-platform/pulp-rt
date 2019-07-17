@@ -44,7 +44,7 @@ hal_debug_struct_t HAL_DEBUG_STRUCT_NAME = HAL_DEBUG_STRUCT_INIT;
 static int __rt_io_pending_flush;
 
 static int errno;
-int *__errno() { return &errno; } 
+int *__errno() { return &errno; }
 
 static void __rt_io_unlock();
 static void __rt_io_lock();
@@ -116,7 +116,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
 }
 
 size_t strlen(const char *str)
-{ 
+{
   const char *start = str;
 
   while (*str)
@@ -191,6 +191,24 @@ void *memmove(void *d, const void *s, size_t n)
   }
 
   return d;
+}
+
+char *strcpy(char *d, const char *s)
+{
+	char *dest = d;
+	while (*s != '\0') {
+		*d = *s;
+		d++;
+		s++;
+	}
+	*d = '\0';
+	return dest;
+}
+
+char *strcat(char *dest, const char *src)
+{
+	strcpy(dest + strlen(dest), src);
+	return dest;
 }
 
 char *strchr(const char *s, int c)
@@ -341,7 +359,7 @@ void __rt_putc_uart(char c)
   {
     __rt_io_uart_flush(debug_struct);
   }
-} 
+}
 #endif
 
 static void tfp_putc(void *data, char c)
@@ -492,7 +510,7 @@ int _prf_locked(int (*func)(), void *dest, char *format, va_list vargs)
 static void __attribute__((noreturn)) __wait_forever()
 {
   // TODO find a better solution. On some architectures or platforms
-  // the execution starts immediately and is stuck here as it is 
+  // the execution starts immediately and is stuck here as it is
   // impossible to force the core to leave clock-gating
 #if 0
 #if defined(ITC_VERSION)
@@ -570,7 +588,7 @@ void exit(int status)
 #endif
 #if defined(ARCHI_CLUSTER_CTRL_ADDR)
   *(volatile int*)(ARCHI_CLUSTER_CTRL_ADDR) = 1;
-#endif  
+#endif
   __rt_exit_debug_bridge(status);
   __wait_forever();
 }
@@ -614,7 +632,7 @@ static int __rt_io_stop(void *arg)
   rt_trace(RT_TRACE_INIT, "[IO] Closing UART device for IO stream\n");
 
   // When shutting down the runtime, make sure we wait until all pending
-  // IO transfers are done. 
+  // IO transfers are done.
   __rt_io_uart_wait_pending();
 
   // Also close the uart driver to properly flush the uart
@@ -634,7 +652,7 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_io_init()
 #if defined(__RT_USE_UART)
   _rt_io_uart = NULL;
   __rt_io_event_current = NULL;
-  
+
   if (rt_iodev() == RT_IODEV_UART)
   {
     __rt_cbsys_add(RT_CBSYS_START, __rt_io_start, NULL);
