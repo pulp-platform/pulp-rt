@@ -271,6 +271,7 @@ int pi_i2c_open(struct pi_device *device)
 
 void pi_i2c_close (struct pi_device *device)
 {
+  int irq = rt_irq_disable();
   pi_i2c_t *i2c = (pi_i2c_t *)device->data;
 
   int channel = i2c->channel;
@@ -286,6 +287,7 @@ void pi_i2c_close (struct pi_device *device)
     // Reactivate clock-gating
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<periph_id));
   }
+  rt_irq_restore(irq);
 }
 
 
