@@ -44,6 +44,7 @@ typedef enum {
 } rt_gpio_conf_e;
 
 
+
 //!@}
 
 
@@ -239,6 +240,17 @@ typedef enum {
   PAD_49_FUNC3_HYPER_CSN1   = 3,
   PAD_50_FUNC3_HYPER_RWDS   = 3,
 } rt_pad_func_e;
+
+/** \enum rt_pad_sleep_state_e
+ * \brief Pad state when the chip is sleeping.
+ *
+ * Describes the available pad state when the chip is sleeping.
+ */
+typedef enum {
+  RT_PAD_SLEEP_STATE_INPUT        = 0, /*!< Input. */
+  RT_PAD_SLEEP_STATE_OUTPUT_LOW   = 1, /*!< Output low. */
+  RT_PAD_SLEEP_STATE_OUTPUT_HIGH  = 3, /*!< Output high. */
+} rt_pad_sleep_state_e;
 
 //!@}
 
