@@ -159,6 +159,9 @@ static void __rt_pmu_shutdown(int flags)
 
   unsigned int boot_mode = flags & RT_PMU_FLAGS_RET ? RETENTIVE_BOOT : DEEP_SLEEP_BOOT;
 
+  // Reactivate all L2 banks as boot code assumes they are ON when starting
+  __rt_alloc_power_ctrl(0xFFFFFFFF, 1, 0);
+
   // For now we just go to sleep and activate RTC wakeup with all
   // cuts retentive
   apb_soc_safe_pmu_sleepctrl_set(
