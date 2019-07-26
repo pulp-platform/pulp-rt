@@ -129,17 +129,32 @@ void *memset(void *m, int c, size_t n)
   return m;
 }
 
-void *memcpy(void *dst0, const void *src0, size_t len0)
-{
-  char *dst = (char *) dst0;
-  char *src = (char *) src0;
-
+void *memcpy(void *dst0, const void *src0, size_t len0) {
   void *save = dst0;
 
-  while (len0--)
-    {
+  char src_aligned = (((size_t) src0) & 3) == 0;
+  char dst_aligned = (((size_t) dst0) & 3) == 0;
+  char copy_full_words = (len0 & 3) == 0;
+
+  if (src_aligned && dst_aligned && copy_full_words) {
+    // all accesses are aligned => can copy full words
+    uint32_t *dst = (uint32_t *) dst0;
+    uint32_t *src = (uint32_t *) src0;
+
+    while (len0) {
       *dst++ = *src++;
+      len0 -= 4;
     }
+  } else {
+    // copy bytewise
+    char *dst = (char *) dst0;
+    char *src = (char *) src0;
+
+    while (len0) {
+      *dst++ = *src++;
+      len0--;
+    }
+  }
 
   return save;
 }
