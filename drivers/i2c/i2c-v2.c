@@ -35,7 +35,7 @@ void __rt_i2c_handle_tx_copy(int event, void *arg)
   cb(i2c);
 }
 
-void __rt_i2c_handle_rx_copy()
+void __rt_i2c_handle_rx_copy(int event, void *arg)
 {
 }
 
@@ -55,7 +55,7 @@ void __rt_i2c_step3(pi_i2c_t *i2c)
 void __rt_i2c_step2(pi_i2c_t *i2c)
 {
   i2c->pending_step = (uint32_t)__rt_i2c_step3;
-  plp_udma_enqueue(i2c->pending_base, i2c->udma_stop_cmd, 1, UDMA_CHANNEL_CFG_EN);
+  plp_udma_enqueue(i2c->pending_base, &i2c->udma_stop_cmd, 1, UDMA_CHANNEL_CFG_EN);
 }
 
 void udma_event_handler_end(pi_i2c_t *i2c)
