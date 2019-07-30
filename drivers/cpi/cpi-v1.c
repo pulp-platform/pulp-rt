@@ -117,7 +117,7 @@ void pi_cpi_close(struct pi_device *device)
 
 
 
-void pi_cpi_capture(struct pi_device *device, void *buffer, size_t size)
+void pi_cpi_capture(struct pi_device *device, void *buffer, int32_t size)
 {
   struct pi_task task;
   pi_cpi_capture_async(device, buffer, size, pi_task(&task));
@@ -126,7 +126,7 @@ void pi_cpi_capture(struct pi_device *device, void *buffer, size_t size)
 
 
 
-void pi_cpi_capture_async(struct pi_device *device, void *buffer, size_t size, pi_task_t *task)
+void pi_cpi_capture_async(struct pi_device *device, void *buffer, int32_t size, pi_task_t *task)
 {
   rt_cpi_t *cpi = (rt_cpi_t *)device->data;
   int irq = rt_irq_disable();
