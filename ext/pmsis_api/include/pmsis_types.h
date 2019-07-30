@@ -48,7 +48,10 @@ struct pmsis_event_kernel_wrap;
 typedef enum {
     PI_DEVICE_CLUSTER_TYPE,
     PI_DEVICE_HYPERBUS_TYPE,
-    PI_DEVICE_SPI_TYPE
+    PI_DEVICE_SPI_TYPE,
+    PI_DEVICE_CPI_TYPE,
+    PI_DEVICE_I2C_TYPE,
+    PI_DEVICE_GPIO_TYPE
 } pi_device_e;
 
 typedef struct pi_task pi_task_t;
@@ -111,14 +114,34 @@ typedef struct pi_device_api {
     void *specific_api;
 } pi_device_api_t;
 
+#ifndef IMPLEM_MUTEX_OBJECT_TYPE
+#define IMPLEM_MUTEX_OBJECT_TYPE \
+    void* mutex_object;
+#endif
+
 /** Task types **/
 typedef void (*__pmsis_mutex_func)(void *mutex_object);
 
 typedef struct pmsis_mutex {
-    void *mutex_object;
+    IMPLEM_MUTEX_OBJECT_TYPE
     __pmsis_mutex_func take;
     __pmsis_mutex_func release;
 } pmsis_mutex_t;
+
+
+#ifndef IMPLEM_SEM_OBJECT_TYPE
+#define IMPLEM_SEM_OBJECT_TYPE \
+    void* sem_object;
+#endif
+
+/** Task types **/
+typedef void (*__pi_sem_func)(void *sem_object);
+
+typedef struct pi_sem {
+    IMPLEM_SEM_OBJECT_TYPE
+    __pi_sem_func take;
+    __pi_sem_func give;
+} pi_sem_t;
 
 typedef struct pmsis_spinlock {
     uint32_t lock;
@@ -150,9 +173,7 @@ typedef struct pi_task{
     volatile int8_t done;
     pmsis_mutex_t wait_on;
     int id;
-
     PI_TASK_IMPLEM;
-
 } pi_task_t;
 
 #endif

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __DRIVERS__HYPERBUS_H__
-#define __DRIVERS__HYPERBUS_H__
+#ifndef __PI_DRIVERS_HYPERBUS_H__
+#define __PI_DRIVERS_HYPERBUS_H__
 
 #include "pmsis_types.h"
 
@@ -493,4 +493,4 @@ void pi_hyper_flash_sync(struct pi_device *device);
  * @} end of Hyperbus
  */
 
-#endif
+#endif  /* __PI_DRIVERS_HYPERBUS_H__ */

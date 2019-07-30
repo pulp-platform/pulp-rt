@@ -17,9 +17,9 @@
 #ifndef __CL_TO_FC_DELEGATE_H__
 #define __CL_TO_FC_DELEGATE_H__
 
-#include "cl_pmsis_types.h"
-#include "pmsis_hal.h"
-#include "pmsis_malloc_internal.h"
+#include "pmsis_cluster/cl_pmsis_types.h"
+#include "pmsis_hal/pmsis_hal.h"
+#include "rtos/malloc/pmsis_malloc_internal.h"
 
 /**
  * @ingroup groupCluster

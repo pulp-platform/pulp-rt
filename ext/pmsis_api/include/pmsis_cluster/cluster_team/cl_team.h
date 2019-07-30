@@ -17,6 +17,8 @@
 #ifndef __CL_TEAM_H__
 #define __CL_TEAM_H__
 
+#include "pmsis.h"
+
 /**        
  * @ingroup groupCluster        
  */
@@ -43,7 +45,7 @@
  * side and currently being eecuted.
  * \return async_task asynchronous task to be executed at the end of operation
  */
-INLINE int cl_cluster_nb_cores();
+int cl_cluster_nb_cores();
 
 /** \brief Fork the execution of the calling core.
  *
@@ -53,7 +55,7 @@ INLINE int cl_cluster_nb_cores();
  * However, fork_task->stacks/stack_size will only concern slave cores
  * \param   fork_task task to be forked on slave cores
  */
-INLINE void cl_team_fork_task(struct cl_team_task *fork_task);
+void cl_team_fork_task(struct cl_team_task *fork_task);
 
 /** \brief Fork the execution of the calling core.
  *
@@ -74,7 +76,7 @@ INLINE void cl_team_fork_task(struct cl_team_task *fork_task);
  * \param        entry The function entry point to be executed by all cores of the team.
  * \param        arg    The argument of the function entry point.
  */
-INLINE void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg);
+void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg);
 
 /** \brief Execute a barrier between all cores of the team.
  *
@@ -84,7 +86,7 @@ INLINE void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg);
  * Each core of the team must execute the barrier exactly once for all cores 
  * to be able to go through the barrier.
  */
-INLINE void cl_team_barrier();
+void cl_team_barrier();
 
 
 
@@ -96,7 +98,7 @@ INLINE void cl_team_barrier();
  * the following code until 
  * rt_team_critical_exit is called.
  */
-INLINE void cl_team_critical_enter();
+void cl_team_critical_enter();
 
 
 
@@ -104,7 +106,7 @@ INLINE void cl_team_critical_enter();
  *
  * This will exit the critical code and let other cores executing it.
  */
-INLINE void cl_team_critical_exit();
+void cl_team_critical_exit();
 
 
 
@@ -114,7 +116,7 @@ INLINE void cl_team_critical_exit();
  * active fork operation.
  * \result The number of cores of the team.
  */
-INLINE int cl_team_nb_cores();
+int cl_team_nb_cores();
 
 
 

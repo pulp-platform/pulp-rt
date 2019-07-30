@@ -14,26 +14,34 @@
  * limitations under the License.
  */
 
-#ifndef __DRIVERS__GPIO_H__
-#define __DRIVERS__GPIO_H__
+#ifndef __PI_DRIVERS_GPIO_H__
+#define __PI_DRIVERS_GPIO_H__
 
-#include <stdint.h>
+#include "pmsis_types.h"
 
-typedef enum {
-  PI_GPIO_INPUT = 0<<1,   /*!< The GPIO is an output, the chip can transmit a value. */
-  PI_GPIO_OUTPUT = 1<<1    /*!< The GPIO is an input, the chip can receive a value. */
+typedef enum
+{
+    PI_GPIO_INPUT = 0<<1,               /*!< The GPIO is an output, the chip can transmit a value. */
+    PI_GPIO_OUTPUT = 1<<1,              /*!< The GPIO is an input, the chip can receive a value. */
+    PI_GPIO_PULL_DISABLE = 0<<0,        /*!< Disable pull.  */
+    PI_GPIO_PULL_ENABLE  = 1<<0,        /*!< Enable pull.  */
+    PI_GPIO_DRIVE_STRENGTH_LOW  = 0<<2, /*!< Low drive strength.  */
+    PI_GPIO_DRIVE_STRENGTH_HIGH = 1<<2  /*!< High drive strength. */
 } pi_gpio_flags_e;
 
-typedef enum {
-  PI_GPIO_NOTIF_EDGE = 3,    /*!< Notifications are sent when there is both a rising edge or a falling edge on the GPIO value. */
-  PI_GPIO_NOTIF_RISE = 2,    /*!< Notifications are sent when there is a rising edge on the GPIO value. */
-  PI_GPIO_NOTIF_FALL = 1,    /*!< Notifications are sent when there is a falling edge on the GPIO value. */
-  PI_GPIO_NOTIF_NONE = 0	
+typedef enum
+{
+    PI_GPIO_NOTIF_FALL = 0x0,    /*!< IRQ on falling edge. */
+    PI_GPIO_NOTIF_RISE = 0x1,    /*!< IRQ on rising edge. */
+    PI_GPIO_NOTIF_EDGE = 0x2,    /*!< IRQ on a rising edge or a falling edge. */
+    PI_GPIO_NOTIF_NONE = 0x3
 } pi_gpio_notif_e;
 
 
-struct pi_gpio_conf {
-  int port;
+struct pi_gpio_conf
+{
+    pi_device_e device;
+    int32_t port;
 };
 
 void pi_gpio_conf_init(struct pi_gpio_conf *conf);
@@ -66,4 +74,4 @@ int pi_gpio_mask_task_add(struct pi_device *device, uint32_t mask, pi_task_t *ta
 
 int pi_gpio_mask_task_remove(struct pi_device *device, uint32_t mask);
 
-#endif
+#endif  /* __PI_DRIVERS_GPIO_H__ */
