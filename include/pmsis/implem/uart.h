@@ -21,6 +21,8 @@ struct pi_cl_uart_req_s {
   int done;
 };
 
+#ifdef ARCHI_HAS_CLUSTER
+
 static inline __attribute__((always_inline)) void pi_cl_uart_write_wait(pi_cl_uart_req_t *req)
 {
   while((*(volatile int *)&req->done) == 0)
@@ -36,5 +38,7 @@ static inline __attribute__((always_inline)) void pi_cl_uart_read_wait(pi_cl_uar
     eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
   }
 }
+
+#endif
 
 #endif
