@@ -17,7 +17,7 @@
 #ifndef __PMSIS_DRIVER_CORE_API_H__
 #define __PMSIS_DRIVER_CORE_API_H__
 
-#include "pmsis_types.h"
+#include "pmsis.h"
 
 
 // Open a device using its name if available

@@ -582,7 +582,7 @@ void pmsis_l1_malloc_free(void *_chunk, int size)
   return rt_free(RT_ALLOC_CL_DATA, _chunk, size);
 }
 
-void *pmsis_l2_malloc(uint32_t size)
+void *pmsis_l2_malloc(int size)
 {
   return rt_alloc(RT_ALLOC_PERIPH, size);
 }

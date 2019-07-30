@@ -138,7 +138,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 
 #define RT_L2_DATA __attribute__((section(".l2_data")))
 #define L2_DATA RT_L2_DATA
-#define PI_L2   L2_DATA
+#define PI_L2 RT_L2_DATA
 
 #define RT_L2_RET_DATA __attribute__((section(".l2_data")))
 

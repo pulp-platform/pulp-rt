@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS_IMPLEM_IMPLEM_H__
-#define __PMSIS_IMPLEM_IMPLEM_H__
+/*
+ * Authors: Germain Haugou, GreenWaves Technologies (germain.haugou@greenwaves-technologies.com)
+ */
 
-#ifdef UDMA_VERSION
-#include "pmsis/implem/udma.h"
-#endif
-#include "pmsis/implem/perf.h"
-#include "pmsis/implem/cpi.h"
-#include "pmsis/implem/uart.h"
-#ifdef MCHAN_VERSION
-#include "pmsis/implem/dma.h"
-#endif
-#include "rt/implem/implem.h"
+#include "pmsis.h"
+#include "hal/pulp.h"
 
-#endif
+void pi_pad_set_function(pi_pad_e pad, pi_pad_func_e function)
+{
+  int irq = rt_irq_disable();
+  hal_apb_soc_pad_set_function(pad, function);
+  rt_irq_restore(irq);
+}
+
+void pi_pad_init(uint32_t pad_values[])
+{
+  for (int i=0; i<ARCHI_APB_SOC_PADFUN_NB; i++)
+  {
+    hal_apb_soc_padfun_set(i, pad_values[i]);
+  }  
+}

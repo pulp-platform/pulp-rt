@@ -31,6 +31,7 @@
 #define _PMSIS_UART_H_
 
 #include "pmsis.h"
+#include "pmsis_types.h"
 
 /*!
  * @addtogroup uart_driver

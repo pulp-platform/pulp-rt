@@ -35,7 +35,7 @@ void __rt_i2c_handle_tx_copy(int event, void *arg)
   cb(i2c);
 }
 
-void __rt_i2c_handle_rx_copy()
+void __rt_i2c_handle_rx_copy(int event, void *arg)
 {
 }
 
@@ -55,7 +55,7 @@ void __rt_i2c_step3(pi_i2c_t *i2c)
 void __rt_i2c_step2(pi_i2c_t *i2c)
 {
   i2c->pending_step = (uint32_t)__rt_i2c_step3;
-  plp_udma_enqueue(i2c->pending_base, i2c->udma_stop_cmd, 1, UDMA_CHANNEL_CFG_EN);
+  plp_udma_enqueue(i2c->pending_base, &i2c->udma_stop_cmd, 1, UDMA_CHANNEL_CFG_EN);
 }
 
 void udma_event_handler_end(pi_i2c_t *i2c)
@@ -271,6 +271,7 @@ int pi_i2c_open(struct pi_device *device)
 
 void pi_i2c_close (struct pi_device *device)
 {
+  int irq = rt_irq_disable();
   pi_i2c_t *i2c = (pi_i2c_t *)device->data;
 
   int channel = i2c->channel;
@@ -286,6 +287,7 @@ void pi_i2c_close (struct pi_device *device)
     // Reactivate clock-gating
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<periph_id));
   }
+  rt_irq_restore(irq);
 }
 
 

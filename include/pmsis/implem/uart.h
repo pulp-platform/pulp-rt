@@ -14,18 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS_IMPLEM_IMPLEM_H__
-#define __PMSIS_IMPLEM_IMPLEM_H__
+#ifndef __PMSIS_IMPLEM_UART_H__
+#define __PMSIS_IMPLEM_UART_H__
 
-#ifdef UDMA_VERSION
-#include "pmsis/implem/udma.h"
-#endif
-#include "pmsis/implem/perf.h"
-#include "pmsis/implem/cpi.h"
-#include "pmsis/implem/uart.h"
-#ifdef MCHAN_VERSION
-#include "pmsis/implem/dma.h"
-#endif
-#include "rt/implem/implem.h"
+struct pi_cl_uart_req_s {
+  int done;
+};
+
+static inline __attribute__((always_inline)) void pi_cl_uart_write_wait(pi_cl_uart_req_t *req)
+{
+  while((*(volatile int *)&req->done) == 0)
+  {
+    eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+  }
+}
+
+static inline __attribute__((always_inline)) void pi_cl_uart_read_wait(pi_cl_uart_req_t *req)
+{
+  while((*(volatile int *)&req->done) == 0)
+  {
+    eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+  }
+}
 
 #endif

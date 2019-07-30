@@ -19,8 +19,7 @@
 
 /// @cond IMPLEM
 
-#include "pmsis_cluster/cl_pmsis_types.h"
-#include "pmsis_types.h"
+#include "pmsis.h"
 
 /**
  * @ingroup groupDrivers
