@@ -90,8 +90,7 @@ unsigned int __rt_fll_set_freq(int fll, unsigned int frequency)
 
   unsigned int real_freq, mult, div;
   real_freq = __rt_fll_get_mult_div_from_freq(frequency, &mult, &div);
-  rt_trace(RT_TRACE_FREQ, "Setting FLL frequency (fll: %d, freq: %d, mult: %d, div: %d, real_freq: %d)\n", fll, frequency, mult, div, real_freq);
-
+ 
   __rt_fll_freq[fll] = real_freq;
   if (__rt_fll_is_on[fll]) {
     hal_fll_update_mult_div(fll, mult, div);
