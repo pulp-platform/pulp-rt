@@ -52,6 +52,7 @@
 typedef struct {
   signed char id;         /*!< If it is different from -1, this specifies on which hyperbus interface the device is connected. */
   signed int ram_size;   /*!< Size of the ram. */
+  unsigned int padding [16];
 } rt_hyperram_conf_t;
 
 /** \brief HyperRAM copy structure.
