@@ -46,6 +46,7 @@ struct pmsis_event_kernel_wrap;
 
 // device type placed at the top of conf
 typedef enum {
+    PI_DEVICE_UNKWN_TYPE,
     PI_DEVICE_CLUSTER_TYPE,
     PI_DEVICE_HYPERBUS_TYPE,
     PI_DEVICE_SPI_TYPE,
@@ -171,7 +172,7 @@ typedef struct pi_task{
     // Warning, might be accessed inline in asm, and thus can not be moved
     uintptr_t arg[4];
     volatile int8_t done;
-    pmsis_mutex_t wait_on;
+    pi_sem_t wait_on;
     int id;
     PI_TASK_IMPLEM;
 } pi_task_t;

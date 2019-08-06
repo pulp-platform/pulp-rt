@@ -110,7 +110,7 @@ static int __rt_spi_get_div(int spi_freq)
     int div = (__rt_freq_periph_get() + spi_freq - 1)/ spi_freq;
 
     // The SPIM always divide by 2 once we activate the divider, thus increase by 1
-    // in case it is even to not go avove the max frequency.
+    // in case it is even to not go above the max frequency.
     if (div & 1) div += 1;
     div >>= 1;
 

@@ -153,6 +153,7 @@ void pi_hyper_conf_init(struct pi_hyper_conf *conf)
 {
   conf->id = -1;
   conf->ram_size = 0;
+  conf->baudrate = 25000000;
 }
 
 
@@ -205,6 +206,32 @@ static void __rt_hyper_handle_copy()
 
 #endif
 
+
+
+static int __rt_get_div(int freq)
+{
+  int periph_freq = __rt_freq_periph_get();
+
+  if (freq >= periph_freq)
+  {
+    return 0;
+  }
+  else
+  {
+    // Round-up the divider to obtain a frequency which is below the maximum
+    int div = (periph_freq + freq - 1) / freq;
+
+    // The divider always divide by 2 once we activate the divider, thus increase by 1
+    // in case it is even to not go above the max frequency.
+    if (div & 1) div += 1;
+    div >>= 1;
+
+    return div;
+  }
+}
+
+
+
 int32_t pi_hyper_open(struct pi_device *device)
 {
   struct pi_hyper_conf *conf = (struct pi_hyper_conf *)device->config;
@@ -228,7 +255,7 @@ int32_t pi_hyper_open(struct pi_device *device)
   // Deactivate Hyper clock-gating
   plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
 
-  hyper_clk_div_set(UDMA_HYPER_ADDR(0), 4);
+  hyper_clk_div_set(UDMA_HYPER_ADDR(0), __rt_get_div(conf->baudrate));
 
   hyper_device_set(UDMA_HYPER_ADDR(0),
     HYPER_DEVICE_DT1(1) |
@@ -249,6 +276,8 @@ int32_t pi_hyper_open(struct pi_device *device)
   );
 
   hyper_irq_en_set(UDMA_HYPER_ADDR(0), 1);
+
+
 
   // Redirect all UDMA hyper events to our callback
   __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy, NULL);

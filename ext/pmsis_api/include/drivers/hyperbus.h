@@ -68,6 +68,7 @@ struct pi_hyper_conf
     pi_hyper_type_e type;/*!< Type of device connected on the hyperbus interface. */
     signed char id;      /*!< If it is different from -1, this specifies on which hyperbus interface the device is connected. */
     signed int ram_size; /*!< Size of the ram. */
+    uint32_t baudrate;
 };
 
 /** \brief Hyperbus request structure.

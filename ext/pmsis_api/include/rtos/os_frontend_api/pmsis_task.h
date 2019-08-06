@@ -12,13 +12,13 @@ static inline int disable_irq(void);
 static inline void restore_irq(int irq_enable);
 
 #ifdef PMSIS_DRIVER
-static inline void pmsis_sem_take(pi_sem_t *mutex);
+static inline void pi_sem_take(pi_sem_t *mutex);
 
-static inline void pmsis_sem_give(pi_sem_t *mutex);
+static inline void pi_sem_give(pi_sem_t *mutex);
 
-static inline int pmsis_sem_init(pi_sem_t *mutex);
+static inline int pi_sem_init(pi_sem_t *mutex);
 
-static inline int pmsis_sem_deinit(pi_sem_t *mutex);
+static inline int pi_sem_deinit(pi_sem_t *mutex);
 
 static inline void pmsis_mutex_take(pmsis_mutex_t *mutex);
 
@@ -79,8 +79,8 @@ static inline void pi_yield();
 
 static inline struct pi_task *pi_task(struct pi_task *task)
 {
-  pi_task_block_no_mutex(task);
-  return task;
+    pi_task_block(task);
+    return task;
 }
 
 /*
@@ -201,7 +201,7 @@ static inline int pi_sem_init(pi_sem_t *sem)
 /*
  * deinit a semaphore, return non zero in case of failure
  */
-static inline int pmsis_sem_deinit(pi_sem_t *sem)
+static inline int pi_sem_deinit(pi_sem_t *sem)
 {
     hal_compiler_barrier();
     return  __os_native_api_sem_deinit(sem);

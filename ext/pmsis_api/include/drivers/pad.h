@@ -122,6 +122,7 @@ typedef enum {
   PI_PAD_55_A24_I2S0_SCK_FUNC0     = 0,
   PI_PAD_56_A26_I2S0_WS_FUNC0      = 0,
   PI_PAD_57_B23_I2S0_SDI_FUNC0     = 0,
+  PI_PAD_FUNC0                     = 0,
 
   /* Func 1, Alt1 : GPIO. */
   PI_PAD_8_A4_GPIO_A0_FUNC1        = 1,
@@ -162,6 +163,7 @@ typedef enum {
   PI_PAD_47_A9_GPIO_A29_FUNC1      = 1,
   PI_PAD_48_B15_GPIO_A30_FUNC1     = 1,
   PI_PAD_49_A16_GPIO_A31_FUNC1     = 1,
+  PI_PAD_FUNC1                     = 1,
 
   /* Func 2, Alt2. */
   PI_PAD_10_A5_I2C1_SDA_FUNC2      = 2,
@@ -194,6 +196,7 @@ typedef enum {
   PI_PAD_45_A8_SPIS0_SDIO3_FUNC2   = 2,
   PI_PAD_47_A9_SPIM1_CS0_FUNC2     = 2,
   PI_PAD_48_B15_SPIM1_CS1_FUNC2    = 2,
+  PI_PAD_FUNC2                     = 2,
 
   /* Func 3, Alt3. */
   PI_PAD_16_A44_SPIS0_SDIO2_FUNC3  = 3,
@@ -211,7 +214,8 @@ typedef enum {
   PI_PAD_47_A9_HYPER_DQ7_FUNC3     = 3,
   PI_PAD_48_B15_HYPER_CSN0_FUNC3   = 3,
   PI_PAD_49_A16_HYPER_CSN1_FUNC3   = 3,
-  PI_PAD_50_B9_HYPER_RWDS_FUNC3    = 3
+  PI_PAD_50_B9_HYPER_RWDS_FUNC3    = 3,
+  PI_PAD_FUNC3                     = 3
 } pi_pad_func_e;
 
 
