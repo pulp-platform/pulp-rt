@@ -318,7 +318,7 @@ static inline void rt_hyperram_free_cluster_wait(rt_hyperram_free_req_t *req);
 
 /// @cond IMPLEM
 
-#include "drivers/hyperbus.h"
+#include "pmsis/drivers/hyperbus.h"
 #include "rt/implem/hyperram.h"
 
 #if defined(ARCHI_UDMA_HAS_HYPER)

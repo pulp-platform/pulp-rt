@@ -120,7 +120,7 @@ void pi_cpi_close(struct pi_device *device)
 void pi_cpi_capture(struct pi_device *device, void *buffer, int32_t size)
 {
   struct pi_task task;
-  pi_cpi_capture_async(device, buffer, size, pi_task(&task));
+  pi_cpi_capture_async(device, buffer, size, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
 

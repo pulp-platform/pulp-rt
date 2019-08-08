@@ -17,6 +17,7 @@
 #ifndef __PMSIS_IMPLEM_DMA_H__
 #define __PMSIS_IMPLEM_DMA_H__
 
+#include "pmsis/cluster/dma/cl_dma.h"
 #include "pmsis.h"
 #include "hal/pulp.h"
 

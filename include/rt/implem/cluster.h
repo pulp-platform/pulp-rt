@@ -19,6 +19,9 @@
 
 #if defined(ARCHI_HAS_CLUSTER)
 
+#include "pmsis/cluster/dma/cl_dma.h"
+#include "pmsis/cluster/cl_malloc.h"
+
 static inline void *rt_alloc_cluster_wait(pi_cl_alloc_req_t *req)
 {
   while((*(volatile char *)&req->done) == 0)

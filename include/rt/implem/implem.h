@@ -31,7 +31,7 @@
 
 extern void __pi_yield();
 
-static inline struct pi_task *pi_task(struct pi_task *task)
+static inline struct pi_task *pi_task_block(struct pi_task *task)
 {
   task->id = PI_TASK_NONE_ID;
   task->arg[0] = (uint32_t)0;

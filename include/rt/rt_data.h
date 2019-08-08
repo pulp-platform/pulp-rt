@@ -317,8 +317,8 @@ typedef struct pi_task{
 
 } pi_task_t;
 
-#include "pmsis_types.h"
-#include "pmsis_cluster/cl_pmsis_types.h"
+#include "pmsis/pmsis_types.h"
+#include "pmsis/cluster/cl_pmsis_types.h"
 
 typedef struct pi_task rt_event_t;
 

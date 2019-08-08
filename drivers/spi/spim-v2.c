@@ -419,7 +419,7 @@ end:
 void pi_spi_send(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags)
 {
   pi_task_t task;
-  pi_spi_send_async(device, data, len, flags, pi_task(&task));
+  pi_spi_send_async(device, data, len, flags, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
 
@@ -500,7 +500,7 @@ end:
 void pi_spi_receive(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags)
 {
   pi_task_t task;
-  pi_spi_receive_async(device, data, len, flags, pi_task(&task));
+  pi_spi_receive_async(device, data, len, flags, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
 
@@ -592,7 +592,7 @@ end:
 void pi_spi_transfer(struct pi_device *device, void *tx_data, void *rx_data, size_t len, pi_spi_flags_e flags)
 {
   pi_task_t task;
-  pi_spi_transfer_async(device, tx_data, rx_data, len, flags, pi_task(&task));
+  pi_spi_transfer_async(device, tx_data, rx_data, len, flags, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
 

@@ -19,6 +19,8 @@
 
 #ifndef LANGUAGE_ASSEMBLY
 
+#include "pmsis/task.h"
+
 typedef struct {
   pi_task_t *pending_copy;
   pi_task_t *waiting_first;

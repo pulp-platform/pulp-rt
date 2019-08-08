@@ -334,7 +334,7 @@ void pi_hyper_read(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size)
 {
   struct pi_task task;
-  pi_hyper_read_async(device, hyper_addr, addr, size, pi_task(&task));
+  pi_hyper_read_async(device, hyper_addr, addr, size, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
 
@@ -355,7 +355,7 @@ void pi_hyper_write(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size)
 {
   struct pi_task task;
-  pi_hyper_write_async(device, hyper_addr, addr, size, pi_task(&task));
+  pi_hyper_write_async(device, hyper_addr, addr, size, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
 
@@ -374,7 +374,7 @@ void pi_hyper_read_2d(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length)
 {
   struct pi_task task;
-  pi_hyper_read_2d_async(device, hyper_addr, addr, size, stride, length, pi_task(&task));
+  pi_hyper_read_2d_async(device, hyper_addr, addr, size, stride, length, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
 
@@ -394,7 +394,7 @@ void pi_hyper_write_2d(struct pi_device *device,
   uint32_t hyper_addr, void *addr, uint32_t size, uint32_t stride, uint32_t length)
 {
   struct pi_task task;
-  pi_hyper_write_2d_async(device, hyper_addr, addr, size, stride, length, pi_task(&task));
+  pi_hyper_write_2d_async(device, hyper_addr, addr, size, stride, length, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
 

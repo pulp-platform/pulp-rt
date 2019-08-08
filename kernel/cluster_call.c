@@ -149,7 +149,7 @@ int pi_cluster_send_task_to_cl(struct pi_device *device, struct pi_cluster_task 
 {
   pi_task_t fc_task;
 
-  pi_task(&fc_task);
+  pi_task_block(&fc_task);
 
   if (pi_cluster_send_task_to_cl_async(device, task, &fc_task))
   {

@@ -19,6 +19,8 @@
 
 #ifdef ARCHI_UDMA_HAS_CAM
 
+#include "pmsis/drivers/cpi.h"
+#include "pmsis/data/cpi.h"
 #include "archi/udma/cpi/udma_cpi_v1.h"
 
 static inline void pi_cpi_control_start(struct pi_device *device)

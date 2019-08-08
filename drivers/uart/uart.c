@@ -276,7 +276,7 @@ int pi_uart_read_async(struct pi_device *device, void *buffer, uint32_t size, pi
 int pi_uart_write(struct pi_device *device, void *buffer, uint32_t size)
 {
   pi_task_t task;
-  if (pi_uart_write_async(device, buffer, size, pi_task(&task)))
+  if (pi_uart_write_async(device, buffer, size, pi_task_block(&task)))
     return -1;
   pi_task_wait_on(&task);
   return 0;
@@ -287,7 +287,7 @@ int pi_uart_write(struct pi_device *device, void *buffer, uint32_t size)
 int pi_uart_read(struct pi_device *device, void *buffer, uint32_t size)
 {
   pi_task_t task;
-  if (pi_uart_read_async(device, buffer, size, pi_task(&task)))
+  if (pi_uart_read_async(device, buffer, size, pi_task_block(&task)))
     return -1;
   pi_task_wait_on(&task);
   return 0;

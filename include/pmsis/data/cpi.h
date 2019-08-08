@@ -17,6 +17,8 @@
 #ifndef __RT_DATA_CPI_H__
 #define __RT_DATA_CPI_H__
 
+#include "pmsis/data/udma.h"
+
 typedef struct {
   int channel_id;
   int open_count;

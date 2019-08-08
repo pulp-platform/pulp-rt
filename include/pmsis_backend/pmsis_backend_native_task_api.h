@@ -5,10 +5,6 @@
 
 typedef int __os_native_task_t;
 
-static inline int disable_irq(void) {return 0;}
-
-static inline void restore_irq(int irq_enable) {}
-
 static inline void pmsis_mutex_take(pmsis_mutex_t *mutex) {}
 
 static inline void pmsis_mutex_release(pmsis_mutex_t *mutex) {}

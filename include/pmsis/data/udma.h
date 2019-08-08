@@ -19,7 +19,7 @@
 
 #ifndef LANGUAGE_ASSEMBLY
 
-#include "pmsis_types.h"
+#include "pmsis/pmsis_types.h"
 
 typedef struct {
   pi_task_t *pendings[2];

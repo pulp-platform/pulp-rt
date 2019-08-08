@@ -17,6 +17,9 @@
 #ifndef __PMSIS_IMPLEM_UART_H__
 #define __PMSIS_IMPLEM_UART_H__
 
+#include "pmsis/drivers/uart.h"
+#include "pmsis/data/data.h"
+
 struct pi_cl_uart_req_s {
   int done;
 };
