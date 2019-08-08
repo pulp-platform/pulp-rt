@@ -29,19 +29,17 @@ void pi_task_wait_on_no_mutex(pi_task_t *task);
 
 #ifdef PMSIS_DRIVERS
 
-#include "pmsis_hal/pmsis_hal.h"
+//#include "pmsis_hal/pmsis_hal.h"
 #include "pmsis_backend/pmsis_backend_native_task_api.h"
+pi_task_t *__pi_task_block(pi_task_t *callback_task);
 
-static inline struct pi_task *pi_task(struct pi_task *task)
+static inline struct pi_task *pi_task_block(struct pi_task *callback_task)
 {
-    pi_task_block(task);
-    return task;
+    __pi_task_block(callback_task);
+    return callback_task;
 }
-
 #else
-
 #include "pmsis/implem/implem.h"
+#endif
 
 #endif  /* __PMSIS_TASK_H__ */
-
-#endif

@@ -5,15 +5,14 @@
 #include <stddef.h>
 #include "pmsis.h"
 
-#include "rtos/malloc/pmsis_malloc.h"
-#include "rtos/malloc/pmsis_l1_malloc.h"
-#include "rtos/malloc/pmsis_l2_malloc.h"
-#include "rtos/malloc/pmsis_hyperram_malloc.h"
+#include "pmsis/rtos/malloc/pmsis_malloc.h"
+#include "pmsis/rtos/malloc/pmsis_l1_malloc.h"
+#include "pmsis/rtos/malloc/pmsis_l2_malloc.h"
 #if (defined(__GAP8__) && defined(__USE_TCDM_MALLOC__))
     #include "rtos/malloc/pmsis_fc_tcdm_malloc.h"
 #endif
-#include "rtos/os_frontend_api/pmsis_task.h"
-#include "rtos/event_kernel/event_kernel.h"
+#include "pmsis/rtos/os_frontend_api/pmsis_task.h"
+#include "pmsis/rtos/event_kernel/event_kernel.h"
 
 #include "pmsis_backend/pmsis_backend_native_types.h"
 #include "pmsis_backend/pmsis_backend_native_task_api.h"
