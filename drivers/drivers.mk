@@ -52,10 +52,12 @@ endif
 
 # PWM
 
+ifeq '$(pulp_chip_family)' 'gap'
 ifeq '$(CONFIG_PWM_ENABLED)' '1'
 PULP_LIB_FC_CFLAGS += -DRT_CONFIG_PWM_ENABLED
 PULP_LIB_FC_SRCS_rt += drivers/pwm/pwm.c
 PULP_LIB_FC_ASM_SRCS_rt += drivers/pwm/pwm_asm.S
+endif
 endif
 
 
