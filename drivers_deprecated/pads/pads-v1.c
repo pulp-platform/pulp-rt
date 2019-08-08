@@ -23,6 +23,8 @@
 
 extern int __rt_nb_profile;
 
+#if PULP_CHIP_FAMILY == CHIP_GAP
+
 __attribute__((weak)) unsigned int __rt_padframe_default[] = { 0x00055500, 0x00000000, 0x00054000, 0x00000000,};
 
 __attribute__((weak)) unsigned int __rt_padframe_hyper[] = { 0x00055500, 0x0f000000, 0x003fffff, 0x00000000,};
@@ -37,6 +39,14 @@ __attribute__((weak)) rt_padframe_profile_t __rt_padframe_profiles[3] = {
 
 __attribute__((weak)) int __rt_nb_profile = 3;
 
+#else
+
+__attribute__((weak)) rt_padframe_profile_t __rt_padframe_profiles[0] = {
+};
+
+__attribute__((weak)) int __rt_nb_profile = 0;
+
+#endif
 
 void rt_pad_set_function(rt_pad_e pad, rt_pad_func_e function)
 {

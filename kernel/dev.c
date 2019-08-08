@@ -21,6 +21,8 @@
 #include "rt/rt_api.h"
 #include <string.h>
 
+#if PULP_CHIP_FAMILY == CHIP_GAP
+
 __attribute__((weak)) rt_dev_t __rt_devices[] = {
   {"camera", 0x509, -1, (void *)&himax_desc, {{}}},
   {"microphone", 0x8, -1, (void *)&i2s_desc, {{}}},
@@ -34,6 +36,14 @@ __attribute__((weak)) rt_dev_t __rt_devices[] = {
 
 __attribute__((weak)) int __rt_nb_devices = 8;
 
+#else
+
+__attribute__((weak)) rt_dev_t __rt_devices[0] = {
+};
+
+__attribute__((weak)) int __rt_nb_devices = 0;
+
+#endif
 
 
 static inline int __rt_dev_nb_devices()
