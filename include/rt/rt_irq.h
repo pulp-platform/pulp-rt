@@ -55,6 +55,16 @@ static inline void rt_irq_restore(int irq)
   hal_irq_restore(irq);
 }
 
+static inline int disable_irq(void)
+{
+  return rt_irq_disable();
+}
+
+static inline void restore_irq(int irq_enable)
+{
+  rt_irq_restore(irq_enable);
+}
+
 
 static inline void rt_irq_enable()
 {
