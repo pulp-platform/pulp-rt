@@ -59,7 +59,9 @@
 #endif
 #include "rt/rt_spim.h"
 #include "rt/rt_rtc.h"
+#if PULP_CHIP == CHIP_GAP
 #include "rt/rt_pwm.h"
+#endif
 //#if defined(APB_SOC_VERSION) && APB_SOC_VERSION == 1
 #include "rt/rt_pad.h"
 //#endif

@@ -539,7 +539,11 @@ static inline unsigned int __rt_get_fc_vector_base()
 #if defined(ARCHI_CORE_HAS_SECURITY) && !defined(ARCHI_CORE_HAS_1_10)
     return __builtin_pulp_spr_read(SR_MTVEC);
 #elif defined(ARCHI_CORE_HAS_1_10)
+#ifdef RV_ISA_RV32
+    return 0;
+#else
     return __builtin_pulp_spr_read(SR_MTVEC) & ~1;
+#endif
 #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
     return apb_soc_bootaddr_get();
 #endif
@@ -565,7 +569,10 @@ static inline void __rt_set_fc_vector_base(unsigned int base)
 #if defined(ARCHI_CORE_HAS_SECURITY)
     __builtin_pulp_spr_write(SR_MTVEC, base);
 #elif defined(ARCHI_CORE_HAS_1_10)
+#ifdef RV_ISA_RV32
+#else
     __builtin_pulp_spr_write(SR_MTVEC, base | 1);
+#endif
 #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
     apb_soc_bootaddr_set(base);
 #endif
