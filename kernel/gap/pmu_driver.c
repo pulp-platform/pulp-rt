@@ -429,11 +429,13 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
   } else {
     PMURetentionState.Fields.BootMode = BOOT_FROM_ROM;
     PMURetentionState.Fields.BootType = DEEP_SLEEP_BOOT;
+    //PMURetentionState.Fields.BootType = FAST_DEEP_SLEEP_BOOT;
   }
   PMURetentionState.Fields.WakeupState = REGULATOR_STATE(WakeUpState);
   PMURetentionState.Fields.ClusterWakeUpState = CLUSTER_STATE(WakeUpState);
 
   PMURetentionState.Fields.L2Retention = 0xF;
+  //PMURetentionState.Fields.FllSoCRetention = 1;
 
   PMUState.State = PMUState.State & 0x6; // Clear cluster on in case since at wake up it will not be on
   SetRetentiveState(PMURetentionState.Raw);

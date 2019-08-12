@@ -935,6 +935,8 @@ static void __attribute__((constructor)) __rt_hyper_init()
   __pi_hyper_cluster_reqs_first = NULL;
   __rt_hyper_pending_emu_channel = -1;
   __rt_hyper_open_count = 0;
+  __rt_hyper_pending_emu_size = 0;
+  __rt_hyper_pending_emu_size_2d = 0;
 }
 
 

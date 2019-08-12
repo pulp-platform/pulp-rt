@@ -56,7 +56,7 @@ int rt_pm_state_switch(rt_pm_state_e state, rt_pm_state_flags_e flags)
 
 rt_pm_wakeup_e rt_pm_wakeup_state()
 {
-  if (PMURetentionState.Fields.BootType == DEEP_SLEEP_BOOT)
+  if (PMURetentionState.Fields.BootType == DEEP_SLEEP_BOOT || PMURetentionState.Fields.BootType == FAST_DEEP_SLEEP_BOOT)
     return RT_PM_WAKEUP_DEEPSLEEP;
   else if (PMURetentionState.Fields.BootType == RETENTIVE_BOOT)
     return RT_PM_WAKEUP_SLEEP;
