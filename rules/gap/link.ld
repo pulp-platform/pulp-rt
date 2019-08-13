@@ -25,6 +25,12 @@ SECTIONS
 
   .stack : {
     . = ALIGN(4);
+    *(.data_fc)
+    *(.data_fc.*)
+    *(.fcTcdm)
+    *(.fcTcdm.*)
+    *(.fcTcdm_g)
+    *(.fcTcdm_g.*)
     . = ALIGN(16);
     stack_start = .;
     . = . + 0x800;
@@ -166,17 +172,11 @@ SECTIONS
     . = ALIGN(4);
     sdata  =  .;
     _sdata  =  .;
-    *(.data_fc)
-    *(.data_fc.*)
     *(.data);
     *(.data.*)
     *(.sdata);
     *(.sdata.*)
     *(.heapl2ram)
-    *(.fcTcdm)
-    *(.fcTcdm.*)
-    *(.fcTcdm_g)
-    *(.fcTcdm_g.*)
     *(.l2_data)
     *(.l2_data.*)
     . = ALIGN(4);
