@@ -532,6 +532,9 @@ static inline void *rt_cluster_tiny_addr(int cid, void *data)
 
 static inline unsigned int __rt_get_fc_vector_base()
 {
+#if defined(ARCHI_CORE_RISCV_ITC)
+  return hal_spr_read(0x305) & ~1;
+#else
 #if defined(APB_SOC_VERSION) && APB_SOC_VERSION == 1
   return ARCHI_L2_ADDR;
 #else
@@ -557,12 +560,16 @@ static inline unsigned int __rt_get_fc_vector_base()
 #endif
   }
 #endif
+#endif
 
   return 0;
 }
 
 static inline void __rt_set_fc_vector_base(unsigned int base)
 {
+#if defined(ARCHI_CORE_RISCV_ITC)
+  hal_spr_write(0x305, base);
+#else
 #if defined(APB_SOC_VERSION) && APB_SOC_VERSION == 1
 #else
   if (rt_is_fc()) {
@@ -585,6 +592,7 @@ static inline void __rt_set_fc_vector_base(unsigned int base)
 #endif
 #endif
   }
+#endif
 #endif
 }
 

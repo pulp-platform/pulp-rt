@@ -62,6 +62,13 @@ static unsigned int __rt_get_itvec(unsigned int ItBaseAddr, unsigned int ItIndex
 
 void rt_irq_set_handler(int irq, void (*handler)())
 {
+#if defined(ARCHI_CORE_RISCV_ITC)
+  if (irq < 16)
+    return;
+
+  irq -= 16;
+#endif
+
   unsigned int base = __rt_get_fc_vector_base();
 
   unsigned int jmpAddr = base + 0x4 * irq;

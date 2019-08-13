@@ -198,6 +198,10 @@ void __rt_event_execute(rt_event_sched_t *sched, int wait)
       // callback can modify the queue 
       rt_wait_for_interrupt();
       rt_irq_enable();
+#if defined(ARCHI_CORE_RISCV_ITC)
+      // TODO temporary work-around until HW bug is fixed
+      asm volatile ("nop");
+#endif
       rt_irq_disable();
       event = *((rt_event_t * volatile *)&sched->first);
       if (event == NULL)
