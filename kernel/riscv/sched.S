@@ -36,7 +36,7 @@ __rt_event_enqueue:
   bne     x10, x0, __rt_handle_special_event
 
   // Enqueue normal event
-  lw      x10, RT_EVENT_T_SCHED(x11)
+  la      x10, __rt_sched
   sw      x0, RT_EVENT_T_NEXT(x11)
   lw      x12, RT_SCHED_T_FIRST(x10)
   beqz    x12, __rt_no_first
@@ -122,12 +122,51 @@ __rt_remote_enqueue_event:
     li   x8, ARCHI_NB_CLUSTER
 #endif
     la   x9, __rt_fc_cluster_data
-    lw   x9, 0(x9)
 
     // Loop over the clusters to see if there is an event to push
 __rt_remote_enqueue_event_loop_cluster:
     lw   a1, RT_FC_CLUSTER_DATA_T_EVENTS(x9)
     beq  a1, x0, __rt_remote_enqueue_event_loop_cluster_continue
+
+
+    // As there is an event also check if we should update the queue of calls
+
+    // Everytime a task is finished, first check if we can update the queue head
+    // as it is not updated by cluster side to avoid race conditions.
+    // At least this task won t be there anymore after we update, and maybe even
+    // more tasks, which is not an issue, as we compare against the head.
+    lw   a1, RT_FC_CLUSTER_DATA_T_CLUSTER_POOL(x9)
+    lw   a0, RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC(a1)
+
+    beq  a0, x0, __rt_cluster_pool_update_end
+
+__rt_cluster_pool_update_loop:
+    lw    a2, RT_CLUSTER_TASK_PENDING(a0)
+    bnez  a2, __rt_cluster_pool_update_loop_end
+
+    lw   a0, RT_CLUSTER_TASK_NEXT(a0)
+    bnez a0, __rt_cluster_pool_update_loop
+
+
+__rt_cluster_pool_update_loop_end:
+    
+    beqz a0, __rt_cluster_pool_update_no_current
+
+    lw   a0, RT_CLUSTER_TASK_NEXT(a0)
+    sw   a0, RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC(a1)
+
+    j    __rt_cluster_pool_update_end
+
+__rt_cluster_pool_update_no_current:
+
+    sw   x0, RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC(a1)
+    sw   x0, RT_CLUSTER_CALL_POOL_T_FIRST_LAST_FC(a1)
+
+
+
+
+__rt_cluster_pool_update_end:
+    lw   a1, RT_FC_CLUSTER_DATA_T_EVENTS(x9)
 
     lw   a2, RT_FC_CLUSTER_DATA_T_TRIG_ADDR(x9)
     sw   x0, RT_FC_CLUSTER_DATA_T_EVENTS(x9)
@@ -153,7 +192,6 @@ __rt_remote_enqueue_event_loop_cluster_continue:
 
 __rt_remote_enqueue_event_loop_next_cluster:
     la   x9, __rt_fc_cluster_data
-    lw   x9, 0(x9)
     li   a1, RT_FC_CLUSTER_DATA_T_SIZEOF
     mul  a1, x8, a1
     add  x9, x9, a1

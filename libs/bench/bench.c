@@ -223,12 +223,44 @@ void illegal_insn_handler_c(void)
 static int __rt_bench_retval;
 static int (*__rt_bench_entry)();
 
-static void __rt_bench_cluster_entry(void *arg)
+static void __rt_bench_pe_entry(void *arg)
 {
   __rt_bench_retval = __rt_bench_entry();
 }
 
+  
+static void __rt_bench_cluster_entry(void *arg)
+{
+#if defined(ARCHI_HAS_CLUSTER)
+  rt_team_fork(0, __rt_bench_pe_entry, NULL);
+#else
+  __rt_bench_pe_entry(arg);
+#endif
+}
+
 int bench_cluster_exec(int cid, int (*entry)())
+{
+  if (rt_cluster_id() != cid)
+  {
+    __rt_bench_entry = entry;
+    rt_cluster_mount(1, 0, 0, NULL);
+    rt_cluster_call(NULL, cid, __rt_bench_cluster_entry, NULL, NULL, 4096, 4096, 0, NULL);
+    rt_cluster_mount(0, 0, 0, NULL);
+
+    return __rt_bench_retval;
+  }
+
+  return 0;
+}
+
+extern int main(int argc, const char * const argv[]);
+
+int bench_cluster_forward(int cid)
+{
+  return bench_cluster_exec(cid, main);
+}
+
+int bench_cluster_exec2(int cid, int (*entry)())
 {
   if (rt_cluster_id() != cid)
   {

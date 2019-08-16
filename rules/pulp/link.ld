@@ -219,24 +219,20 @@ SECTIONS
    * Contains other data such as peripheral data and cluster code and data
    */
 
-  .text.cluster MAX(0x1c010000,ALIGN(4)) :
+  .l2_data MAX(0x1c010000,ALIGN(4)) :
   {
+    . = ALIGN(4);
     __cluster_text_start = .;
     *(.cluster.text)
     *(.cluster.text.*)
+    . = ALIGN(4);
     __cluster_text_end = .;
-    . = ALIGN(4);
-  } > L2
-
-  .l2_data : {
-    . = ALIGN(4);
     *(.l2_data)
     *(.l2_data.*)
     *(.data_fc_shared)
     *(.data_fc_shared.*)
     . = ALIGN(4);
   } > L2
-
 
   /* Following sections are keeping the cluster data
    * in L2 until the cluster is powered up */
@@ -268,7 +264,7 @@ SECTIONS
     . = ALIGN(4);
   } > L1 AT> L2
 
-  .bss_l1 : {
+  .bss_l1 (ORIGIN(L1) + SIZEOF(.data_tiny_l1) + SIZEOF(.l1cluster_g)) : {
     . = ALIGN(4);
     *(.bss_l1)
     *(.bss_l1.*)

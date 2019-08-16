@@ -44,6 +44,9 @@ static inline void rt_periph_copy_init(rt_periph_copy_t *copy, int flags);
 void rt_periph_copy(rt_periph_copy_t *copy, int channel, unsigned int addr, int size,
   unsigned int cfg, rt_event_t *event);
 
+void rt_periph_hyper_copy(rt_periph_copy_t *copy, int channel, unsigned int addr, int size,
+  unsigned int cfg, rt_event_t *event);
+
 void rt_periph_single_copy(rt_periph_copy_t *copy, int channel, unsigned int addr, int size,
   unsigned int cfg, rt_event_t *event);
 
@@ -130,7 +133,6 @@ static inline rt_periph_channel_t *__rt_periph_channel(int channel) {
   return &periph_channels[channel];
 }
 
-
 #if defined(UDMA_VERSION) && UDMA_VERSION < 3
 
 extern RT_FC_TINY_DATA void *__rt_udma_extra_callback[];
@@ -141,6 +143,28 @@ extern RT_FC_TINY_DATA void *__rt_udma_callback[ARCHI_NB_PERIPH];
 extern RT_FC_TINY_DATA void *__rt_udma_callback_data[ARCHI_NB_PERIPH];
 
 #endif
+
+#if defined(UDMA_VERSION)
+static inline void __rt_udma_register_channel_callback(unsigned int channel, void (*callback)(void *), void *arg)
+{
+#if UDMA_VERSION == 2
+  __rt_periph_channel(channel)->callback = callback;
+#else
+  __rt_udma_callback[channel>>UDMA_NB_PERIPH_EVENTS_LOG2] = callback;
+#endif
+}
+
+#if defined(UDMA_VERSION) && UDMA_VERSION < 3
+
+static inline void __rt_udma_register_extra_callback(unsigned int event, void (*callback)(void *), void *arg)
+{
+  __rt_udma_extra_callback[event - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT] = callback;
+}
+
+#endif
+
+#endif
+
 
 int __rt_periph_get_event(int event);
 
@@ -176,6 +200,8 @@ void rt_periph_copy_spi(rt_periph_copy_t *copy, int channel_id, unsigned int add
 void udma_event_handler();
 
 void __rt_spim_handle_eot();
+
+void __rt_mram_handle_event();
 
 #if UDMA_VERSION <= 2
 

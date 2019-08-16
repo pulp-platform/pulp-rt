@@ -4,7 +4,7 @@ ENTRY( _start )
 MEMORY
 {
   L2                 : ORIGIN = 0x1c000000, LENGTH = 0x00080000
-  fc_tcdm            : ORIGIN = 0x1b000000, LENGTH = 0x00004000
+  fc_tcdm            : ORIGIN = 0x1b000004, LENGTH = 0x00003ffc
   fc_tcdm_aliased    : ORIGIN = 0x00000004, LENGTH = 0x00003ffc
   L1                 : ORIGIN = 0x10000004, LENGTH = 0x0000fffc
   L1_aliased         : ORIGIN = 0x00000004, LENGTH = 0x0000fffc
@@ -25,6 +25,12 @@ SECTIONS
 
   .stack : {
     . = ALIGN(4);
+    *(.data_fc)
+    *(.data_fc.*)
+    *(.fcTcdm)
+    *(.fcTcdm.*)
+    *(.fcTcdm_g)
+    *(.fcTcdm_g.*)
     . = ALIGN(16);
     stack_start = .;
     . = . + 0x800;
@@ -166,17 +172,13 @@ SECTIONS
     . = ALIGN(4);
     sdata  =  .;
     _sdata  =  .;
-    *(.data_fc)
-    *(.data_fc.*)
     *(.data);
     *(.data.*)
     *(.sdata);
     *(.sdata.*)
     *(.heapl2ram)
-    *(.fcTcdm)
-    *(.fcTcdm.*)
-    *(.fcTcdm_g)
-    *(.fcTcdm_g.*)
+    *(.l2_data)
+    *(.l2_data.*)
     . = ALIGN(4);
     edata  =  .;
     _edata  =  .;
@@ -226,7 +228,7 @@ SECTIONS
     . = ALIGN(4);
   } > L1 AT> L2
 
-  .bss_l1 : {
+  .bss_l1 (ORIGIN(L1) + SIZEOF(.data_tiny_l1) + SIZEOF(.l1cluster_g)) : {
     . = ALIGN(4);
     *(.bss_l1)
     *(.bss_l1.*)

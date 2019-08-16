@@ -23,6 +23,7 @@
 #include "archi/eu/eu_v3.h"
 
   .global __rt_fc_socevents_handler
+  .extern pwm_event_handler
 __rt_fc_socevents_handler:
 // The stack is first adjusted to have stack-based load/store compressed
   add sp, sp, -128
@@ -56,6 +57,8 @@ __rt_fc_socevents_handler:
 
   // We have the channel ID in x10, get pointer to the corresponding channel
 
+  // TODO once deprecated drivers are removed this should disappear, and we should keep
+  // only the callback
 #if defined(ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT) && ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT > 2
   andi   x8, x10, 1
   srli   x10, x10, 1
@@ -77,11 +80,13 @@ __rt_soc_evt_no_udma_channel:
   li x9, ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + ARCHI_SOC_EVENT_UDMA_NB_EXTRA_EVT
   bge x10, x9, __rt_soc_evt_no_udma
 
-  addi x11, x10, -ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT
-  slli x11, x11, 2
+  addi x8, x10, -ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT
+  slli x11, x8, 2
   lw   x11, %tiny(__rt_udma_extra_callback)(x11)
 
   jr   x11
+
+
 
   .global __rt_soc_evt_no_udma
 __rt_soc_evt_no_udma:
@@ -95,6 +100,18 @@ __rt_soc_evt_no_udma:
   beq     x9, x10, rtc_event_handler
 
 
+// pwm event handler
+//x9 : nb of event that will be used by handler
+__rt_soc_evt_pwm:
+  li x11, ARCHI_SOC_EVENT_ADV_TIMER_NB_EVT-1 // 3
+  addi x9, x11, ARCHI_SOC_EVENT_ADV_TIMER_FIRST_EVT //3+38=41
+  sub x9, x9, x10 // 41 - 56
+  bgt x9, x11, __rt_soc_evt_store // if > 3 not for pwm
+  blt x9, x0,  __rt_soc_evt_store // if > 3 not for pwm
+  j pwm_event_handler
+
+
+__rt_soc_evt_store:
   // If the event is not handled, store it in the soc event status mask
   la      x9, __rt_socevents_status
   li      x11, 32

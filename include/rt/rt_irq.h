@@ -55,6 +55,17 @@ static inline void rt_irq_restore(int irq)
   hal_irq_restore(irq);
 }
 
+static inline int disable_irq(void)
+{
+  return rt_irq_disable();
+}
+
+static inline void restore_irq(int irq_enable)
+{
+  rt_irq_restore(irq_enable);
+}
+
+
 static inline void rt_irq_enable()
 {
   hal_irq_enable();
@@ -62,6 +73,9 @@ static inline void rt_irq_enable()
 
 static inline void rt_irq_mask_set(unsigned int mask)
 {
+#if defined(ARCHI_CORE_RISCV_ITC)
+  hal_spr_read_then_set_from_reg(0x304, mask);
+#endif
 #if defined(ITC_VERSION) && defined(EU_VERSION)
   if (hal_is_fc()) hal_itc_enable_set(mask);
   else eu_irq_maskSet(mask);
@@ -79,6 +93,9 @@ static inline void rt_irq_mask_set(unsigned int mask)
 
 static inline void rt_irq_mask_clr(unsigned int mask)
 {
+#if defined(ARCHI_CORE_RISCV_ITC)
+  hal_spr_read_then_clr_from_reg(0x304, mask);
+#endif
 #if defined(ITC_VERSION) && defined(EU_VERSION)
   if (hal_is_fc()) hal_itc_enable_clr(mask);
   else eu_irq_maskClr(mask);

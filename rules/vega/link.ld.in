@@ -4,10 +4,10 @@ ENTRY( _start )
 MEMORY
 {
   /* 0x8000 are reserved at the end of the L2 for the boot rom */
-  L2           : ORIGIN = 0x1c000004, LENGTH = @l2_size@ - 4
-  L2_aliased   : ORIGIN = 0x00000004, LENGTH = 0x00003ffc
-  L1                 : ORIGIN = 0x10000004, LENGTH = 0x0001fffc
-  L1_aliased         : ORIGIN = 0x00000004, LENGTH = 0x0001fffc
+  L2           : ORIGIN = 0x1c000008, LENGTH = @l2_size@ - 8
+  L2_aliased   : ORIGIN = 0x00000008, LENGTH = 0x00003ff8
+  L1                 : ORIGIN = 0x10000008, LENGTH = 0x0001fff8
+  L1_aliased         : ORIGIN = 0x00000008, LENGTH = 0x0001fff8
 }
 
 /*
@@ -35,36 +35,40 @@ SECTIONS
    */
   .data_tiny_fc :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
     *(.data_tiny_fc)
     *(.data_tiny_fc.*)
+    . = ALIGN(8);
   } > L2_aliased AT> L2
 
 
   .init :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
     KEEP( *(.init) )
+    . = ALIGN(8);
   } > L2
 
 
   .fini :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
     KEEP( *(.fini) )
+    . = ALIGN(8);
   } > L2
 
 
   .preinit_array : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array))
     PROVIDE_HIDDEN (__preinit_array_end = .);
+    . = ALIGN(8);
   } > L2
 
 
   .init_array : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     PROVIDE_HIDDEN (__init_array_start = .);
     __CTOR_LIST__ = .;
     LONG((__CTOR_END__ - __CTOR_LIST__) / 4 - 2)
@@ -75,11 +79,12 @@ SECTIONS
     LONG(0)
     __CTOR_END__ = .;
     PROVIDE_HIDDEN (__init_array_end = .);
+    . = ALIGN(8);
   } > L2
 
 
   .fini_array : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     PROVIDE_HIDDEN (__fini_array_start = .);
     __DTOR_LIST__ = .;
     LONG((__DTOR_END__ - __DTOR_LIST__) / 4 - 2)
@@ -90,35 +95,40 @@ SECTIONS
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array ))
     PROVIDE_HIDDEN (__fini_array_end = .);
+    . = ALIGN(8);
   } > L2
 
 
   .boot : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     *(.boot)
     *(.boot.data)
+    . = ALIGN(8);
   } > L2
 
 
   .rodata : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     *(.rodata);
     *(.rodata.*)
     *(.srodata);
     *(.srodata.*)
     *(.eh_frame*)
+    . = ALIGN(8);
   } > L2
 
 
   .got : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     *(.got.plt) * (.igot.plt) *(.got) *(.igot)
+    . = ALIGN(8);
   } > L2
 
 
   .shbss : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     *(.shbss)
+    . = ALIGN(8);
   } > L2
 
 
@@ -127,28 +137,31 @@ SECTIONS
 
 
   .gnu.offload_funcs : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     KEEP(*(.gnu.offload_funcs))
+    . = ALIGN(8);
   } > L2
 
 
   .gnu.offload_vars : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     KEEP(*(.gnu.offload_vars))
+    . = ALIGN(8);
   } > L2
 
 
   .stack : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     . = ALIGN(16);
     stack_start = .;
     . = . + 0x800;
     stack = .;
+    . = ALIGN(8);
   } > L2
 
 
   .data : {
-    . = ALIGN(4);
+    . = ALIGN(8);
     sdata  =  .;
     _sdata  =  .;
     *(.data_fc)
@@ -162,7 +175,7 @@ SECTIONS
     *(.fcTcdm.*)
     *(.fcTcdm_g)
     *(.fcTcdm_g.*)
-    . = ALIGN(4);
+    . = ALIGN(8);
     edata  =  .;
     _edata  =  .;
   } > L2
@@ -176,12 +189,12 @@ SECTIONS
     *(.sbss)
     *(.sbss.*)
     *(COMMON)
-    . = ALIGN(4);
+    . = ALIGN(8);
     _bss_end = .;
   } > L2
 
 
-  __l2_priv0_end = ALIGN(4);
+  __l2_priv0_end = ALIGN(8);
 
 
 
@@ -196,11 +209,12 @@ SECTIONS
   {
     __irq_vector_base = .;
     KEEP(*(.vectors))
+    . = ALIGN(8);
   } > L2
 
   .text :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
     _stext = .;
     *(.text)
     *(.text.*)
@@ -208,10 +222,10 @@ SECTIONS
     *(.lit)
     *(.shdata)
     _endtext = .;
-    . = ALIGN(4);
+    . = ALIGN(8);
   } > L2
 
-  __l2_priv1_end = ALIGN(4);
+  __l2_priv1_end = ALIGN(8);
 
 
   /*
@@ -220,17 +234,14 @@ SECTIONS
    * Contains other data such as peripheral data and cluster code and data
    */
 
-  .text.cluster MAX(0x1c010000,ALIGN(4)) :
+  .l2_data MAX(0x1c010000,ALIGN(8)) :
   {
+    . = ALIGN(4);
     __cluster_text_start = .;
     *(.cluster.text)
     *(.cluster.text.*)
+    . = ALIGN(4);
     __cluster_text_end = .;
-    . = ALIGN(4);
-  } > L2
-
-  .l2_data : {
-    . = ALIGN(4);
     *(.l2_data)
     *(.l2_data.*)
     *(.data_fc_shared)
@@ -242,41 +253,42 @@ SECTIONS
   /* Following sections are keeping the cluster data
    * in L2 until the cluster is powered up */
 
-  _l1_preload_start_inL2 = ALIGN(4);
+  _l1_preload_start_inL2 = ALIGN(8);
 
   .data_tiny_l1 :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
     _l1_preload_start = .;
     *(.data_tiny_l1)
     *(.data_tiny_l1.*)
     *(.data_alias_l1)
     *(.data_alias_l1.*)
+    . = ALIGN(8);
   } > L1_aliased AT> L2
 
   .l1cluster_g (ORIGIN(L1) + SIZEOF(.data_tiny_l1)): {
-    . = ALIGN(4);
+    . = ALIGN(8);
     *(.heapsram)
     *(.heapsram.*)
     *(.l1cluster_g)
     *(.l1cluster_g.*)
     *(.data_l1)
     *(.data_l1.*)
-    . = ALIGN(4);
+    . = ALIGN(8);
     _libgomp_start = .;
     *(.libgomp)
     *(.libgomp.*)
-    . = ALIGN(4);
+    . = ALIGN(8);
   } > L1 AT> L2
 
-  .bss_l1 : {
-    . = ALIGN(4);
+  .bss_l1 (ORIGIN(L1) + SIZEOF(.data_tiny_l1) + SIZEOF(.l1cluster_g)) : {
+    . = ALIGN(8);
     *(.bss_l1)
     *(.bss_l1.*)
-    . = ALIGN(4);
+    . = ALIGN(8);
   } > L1 AT> L2
 
-  __l1_end = ALIGN(4);
+  __l1_end = ALIGN(8);
 
   __l2_shared_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
 
@@ -287,6 +299,6 @@ SECTIONS
 
   __cluster_text_size = __cluster_text_end - __cluster_text_start;
 
-  __l1_heap_start = ALIGN(4);
+  __l1_heap_start = ALIGN(8);
   __l1_heap_size = LENGTH(L1) - __l1_heap_start + ORIGIN(L1);
 }

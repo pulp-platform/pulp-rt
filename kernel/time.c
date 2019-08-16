@@ -74,26 +74,26 @@ void rt_event_push_delayed(rt_event_t *event, int us)
   // In order to simplify time comparison, we sacrify the MSB to avoid overflow
   // as the given amount of time must be short
   uint32_t time = (current_time & 0x7fffffff) + ticks;
-  event->time = current_time + ticks;
+  event->implem.time = current_time + ticks;
 
 
   // Enqueue the event in the wait list.
-  while (current && (current->time & 0x7fffffff) < time)
+  while (current && (current->implem.time & 0x7fffffff) < time)
   {
     prev = current;
-    current = current->next;
+    current = current->implem.next;
   }
 
   if (prev)
   {
-    prev->next = event;
+    prev->implem.next = event;
   }
   else
   {
     set_irq = 1;
     first_delayed = event;
   }
-  event->next = current;
+  event->implem.next = current;
 
   // And finally update the timer trigger time in case we enqueued the event
   // at the head of the wait list.
@@ -120,6 +120,11 @@ void rt_time_wait_us(int time_us)
   rt_event_t *event = rt_event_get_blocking(NULL);
   rt_event_push_delayed(event, time_us);
   rt_event_wait(event);
+}
+
+void pi_time_wait_us(int time_us)
+{
+  rt_time_wait_us(time_us);
 }
 
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_time_init()
@@ -156,8 +161,8 @@ static void __rt_timer_handle(void *arg)
   rt_timer_t *timer = (rt_timer_t *)arg;
   rt_event_t *event = timer->user_event;
 
-  void (*callback)(void *) = event->callback;
-  void *cb_arg = event->arg;
+  void (*callback)(void *) = (void (*)(void *))event->arg[0];
+  void *cb_arg = (void *)event->arg[1];
 
   if (callback) {
     callback(cb_arg);
@@ -175,10 +180,10 @@ static void __rt_timer_handle(void *arg)
 
 int rt_timer_create(rt_timer_t *timer, rt_timer_flags_e flags, rt_event_t *event)
 {
-  if (rt_event_alloc(event->sched, 1))
+  if (rt_event_alloc(rt_event_internal_sched(), 1))
     return -1;
 
-  timer->event = rt_event_get(event->sched, __rt_timer_handle, (void *)timer);
+  timer->event = rt_event_get(rt_event_internal_sched(), __rt_timer_handle, (void *)timer);
   timer->user_event = event;
   timer->flags = flags;
 
@@ -206,15 +211,15 @@ void rt_timer_stop(rt_timer_t *timer)
   while (current && current != event)
   {
     prev = current;
-    current = current->next;
+    current = current->implem.next;
   }
 
   if (current)
   {
     if (prev)
-      prev->next = current->next;
+      prev->implem.next = current->implem.next;
     else
-      first_delayed = current->next;
+      first_delayed = current->implem.next;
   }
   else
   {

@@ -123,7 +123,8 @@ int rt_freq_set_and_get(rt_freq_domain_e domain, unsigned int freq, unsigned int
 
   rt_trace(RT_TRACE_FREQ, "Setting domain frequency (domain: %d, freq: %d)\n", domain, freq);
 
-#if defined(RT_FREQ_DOMAIN_CL) && RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
+#if defined(__RT_FREQ_DOMAIN_CL) && (__RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN)
+
   if (domain == RT_FREQ_DOMAIN_CL)
   {
     // On cluster side, this is straight forward as the fll is not shared
@@ -276,7 +277,6 @@ void __rt_freq_remove_constraint_multiple(unsigned int freq)
 
 void __rt_freq_init()
 {
-
   __rt_flls_constructor();
 
 #if PULP_CHIP == CHIP_KERBIN
@@ -296,7 +296,7 @@ void __rt_freq_init()
     __rt_freq_domains[RT_FREQ_DOMAIN_FC] = 40000000;
   }
 
-#if defined(RT_FREQ_DOMAIN_CL) && RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
+#if defined(__RT_FREQ_DOMAIN_CL) && __RT_FREQ_DOMAIN_CL < RT_FREQ_NB_DOMAIN
   __rt_freq_domains[RT_FREQ_DOMAIN_CL] = 0;
 #endif
 

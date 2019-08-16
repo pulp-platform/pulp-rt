@@ -18,12 +18,14 @@
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
-#include "tinyprintf.h"
 #include <stdarg.h>
 #include "hal/pulp.h"
 #include "rt/rt_api.h"
 #include "hal/debug_bridge/debug_bridge.h"
 #include <stdint.h>
+
+extern int _prf(int (*func)(), void *dest,
+        const char *format, va_list vargs);
 
 #if defined(ARCHI_UDMA_HAS_UART) && UDMA_VERSION >= 2 || defined(ARCHI_HAS_UART)
 #define __RT_USE_UART 1
@@ -39,32 +41,51 @@ static rt_event_t *__rt_io_event_current;
 
 hal_debug_struct_t HAL_DEBUG_STRUCT_NAME = HAL_DEBUG_STRUCT_INIT;
 
-static int errno;
-int *__errno() { return &errno; } 
+static int __rt_io_pending_flush;
 
-void *malloc(size_t size)
+static int errno;
+int *__errno() { return &errno; }
+
+static void __rt_io_unlock();
+static void __rt_io_lock();
+
+static void *domain_malloc(size_t size, int domain)
 {
-  void * ptr = rt_alloc(RT_ALLOC_CL_DATA, size + 0x4U);
+  void * ptr = rt_alloc(domain, size + 0x4U);
   if ((uint32_t) ptr == 0x0)
     return (void *) 0x0;
   *(uint32_t *)(ptr) = size + 0x4U;
-  return (void *) ((uint32_t *)ptr++);
+
+  void *user_ptr = (void *)(((uint32_t *)ptr)+1);
+
+  return user_ptr;
+}
+
+static void domain_free(void *ptr, int domain)
+{
+  void *alloc_ptr = (void *)(((uint32_t *)ptr)-1);
+  uint32_t size = *((uint32_t *)alloc_ptr);
+  rt_free(domain, alloc_ptr, size);
+}
+
+void *malloc(size_t size)
+{
+  return domain_malloc(size, RT_ALLOC_FC_DATA);
 }
 
 void free(void *ptr)
 {
-  uint32_t size = *((uint32_t *)ptr--);
-  rt_free(RT_ALLOC_CL_DATA, (void *)((uint32_t *)ptr--), size);
+  domain_free(ptr, RT_ALLOC_FC_DATA);
 }
 
 void *l1malloc(size_t size)
 {
-  return malloc(size);
+  return domain_malloc(size, RT_ALLOC_CL_DATA);
 }
 
 void l1free(void *ptr)
 {
-  free(ptr);
+  domain_free(ptr, RT_ALLOC_CL_DATA);
 }
 
 int strcmp(const char *s1, const char *s2)
@@ -95,7 +116,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
 }
 
 size_t strlen(const char *str)
-{ 
+{
   const char *start = str;
 
   while (*str)
@@ -129,19 +150,90 @@ void *memset(void *m, int c, size_t n)
   return m;
 }
 
-void *memcpy(void *dst0, const void *src0, size_t len0)
-{
-  char *dst = (char *) dst0;
-  char *src = (char *) src0;
-
+void *memcpy(void *dst0, const void *src0, size_t len0) {
   void *save = dst0;
 
-  while (len0--)
-    {
+  char src_aligned = (((size_t) src0) & 3) == 0;
+  char dst_aligned = (((size_t) dst0) & 3) == 0;
+  char copy_full_words = (len0 & 3) == 0;
+
+  if (src_aligned && dst_aligned && copy_full_words) {
+    // all accesses are aligned => can copy full words
+    uint32_t *dst = (uint32_t *) dst0;
+    uint32_t *src = (uint32_t *) src0;
+
+    while (len0) {
       *dst++ = *src++;
+      len0 -= 4;
     }
+  } else {
+    // copy bytewise
+    char *dst = (char *) dst0;
+    char *src = (char *) src0;
+
+    while (len0) {
+      *dst++ = *src++;
+      len0--;
+    }
+  }
 
   return save;
+}
+
+void *memmove(void *d, const void *s, size_t n)
+{
+  char *dest = d;
+  const char *src  = s;
+
+  if ((size_t) (dest - src) < n) {
+    /*
+     * The <src> buffer overlaps with the start of the <dest> buffer.
+     * Copy backwards to prevent the premature corruption of <src>.
+     */
+
+    while (n > 0) {
+      n--;
+      dest[n] = src[n];
+    }
+  } else {
+    /* It is safe to perform a forward-copy */
+    while (n > 0) {
+      *dest = *src;
+      dest++;
+      src++;
+      n--;
+    }
+  }
+
+  return d;
+}
+
+char *strcpy(char *d, const char *s)
+{
+	char *dest = d;
+	while (*s != '\0') {
+		*d = *s;
+		d++;
+		s++;
+	}
+	*d = '\0';
+	return dest;
+}
+
+char *strcat(char *dest, const char *src)
+{
+	strcpy(dest + strlen(dest), src);
+	return dest;
+}
+
+char *strchr(const char *s, int c)
+{
+  char tmp = (char) c;
+
+  while ((*s != tmp) && (*s != '\0'))
+    s++;
+
+  return (*s == tmp) ? (char *) s : NULL;
 }
 
 void __rt_putc_debug_bridge(char c)
@@ -189,6 +281,13 @@ static void __rt_io_uart_wait_req(void *_req)
 
 static void __rt_io_uart_wait_pending()
 {
+  while(__rt_io_pending_flush)
+  {
+    __rt_io_unlock();
+    rt_event_yield(NULL);
+    __rt_io_lock();
+  }
+
   if (__rt_io_event_current)
   {
     if (rt_is_fc() || !rt_has_fc())
@@ -214,14 +313,38 @@ static void __rt_io_uart_wait_pending()
   }
 }
 
+static void __rt_io_end_of_flush(void *arg)
+{
+  hal_debug_struct_t *debug_struct = (hal_debug_struct_t *)arg;
+  __rt_io_pending_flush = 0;
+  debug_struct->putc_current = 0;
+}
+
 static void __attribute__((noinline)) __rt_io_uart_flush(hal_debug_struct_t *debug_struct)
 {
+  while(__rt_io_pending_flush)
+  {
+    __rt_io_unlock();
+    rt_event_yield(NULL);
+    __rt_io_lock();
+  }
+
   if (debug_struct->putc_current)
   {
     if (rt_is_fc() || !rt_has_fc())
     {
+      __rt_io_pending_flush = 1;
       rt_uart_write(_rt_io_uart, debug_struct->putc_buffer,
-        debug_struct->putc_current, NULL);
+        debug_struct->putc_current, rt_event_get(NULL, __rt_io_end_of_flush, debug_struct));
+
+      __rt_io_unlock();
+
+      while(__rt_io_pending_flush)
+      {
+        rt_event_yield(NULL);
+      }
+
+      __rt_io_lock();
     }
     else {
   #if defined(ARCHI_HAS_CLUSTER) && defined(ARCHI_HAS_FC)
@@ -229,10 +352,10 @@ static void __attribute__((noinline)) __rt_io_uart_flush(hal_debug_struct_t *deb
       rt_uart_cluster_write(_rt_io_uart, debug_struct->putc_buffer,
         debug_struct->putc_current, &req);
       rt_uart_cluster_wait(&req);
+      debug_struct->putc_current = 0;
   #endif
     }
 
-    debug_struct->putc_current = 0;
   }
 }
 
@@ -251,7 +374,7 @@ void __rt_putc_uart(char c)
   {
     __rt_io_uart_flush(debug_struct);
   }
-} 
+}
 #endif
 
 static void tfp_putc(void *data, char c)
@@ -319,6 +442,7 @@ static void __rt_io_unlock()
   }
 }
 
+#if 0
 int printf(const char *fmt, ...) {
 
   __rt_io_lock();
@@ -332,6 +456,8 @@ __rt_io_unlock();
 
   return 0;
 }
+
+#endif
 
 int puts(const char *s) {
 
@@ -353,26 +479,53 @@ __rt_io_unlock();
   return 0;
 }
 
-int putchar(int c) {
-  __rt_io_lock();
-
+int fputc_locked(int c, FILE *stream)
+{
   tfp_putc(NULL, c);
-
-  if (!hal_debug_struct_get()->use_internal_printf)
-  {
-    hal_debug_send_printf(hal_debug_struct_get());
-  }
-
-__rt_io_unlock();
 
   return c;
 }
 
+int fputc(int c, FILE *stream)
+{
+  int err;
+
+  __rt_io_lock();
+
+  err = fputc_locked(c, stream);
+
+  if (!hal_debug_struct_get()->use_internal_printf)
+  {
+    __rt_bridge_printf_flush();
+  }
+
+__rt_io_unlock();
+
+  return err;
+}
+
+int putchar(int c)
+{
+  return fputc(c, stdout);
+}
+
+int _prf_locked(int (*func)(), void *dest, char *format, va_list vargs)
+{
+  int err;
+
+  __rt_io_lock();
+
+  err =  _prf(func, dest, format, vargs);
+
+  __rt_io_unlock();
+
+  return err;
+}
 
 static void __attribute__((noreturn)) __wait_forever()
 {
   // TODO find a better solution. On some architectures or platforms
-  // the execution starts immediately and is stuck here as it is 
+  // the execution starts immediately and is stuck here as it is
   // impossible to force the core to leave clock-gating
 #if 0
 #if defined(ITC_VERSION)
@@ -392,7 +545,19 @@ static void __rt_exit_debug_bridge(int status)
   // Notify debug tools about the termination
   __rt_bridge_printf_flush();
   hal_debug_exit(hal_debug_struct_get(), status);
+
   __rt_bridge_send_notif();
+
+  hal_debug_struct_t *debug_struct = hal_debug_struct_get();
+
+  if (debug_struct->bridge.connected)
+  {
+    while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) != 7)
+    {
+    }
+
+    __rt_bridge_clear_notif();
+  }
 }
 
 
@@ -410,8 +575,8 @@ void exit(int status)
 
 void exit(int status)
 {
-  __rt_exit_debug_bridge(status);
   apb_soc_status_set(status);
+  __rt_exit_debug_bridge(status);
   __wait_forever();
 }
 
@@ -438,7 +603,7 @@ void exit(int status)
 #endif
 #if defined(ARCHI_CLUSTER_CTRL_ADDR)
   *(volatile int*)(ARCHI_CLUSTER_CTRL_ADDR) = 1;
-#endif  
+#endif
   __rt_exit_debug_bridge(status);
   __wait_forever();
 }
@@ -466,7 +631,7 @@ static int __rt_io_start(void *arg)
 
   conf.baudrate = rt_iodev_uart_baudrate();
 
-  __rt_event_init(&__rt_io_event, __rt_thread_current->sched);
+  __rt_event_init(&__rt_io_event, rt_event_internal_sched());
 
 #if defined(UDMA_VERSION)
   _rt_io_uart = __rt_uart_open(rt_iodev_uart_channel() + ARCHI_UDMA_UART_ID(0), &conf, NULL, NULL);
@@ -482,7 +647,7 @@ static int __rt_io_stop(void *arg)
   rt_trace(RT_TRACE_INIT, "[IO] Closing UART device for IO stream\n");
 
   // When shutting down the runtime, make sure we wait until all pending
-  // IO transfers are done. 
+  // IO transfers are done.
   __rt_io_uart_wait_pending();
 
   // Also close the uart driver to properly flush the uart
@@ -502,11 +667,13 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_io_init()
 #if defined(__RT_USE_UART)
   _rt_io_uart = NULL;
   __rt_io_event_current = NULL;
-  
+
   if (rt_iodev() == RT_IODEV_UART)
   {
     __rt_cbsys_add(RT_CBSYS_START, __rt_io_start, NULL);
     __rt_cbsys_add(RT_CBSYS_STOP, __rt_io_stop, NULL);
+    __rt_io_pending_flush = 0;
+    rt_event_alloc(NULL, 1);
   }
 #endif
 

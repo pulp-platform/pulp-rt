@@ -33,6 +33,14 @@
 #ifndef __RTIO_STDIO_H__
 #define __RTIO_STDIO_H__
 
+typedef int FILE;
+
+#define stdin  ((FILE *) 1)
+#define stdout ((FILE *) 2)
+#define stderr ((FILE *) 3)
+
+int puts(const char *s);
+
 int printf(const char *format, ...);
 
 int putchar(int c);
@@ -40,5 +48,7 @@ int putchar(int c);
 int puts(const char *s);
 
 int sprintf(char *str, const char *fmt, ...) ;
+
+int fputc(int c, FILE *stream);
 
 #endif

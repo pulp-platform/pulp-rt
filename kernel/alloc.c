@@ -30,16 +30,17 @@
  * limitations under the License.
  */
 
-/* 
+/*
  * Authors: Eric Flamand, GreenWaves Technologies (eric.flamand@greenwaves-technologies.com)
  *          Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
+#include "pmsis.h"
 #include "rt/rt_api.h"
 #include <string.h>
 #include <stdio.h>
 
-// Allocate at least 4 bytes to avoid misaligned accesses when parsing free blocks 
+// Allocate at least 4 bytes to avoid misaligned accesses when parsing free blocks
 // and actually 8 to fit free chunk header size and make sure a e free block to always have
 // at least the size of the header.
 // This also requires the initial chunk to be correctly aligned.
@@ -60,7 +61,9 @@ rt_alloc_t __rt_alloc_l2[__RT_NB_ALLOC_L2];
 #define ALIGN_UP(addr,size)   (((addr) + (size) - 1) & ~((size) - 1))
 #define ALIGN_DOWN(addr,size) ((addr) & ~((size) - 1))
 
+#ifndef Max
 #define Max(x, y) (((x)>(y))?(x):(y))
+#endif
 
 /*
   A semi general purpose memory allocator based on the assumption that when something is freed it's size is known.
@@ -101,9 +104,93 @@ void rt_user_alloc_dump(rt_alloc_t *a)
   printf("=============================================\n");
 }
 
+
+
+#ifdef ARCHI_MEMORY_POWER
+static __attribute__((noinline)) void __rt_alloc_account(rt_alloc_t *a, void *chunk, uint32_t size, int factor, uint32_t standby)
+{
+  uint32_t bank_size_log2 = a->bank_size_log2;
+  uint32_t bank_size = 1<<bank_size_log2;
+  uint32_t chunk_addr = ((uint32_t)chunk) - a->first_bank_addr;
+  uint32_t addr = ((uint32_t)chunk_addr) & ~(bank_size - 1);
+  uint32_t iter_size = addr + bank_size - ((uint32_t)chunk_addr);
+  uint32_t bank = addr >> bank_size_log2;
+  uint32_t banks_ctrl = 0;
+
+  if (iter_size > size)
+    iter_size = size;
+
+  while (size)
+  {
+    uint32_t *count = standby ? &a->ret_count[bank] : &a->pwd_count[bank];
+
+    if (factor == -1 && *count == bank_size)
+    {
+      banks_ctrl |= 1<<bank;
+    }
+    
+    *count += iter_size*factor;
+
+    if (*count == bank_size)
+    {
+      banks_ctrl |= 1<<bank;
+    }
+
+    addr += bank_size;
+    size -= iter_size;
+    iter_size = bank_size;
+    bank++;
+    if (iter_size > size)
+      iter_size = size;
+  }
+
+  if (banks_ctrl)
+    __rt_alloc_power_ctrl(banks_ctrl, factor == -1 ? 1 : 0, standby);
+}
+#endif
+
+static void __rt_alloc_account_alloc(rt_alloc_t *a, void *chunk, int size)
+{
+#ifdef ARCHI_MEMORY_POWER
+  if (a->track_pwd)
+  {
+    __rt_alloc_account(a, chunk, size, -1, 0);
+  }
+#endif
+}
+
+static void __rt_alloc_account_free(rt_alloc_t *a, void *chunk, int size)
+{
+#ifdef ARCHI_MEMORY_POWER
+  if (a->track_pwd)
+  {
+    __rt_alloc_account(a, chunk, size, 1, 0);
+  }
+#endif
+}
+
+void rt_user_alloc_conf(rt_alloc_t *a, void *chunk, int size, rt_alloc_conf_e conf)
+{
+#ifdef ARCHI_MEMORY_POWER
+  if (a->track_pwd)
+  {
+
+    if (conf == RT_ALLOC_CONF_POWER_RET || conf == RT_ALLOC_CONF_POWER_NON_RET)
+      __rt_alloc_account(a, chunk, size, conf == RT_ALLOC_CONF_POWER_RET ? 1 : -1, 1);
+    else
+      __rt_alloc_account(a, chunk, size, conf == RT_ALLOC_CONF_POWER_DOWN ? 1 : -1, 0);
+  }
+#endif
+}
+
+
+
 void rt_user_alloc_init(rt_alloc_t *a, void *_chunk, int size)
 {
   rt_alloc_chunk_t *chunk = (rt_alloc_chunk_t *)ALIGN_UP((int)_chunk, MIN_CHUNK_SIZE);
+#ifdef ARCHI_MEMORY_POWER
+  a->track_pwd = 0;
+#endif
   a->first_free = chunk;
   size = size - ((int)chunk - (int)_chunk);
   if (size > 0) {
@@ -115,7 +202,7 @@ void rt_user_alloc_init(rt_alloc_t *a, void *_chunk, int size)
 void *rt_user_alloc(rt_alloc_t *a, int size)
 {
   rt_trace(RT_TRACE_ALLOC, "Allocating memory chunk (alloc: %p, size: 0x%8x)\n", a, size);
-  
+
   rt_alloc_chunk_t *pt = a->first_free, *prev = 0;
 
   size = ALIGN_UP(size, MIN_CHUNK_SIZE);
@@ -127,18 +214,37 @@ void *rt_user_alloc(rt_alloc_t *a, int size)
       // Special case where the whole block disappears
       // This special case is interesting to support when we allocate aligned pages, to limit fragmentation
       if (prev) prev->next = pt->next; else a->first_free = pt->next;
+      rt_trace(RT_TRACE_ALLOC, "Allocated memory chunk (alloc: %p, base: %p)\n", a, pt);
+      // As this block was the full free block, the beginning of the block was already taken
+      // for the header and was accounted as allocated, so don't account it twice.
+      __rt_alloc_account_alloc(a, (void *)(((uint32_t)pt) + sizeof(rt_alloc_chunk_t)), size - sizeof(rt_alloc_chunk_t));
       return (void *)pt;
     } else {
       // The free block is bigger than needed
-      // Return the end of the block in order to just update the free block size
-      void *result = (void *)((char *)pt + pt->size - size);
-      pt->size = pt->size - size;
+      // Return the beginning of the block to be contiguous with statically allocated data
+      // and simplify memory power management
+      void *result = (void *)((char *)pt);
+      rt_alloc_chunk_t *new_pt = (rt_alloc_chunk_t *)((char *)pt + size);
+      new_pt->size = pt->size - size;
+      new_pt->next = pt->next;
+
+      if (prev)
+        prev->next = new_pt;
+      else
+        a->first_free = new_pt;
+
       rt_trace(RT_TRACE_ALLOC, "Allocated memory chunk (alloc: %p, base: %p)\n", a, result);
+      // Don't account the metadata which were in the newly allocated block as they were
+      // already accounted when the block was freed
+      __rt_alloc_account_alloc(a, (void *)((uint32_t)result+ sizeof(rt_alloc_chunk_t)), size - sizeof(rt_alloc_chunk_t));
+      // Instead account the metadata of the new free block
+      __rt_alloc_account_alloc(a, new_pt, sizeof(rt_alloc_chunk_t));
+
       return result;
     }
   } else {
     rt_trace(RT_TRACE_ALLOC, "Not enough memory to allocate\n");
-  
+
     //rt_warning("Not enough memory to allocate\n");
     return NULL;
   }
@@ -181,19 +287,22 @@ void __attribute__((noinline)) rt_user_free(rt_alloc_t *a, void *_chunk, int siz
 
 {
   rt_trace(RT_TRACE_ALLOC, "Freeing memory chunk (alloc: %p, base: %p, size: 0x%8x)\n", a, _chunk, size);
-  
+
   rt_alloc_chunk_t *chunk = (rt_alloc_chunk_t *)_chunk;
   rt_alloc_chunk_t *next = a->first_free, *prev = 0, *new;
   size = ALIGN_UP(size, MIN_CHUNK_SIZE);
 
   while (next && next < chunk) {
-    prev = next; next = next->next; 
+    prev = next; next = next->next;
   }
 
   if (((char *)chunk + size) == (char *)next) {
     /* Coalesce with next */
     chunk->size = size + next->size;
     chunk->next = next->next;
+    // The header in the next free was considered allocated, we now have to free it as it will
+    // stand in the one being freed.
+    __rt_alloc_account_free(a, next, sizeof(rt_alloc_chunk_t));
   } else {
     chunk->size = size;
     chunk->next = next;
@@ -204,12 +313,19 @@ void __attribute__((noinline)) rt_user_free(rt_alloc_t *a, void *_chunk, int siz
       /* Coalesce with previous */
       prev->size += chunk->size;
       prev->next = chunk->next;
+      // The metadata will stand in the previous chunk, we can account the whole chunk
+      __rt_alloc_account_free(a, _chunk, size);
     } else {
       prev->next = chunk;
+      // The metadata will stand in this block, we can account ony after the metadata
+      __rt_alloc_account_free(a, (void *)(((uint32_t)_chunk) + sizeof(rt_alloc_chunk_t)), size - sizeof(rt_alloc_chunk_t));
     }
   } else {
     a->first_free = chunk;
+    // The metadata will stand in this block, we can account ony after the metadata
+    __rt_alloc_account_free(a, (void *)(((uint32_t)_chunk) + sizeof(rt_alloc_chunk_t)), size - sizeof(rt_alloc_chunk_t));
   }
+
 }
 
 void *rt_alloc(rt_alloc_e flags, int size)
@@ -236,6 +352,40 @@ void *rt_alloc(rt_alloc_e flags, int size)
 #endif
   }
 }
+
+
+
+static rt_alloc_t *__rt_alloc_get(rt_alloc_e flags)
+{
+#if defined(ARCHI_HAS_L1)
+  if (flags >= RT_ALLOC_CL_DATA)
+    return rt_alloc_l1(flags - RT_ALLOC_CL_DATA);
+  else
+#endif
+#if defined(ARCHI_HAS_FC_TCDM)
+  if (flags == RT_ALLOC_FC_DATA)
+    return rt_alloc_fc_tcdm();
+  else
+#endif
+  {
+#ifdef __RT_ALLOC_L2_MULTI
+    return &__rt_alloc_l2[flags];
+#else
+    return rt_alloc_l2();
+#endif
+  }
+
+  return NULL;
+}
+
+
+
+void rt_alloc_conf(rt_alloc_e flags, void *chunk, int size, rt_alloc_conf_e conf)
+{
+  rt_user_alloc_conf(__rt_alloc_get(flags), chunk, size, conf);
+}
+
+
 
 void rt_free(rt_alloc_e flags, void *_chunk, int size)
 {
@@ -283,7 +433,7 @@ void *rt_alloc_align(rt_alloc_e flags, int size, int align)
 #else
     return rt_user_alloc_align(rt_alloc_l2(), size, align);
 #endif
-  } 
+  }
 }
 
 #if defined(ARCHI_HAS_L1)
@@ -326,7 +476,19 @@ void __rt_allocs_init()
 
   rt_trace(RT_TRACE_INIT, "Initializing L2 shared banks allocator (base: 0x%8x, size: 0x%8x)\n", (int)rt_l2_shared_base(), rt_l2_shared_size());
   rt_user_alloc_init(&__rt_alloc_l2[2], rt_l2_shared_base(), rt_l2_shared_size());
-
+#ifdef CONFIG_ALLOC_L2_PWD_NB_BANKS
+  __rt_alloc_l2[2].track_pwd = 1;
+  __rt_alloc_l2[2].pwd_count = rt_alloc(RT_ALLOC_FC_DATA, sizeof(int)*CONFIG_ALLOC_L2_PWD_NB_BANKS);
+  __rt_alloc_l2[2].ret_count = rt_alloc(RT_ALLOC_FC_DATA, sizeof(int)*CONFIG_ALLOC_L2_PWD_NB_BANKS);
+  for (int i=0; i<CONFIG_ALLOC_L2_PWD_NB_BANKS; i++)
+  {
+    __rt_alloc_l2[2].pwd_count[i] = 0;
+    __rt_alloc_l2[2].ret_count[i] = 0;
+  }
+  __rt_alloc_l2[2].bank_size_log2 = CONFIG_ALLOC_L2_PWD_BANK_SIZE_LOG2;
+  __rt_alloc_l2[2].first_bank_addr = ARCHI_L2_SHARED_ADDR;
+  __rt_alloc_account_free(&__rt_alloc_l2[2], rt_l2_shared_base() - sizeof(rt_alloc_chunk_t), rt_l2_shared_size() + sizeof(rt_alloc_chunk_t));
+#endif
 #else
   rt_trace(RT_TRACE_INIT, "Initializing L2 allocator (base: 0x%8x, size: 0x%8x)\n", (int)rt_l2_base(), rt_l2_size());
   rt_user_alloc_init(&__rt_alloc_l2[0], rt_l2_base(), rt_l2_size());
@@ -398,6 +560,36 @@ void rt_free_cluster(rt_alloc_e flags, void *chunk, int size, rt_free_req_t *req
   // as it stands inside the event request
   __rt_event_set_pending(&req->event);
   __rt_cluster_push_fc_event(&req->event);
+}
+
+void pi_cl_l2_malloc(int size, pi_cl_alloc_req_t *req)
+{
+  rt_alloc_cluster(RT_ALLOC_PERIPH, size, (rt_alloc_req_t *)req);
+}
+
+void pi_cl_l2_free(void *chunk, int size, pi_cl_free_req_t *req)
+{
+  rt_free_cluster(RT_ALLOC_PERIPH, chunk, size, (rt_free_req_t *)req);
+}
+
+void *pmsis_l1_malloc(uint32_t size)
+{
+  return rt_alloc(RT_ALLOC_CL_DATA, size);
+}
+
+void pmsis_l1_malloc_free(void *_chunk, int size)
+{
+  return rt_free(RT_ALLOC_CL_DATA, _chunk, size);
+}
+
+void *pmsis_l2_malloc(int size)
+{
+  return rt_alloc(RT_ALLOC_PERIPH, size);
+}
+
+void pmsis_l2_malloc_free(void *_chunk, int size)
+{
+  return rt_free(RT_ALLOC_PERIPH, _chunk, size);
 }
 
 

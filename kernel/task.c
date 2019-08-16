@@ -142,14 +142,24 @@ void rt_task_cluster_deinit(rt_task_cluster_t *cluster, rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
+  // Init now the counter to check that all cores has exited the loop, before
+  // they start accessing it
+  cluster->loc->nb_cores_done = cluster->nb_cores;
+  rt_compiler_barrier();
+
   // Notify all the cores to leave the task framework with a special value
   cluster->loc->__rt_task_first_fc_for_cl = (rt_task_t *)-1;
   rt_compiler_barrier();
   eu_evt_trig(eu_evt_trig_cluster_addr(cluster->cid, RT_CLUSTER_CALL_EVT), 0);
 
-  // Since the cores will just reexecute from scratch, we need to reinitialize
-  // the cluster driver
-  __rt_fc_cluster_data[cluster->cid].call_head = 0;
+  // Wait until they all leave the task code before freeing cluster struct as
+  // it may still be used
+  rt_irq_enable();
+  while(*(volatile int *)&cluster->loc->nb_cores_done != 0)
+  {
+    __rt_wait_for_event(1<<RT_FC_SYNC);
+  }
+  rt_irq_disable();
 
   // Now free all allocated resources
   if (cluster->free_stacks)
@@ -189,7 +199,7 @@ static void __rt_task_handle_end_of_task(void *_task)
   // At least this task won't be there anymore after we update, and maybe even
   // more tasks, which is not an issue, as we compare against the head.
   rt_task_t *current = cluster_loc->__rt_task_first_fc;
-  while (current && current != cluster_loc->__rt_task_first_fc_for_cl)
+  while (current && current->pending == 0)
   {
     current = current->next;
   }
@@ -226,7 +236,7 @@ void rt_task_fc_push(rt_task_cluster_t *cluster, rt_task_t *task, rt_event_t *ev
 
   // We need to execute some code after the task is done to update the queues.
   // To simplify allocation, we reuse user event.
-  rt_event_sched_t *sched = event == NULL ? NULL : event->sched;
+  rt_event_sched_t *sched = rt_event_internal_sched();
   __rt_event_save(call_event);
   __rt_init_event(call_event, sched, __rt_task_handle_end_of_task, (void *)task);
   __rt_event_set_pending(call_event);

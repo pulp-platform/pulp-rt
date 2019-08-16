@@ -22,7 +22,7 @@
 #include "archi/gvsoc/gvsoc.h"
 #endif
 
-#include "rt/rt_data.h"
+#include "data.h"
 #include "archi/pulp.h"
 #if defined(ITC_VERSION)
 #include "archi/itc/itc_v1.h"
@@ -46,6 +46,10 @@ __rt_pe_start:
 
 #endif
 
+    csrr    a0, 0xF14
+    andi    a1, a0, 0x1f
+    srli    a0, a0, 5
+    
     // Activate a few events
     li      t0, (1<<PULP_DISPATCH_EVENT) | (1<<PULP_HW_BAR_EVENT) | (1<<PULP_MUTEX_EVENT)
     li      t1, ARCHI_EU_DEMUX_ADDR
@@ -59,14 +63,11 @@ __rt_pe_start:
 #endif
 
     // Prepare few values that will be kept in saved registers to optimize the loop
-    la      s0, __rt_cluster_call
-    addi    s1, s0, RT_CLUSTER_CALL_T_SIZEOF * 2
-    mv      s2, s0
+    la      s0, __rt_cluster_pool
     li      s3, ARCHI_EU_DEMUX_ADDR
     li      s4, 1<<RT_CLUSTER_CALL_EVT
     la      s5, __rt_master_event
     la      s7, __rt_fc_cluster_data
-    lw      s7, 0(s7)
     li      t2, RT_FC_CLUSTER_DATA_T_SIZEOF
     mul     t2, t2, a0
     add     s7, s7, t2
@@ -90,6 +91,8 @@ __rt_pe_start:
 #endif
     j       __rt_master_loop
 
+
+
 __rt_master_event:
     beq     s6, x0, __rt_master_loop
 
@@ -107,10 +110,22 @@ __rt_push_event_to_fc_retry:
 
 
 __rt_master_loop:
+    // Check if a task is ready in the pool
+    lw      t3, 0(s0)
     // Check if a call is ready, e.g. if nb_pe is not zero
     // otherwise go to sleep
-    lw      t3, RT_CLUSTER_CALL_T_NB_PE(s0)
     beq     t3, x0, __rt_master_sleep
+
+__rt_master_loop_update_next:
+    lw      t4, RT_CLUSTER_TASK_NEXT(t3)
+    sw      x0, RT_CLUSTER_TASK_PENDING(t3)
+    sw      t4, 0(s0)
+
+    // Check again next pointer in case it was updated by the FC.
+    // If so, do it it again as this will ensure that either we see the new
+    // value or the FC sees our write
+    lw      t5, RT_CLUSTER_TASK_NEXT(t3)
+    bne     t4, t5, __rt_master_loop_update_next
 
 #ifdef __RT_USE_PROFILE
     li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
@@ -120,83 +135,65 @@ __rt_master_loop:
     ebreak
 #endif
 
-    // Reads entry point information
-    lw      a0, RT_CLUSTER_CALL_T_ARG(s0)
-    lw      t0, RT_CLUSTER_CALL_T_ENTRY(s0)
-    lw      sp, RT_CLUSTER_CALL_T_STACKS(s0)
-    lw      t1, RT_CLUSTER_CALL_T_M_STACK_SIZE(s0)
-    lw      t2, RT_CLUSTER_CALL_T_S_STACK_SIZE(s0)
-    lw      s6, RT_CLUSTER_CALL_T_EVENT(s0)
-    lw      t4, RT_CLUSTER_CALL_T_SCHED(s0)
-    sw      x0, RT_CLUSTER_CALL_T_NB_PE(s0)
-#ifndef ARCHI_NO_L1_TINY
-    sw      t4, %tiny(__rt_cluster_sched_current)(x0)
-#else
-    la      t5, __rt_cluster_sched_current
-    sw      t4, 0(t5)
+#ifdef __RT_USE_ASSERT
+    csrwi   0x7D0, 0
 #endif
+
+    // Reads entry point information
+    lw      a0, RT_CLUSTER_TASK_ARG(t3)
+    lw      t0, RT_CLUSTER_TASK_ENTRY(t3)
+    lw      sp, RT_CLUSTER_TASK_STACKS(t3)
+    lw      t1, RT_CLUSTER_TASK_STACK_SIZE(t3)
+    lw      t2, RT_CLUSTER_TASK_SLAVE_STACK_SIZE(t3)
+    lw      t5, RT_CLUSTER_TASK_CORE_MASK(t3)
+    lw      s6, RT_CLUSTER_TASK_COMPLETION_CALLBACK(t3)
+    lw      t6, RT_CLUSTER_TASK_NB_CORES(t3)
     mv      ra, s5
+
+    add     sp, sp, t1
+
+#ifdef ARCHI_NO_L1_TINY
+    la      t4, __rt_cluster_nb_active_pe
+    sw      t6, 0(t4)
+#else
+    sw      t6, %tiny(__rt_cluster_nb_active_pe)(x0)
+#endif
 
 #ifdef __RT_USE_ASSERT
     // Update stack checking information
-    la      t4, __rt_platform
-    lw      t4, 0(t4)
-    li      t5, 3
-    bne     t4, t5, __rt_no_stack_check
     beqz    t1, __rt_no_stack_check
     sub     t4, sp, t1
-    csrwi   0x7B0, 0
-    csrw    0x7B1, t4
-    csrw    0x7B2, sp
-    csrwi   0x7B0, 1
+    csrw    0x7D1, t4
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
 #endif
 
 __rt_no_stack_check:
     // Whatever the number of cores, we need to setup the barrier as the master code is compiled to use it
-    li      t4, 1
-#ifdef ARCHI_HAS_CC
-    addi    t3, t3, -1
-#endif
-    sll     t3, t4, t3
-    addi    t3, t3, -1
-#ifndef ARCHI_HAS_NO_DISPATCH
-    sw      t3, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
-#endif
-#ifndef ARCHI_HAS_NO_BARRIER
+    sw      t5, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
 #ifdef ARCHI_HAS_CC
     // When we have a cluster controller, don't configure the slave barrier
     // if we don't have have any slave
-    beqz    t3, __rt_master_no_slave_barrier
+    beqz    t5, __rt_master_no_slave_barrier
 #endif
-    sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
-    sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
+    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
+    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
 __rt_master_no_slave_barrier:
 #ifdef ARCHI_HAS_CC
-    ori     t3, t3, 1<<ARCHI_CC_CORE_ID
-    sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK + EU_BARRIER_SIZE(s3)
-    sw      t3, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK + EU_BARRIER_SIZE(s3)
-#endif
-#else
-    sw      t3, %tiny(__rt_barrier_wait_mask)(x0)
+    ori     t6, t5, 1<<ARCHI_CC_CORE_ID
+    sw      t6, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK + EU_BARRIER_SIZE(s3)
+    sw      t6, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK + EU_BARRIER_SIZE(s3)
 #endif
 
-#ifndef ARCHI_HAS_NO_DISPATCH
     // Set stack on slaves
     // For that we push first the function for setting stack, then the stack size and the base
-    p.beqimm t3, 1, __rt_master_loop_no_slave
+    p.beqimm t5, 0, __rt_master_loop_no_slave
     sw      s10, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
     sw      t2, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
     sw      sp, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
-#endif
 
 __rt_master_loop_no_slave:
 
-    // Update cluster call pointer
-    addi    s0, s0, RT_CLUSTER_CALL_T_SIZEOF
-    bne     s0, s1, __rt_master_no_reset
-    mv      s0, s2
-
-__rt_master_no_reset:
     // Call the entry point, this will directly come back to the master loop
     jr      t0
 
@@ -303,6 +300,10 @@ __rt_other_entry:
   .global __rt_set_slave_stack
 __rt_set_slave_stack:
 
+#ifdef __RT_USE_ASSERT
+    csrwi   0x7D0, 0
+#endif
+
     // Multiply the stack size by the core ID and add the stack base to get our stack
     p.elw   t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
 #ifdef ARCHI_HAS_CC
@@ -314,25 +315,14 @@ __rt_set_slave_stack:
     add     sp, t4, t0
 
 #ifdef __RT_USE_ASSERT
-    // Update stack checking information
-    la      t4, __rt_platform
-    lw      t4, 0(t4)
-    li      t5, 3
-    beq     t4, t5, __rt_slave_stack_check
-#endif
-    ret
-
-#ifdef __RT_USE_ASSERT
-__rt_slave_stack_check:
     beqz    a0, __rt_no_stack_check_end
     sub     t4, sp, a0
-    csrwi   0x7B0, 0
-    csrw    0x7B1, t4
-    csrw    0x7B2, sp
-    csrwi   0x7B0, 1
+    csrw    0x7D1, t4
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
+#endif
 __rt_no_stack_check_end:
     ret
-#endif
 
 #else
 

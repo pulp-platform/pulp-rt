@@ -30,16 +30,17 @@
 
 #else
 
-#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN || PULP_CHIP == CHIP_PULP || PULP_CHIP == CHIP_PULP_V1 || PULP_CHIP == CHIP_ARNOLD
+#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN || PULP_CHIP == CHIP_PULP || PULP_CHIP == CHIP_PULP_V1 || PULP_CHIP == CHIP_ARNOLD || PULP_CHIP == CHIP_VEGA
 
-#define __RT_FREQ_DOMAIN_FC 0
+#define __RT_FREQ_DOMAIN_FC 1
 #define __RT_FREQ_DOMAIN_CL 2
-#define __RT_FREQ_DOMAIN_PERIPH 1
+#define __RT_FREQ_DOMAIN_PERIPH 0
 #define RT_FREQ_NB_DOMAIN 3
 
 #elif PULP_CHIP == CHIP_PULPISSIMO || PULP_CHIP == CHIP_PULPISSIMO_V1
 
 #define __RT_FREQ_DOMAIN_FC 0
+// TODO it is just defined here to avoid compilation issue
 #define __RT_FREQ_DOMAIN_CL 2
 #define __RT_FREQ_DOMAIN_PERIPH 1
 #define RT_FREQ_NB_DOMAIN 2
@@ -258,6 +259,10 @@ static inline int rt_freq_set(rt_freq_domain_e domain, unsigned int freq);
   #define __RT_FLL_CL 2
   #define __RT_FLL_PERIPH 1
   #define __RT_FLL_FC 0
+  #elif PULP_CHIP == CHIP_VEGA
+  #define __RT_FLL_PERIPH 0
+  #define __RT_FLL_FC     1
+  #define __RT_FLL_CL     2
   #else
   #define __RT_FLL_FC     0
   #define __RT_FLL_PERIPH 0

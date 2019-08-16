@@ -79,6 +79,7 @@ __rt_fc_socevents_no_udma:
   // SOC event status register
   //
 
+  .global __rt_fc_socevents_register
 __rt_fc_socevents_register:
   // If the event is not handled, store it in the soc event status mask
   srli    x11, x10, 5
@@ -118,6 +119,7 @@ __rt_fc_socevents_handler_exit:
 #ifdef RTC_VERSION
 rtc_event_handler:
   lw    x11, __rtc_handler
+  beq   x11, x0, __rt_fc_socevents_handler_exit
   la    x9, __rt_fc_socevents_handler_exit
   j   __rt_event_enqueue
 #endif

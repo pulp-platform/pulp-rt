@@ -22,6 +22,8 @@
 #include "rt/rt_api.h"
 #include "archi/pulp.h"
 
+int pmsis_exit_value;
+
 typedef void (*fptr)(void);
 
 static fptr ctor_list[1] __attribute__((section(".ctors.start"))) = { (fptr) -1 };
@@ -112,8 +114,7 @@ void __rt_init()
 
   if (rt_is_fc()) {
 #if defined(ARCHI_FC_HAS_ICACHE)
-    // Enable instruction cache, initialize all memories
-    enable_all_icache_banks();
+    icache_enable(ARCHI_FC_ICACHE_ADDR);
 #endif
   } else {
 #if defined(ARCHI_HAS_CLUSTER)
@@ -168,6 +169,11 @@ error:
 
 void __rt_deinit()
 {
+  if (rt_platform() == ARCHI_PLATFORM_GVSOC)
+  {
+    cpu_stack_check_disable();
+  }
+
 #ifndef __ariane__
 
   // Stop all modules
@@ -320,3 +326,9 @@ static int __rt_check_clusters_start()
 }
 
 #endif
+
+
+void pi_open_from_conf(struct pi_device *device, void *conf)
+{
+  device->config = conf;
+}

@@ -294,6 +294,8 @@ void rt_free(rt_alloc_e flags, void *chunk, int size);
  */
 void *rt_alloc_align(rt_alloc_e flags, int size, int align);
 
+
+
 //!@}
 
 /**        
@@ -328,7 +330,7 @@ void *rt_alloc_align(rt_alloc_e flags, int size, int align);
  * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
  * or through a memory allocator.
  */
-typedef struct rt_alloc_req_s rt_alloc_req_t ;
+typedef struct pi_cl_alloc_req_s rt_alloc_req_t ;
 
 
 /** \brief Free request structure.
@@ -338,7 +340,7 @@ typedef struct rt_alloc_req_s rt_alloc_req_t ;
  * It can be instantiated as a normal variable, for example as a global variable, a local one on the stack,
  * or through a memory allocator.
  */
-typedef struct rt_free_req_s rt_free_req_t ;
+typedef struct pi_cl_free_req_s rt_free_req_t ;
 
 
 
@@ -391,6 +393,16 @@ static inline void rt_free_cluster_wait(rt_free_req_t *req);
 
 
 /// @cond IMPLEM
+
+// TODO experimental feature, integrate it into the visible API once it is well tested
+typedef enum {
+  RT_ALLOC_CONF_POWER_DOWN = 1,
+  RT_ALLOC_CONF_POWER_UP = 2,
+  RT_ALLOC_CONF_POWER_RET = 3,
+  RT_ALLOC_CONF_POWER_NON_RET = 4
+} rt_alloc_conf_e;
+
+void rt_alloc_conf(rt_alloc_e flags, void *chunk, int size, rt_alloc_conf_e conf);
 
 #if defined(ARCHI_HAS_L2)
 #ifdef __RT_ALLOC_L2_MULTI
@@ -473,23 +485,6 @@ void __rt_allocs_init();
 #include "hal/pulp.h"
 
 void __rt_alloc_cluster_req(void *req);
-
-static inline void *rt_alloc_cluster_wait(rt_alloc_req_t *req)
-{
-	while((*(volatile char *)&req->done) == 0)
-	{
-		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
-	}
-	return req->result;
-}
-
-static inline void rt_free_cluster_wait(rt_free_req_t *req)
-{
-	while((*(volatile char *)&req->done) == 0)
-	{
-		eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
-	}
-}
 
 #endif
 

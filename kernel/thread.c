@@ -41,10 +41,9 @@ static void __rt_thread_init(rt_thread_t *thread, void *(*entry)(void *), void *
   thread->u.regs.s0 = (int)entry;
   thread->u.regs.s1 = (int)arg;
   thread->u.regs.s2 = (int)rt_thread_exit;
-  thread->sched = &__rt_sched;
   thread->state = RT_THREAD_STATE_OTHER;
   __rt_event_init(&thread->event, &__rt_sched);
-  thread->event.next = __rt_first_free;
+  thread->event.implem.next = __rt_first_free;
   __rt_first_free = &thread->event;
 }
 

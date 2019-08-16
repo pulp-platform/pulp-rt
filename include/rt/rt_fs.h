@@ -34,8 +34,6 @@
 #define __RT_RT_READ_FS_H__
 
 
-#include "rt/rt_api.h"
-
 
 
 /**

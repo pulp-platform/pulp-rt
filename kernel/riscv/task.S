@@ -46,7 +46,6 @@ __rt_task_loop_entry:
     and     s5, s5, 0x1f
     srli    s6, s5, 5
     la      s7, __rt_fc_cluster_data
-    lw      s7, 0(s7)
     li      t2, RT_FC_CLUSTER_DATA_T_SIZEOF
     mul     t2, t2, s6
     add     s7, s7, t2
@@ -59,14 +58,21 @@ __rt_task_loop_entry:
     li      s8, 1
 #endif
 
-    lw      t0, 4(a0)
+    lw      s11, 4(a0)
     lw      sp, 0(a0)
     addi    t1, s5, 1
-    mul     t0, t0, t1
+    mul     t0, s11, t1
     add     sp, sp, t0
     mv      s10, sp
-    addi    s11, s2, RT_CLUSTER_CALL_EVT<<2
     mv      s5, ra
+    sub     s11, sp, s11
+
+#ifdef __RT_USE_ASSERT
+    // Activate global stack checking information
+    csrw    0x7D1, s11
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
+#endif
 
     j       __rt_task_loop
 
@@ -100,6 +106,7 @@ __rt_task_fc:
     li      t5, -1
     beq     a0, t5, __rt_task_exit
     lb      a1, RT_TASK_T_NB_CORES(a0)
+    sb      x0, RT_TASK_T_PENDING(a0)
     bnez    a1, __rt_task_handle_from_fc_mc
 
 
@@ -113,6 +120,12 @@ __rt_task_handle_from_fc:
     lw      t1, RT_TASK_T_NEXT(a0)
     lw      t2, RT_TASK_T_ENTRY(a0)
     sw      t1, 0(t6)
+
+    // Check again next pointer in case it was updated by the FC.
+    // If so, do it it again as this will ensure that either we see the new
+    // value or the FC sees our write
+    lw      t3, RT_TASK_T_NEXT(a0)
+    bne     t1, t3, __rt_task_handle_from_fc
 
     sw      x0, EU_MUTEX_DEMUX_OFFSET(s2)
 
@@ -152,7 +165,9 @@ __rt_task_cl_end:
     li      t2, 1
     sw      t2, RT_TASK_T_EVENT(s6)
 
-    sw      x0, EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT(s11)
+
+    addi    t6, s2, RT_CLUSTER_CALL_EVT<<2
+    sw      x0, EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT(t6)
 
 
     j __rt_task_loop
@@ -164,20 +179,23 @@ __rt_task_handle_from_fc_stack:
 
 #ifdef __RT_USE_ASSERT
     // Update stack checking information
-    la      t6, __rt_platform
     lh      t4, RT_TASK_T_STACK_SIZE(s6)
-    lw      t6, 0(t6)
-    li      t1, 3
-    bne     t6, t1, __rt_task_handle_from_fc_stack_no_check
     sub     t6, sp, t4
-    csrwi   0x7B0, 0
-    csrw    0x7B1, t6
-    csrw    0x7B2, sp
-    csrwi   0x7B0, 1
+    csrwi   0x7D0, 0
+    csrw    0x7D1, t6
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
 #endif
 
-__rt_task_handle_from_fc_stack_no_check:
     jalr    ra, t2
+
+#ifdef __RT_USE_ASSERT
+    // Reactivate global stack checking
+    csrwi   0x7D0, 0
+    csrw    0x7D1, s11
+    csrw    0x7D2, s10
+    csrwi   0x7D0, 1
+#endif
 
     mv      sp, s10
 
@@ -203,8 +221,15 @@ __rt_task_handle_from_fc_mc:
     lw      t2, RT_TASK_T_ENTRY(a0)
 
     bnez    a1, __rt_task_fc_mc_no_dequeue
+  
+__rt_task_handle_from_fc_mc_retry:
     lw      t1, RT_TASK_T_NEXT(a0)
     sw      t1, 0(t6)
+    // Check again next pointer in case it was updated by the FC.
+    // If so, do it it again as this will ensure that either we see the new
+    // value or the FC sees our write
+    lw      t3, RT_TASK_T_NEXT(a0)
+    bne     t1, t3, __rt_task_handle_from_fc
 
 __rt_task_fc_mc_no_dequeue:
     addi    t3, a1, -1
@@ -240,19 +265,22 @@ __rt_task_fc_mc_stack:
 
 #ifdef __RT_USE_ASSERT
     // Update stack checking information
-    la      t6, __rt_platform
-    lw      t6, 0(t6)
-    li      t1, 3
-    bne     t6, t1, __rt_task_fc_mc_stack_no_check
     sub     t6, sp, t4
-    csrwi   0x7B0, 0
-    csrw    0x7B1, t6
-    csrw    0x7B2, sp
-    csrwi   0x7B0, 1
+    csrwi   0x7D0, 0
+    csrw    0x7D1, t6
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
 #endif
 
-__rt_task_fc_mc_stack_no_check:
     jalr    ra, t2
+
+#ifdef __RT_USE_ASSERT
+    // Reactivate global stack checking
+    csrwi   0x7D0, 0
+    csrw    0x7D1, s11
+    csrw    0x7D2, s10
+    csrwi   0x7D0, 1
+#endif
 
     mv      sp, s10
 
@@ -260,9 +288,22 @@ __rt_task_fc_mc_stack_no_check:
 
     j       __rt_task_fc_mc_end
 
-#endif
-
 __rt_task_exit:
+    lw      t0, 12(s0)
+    addi    t0, t0, -1
+    sw      t0, 12(s0)
+
+#if defined(ITC_VERSION)
+    li      t2, ARCHI_FC_ITC_ADDR + ITC_STATUS_SET_OFFSET
+    li      t1, 1<<RT_FC_SYNC
+#else
+    li      t2, ARCHI_FC_GLOBAL_ADDR + ARCHI_FC_PERIPHERALS_OFFSET + ARCHI_FC_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (RT_FC_SYNC << 2)
+    li      t1, 1
+#endif
+    sw      t1, 0(t2)
+
     sw      x0, EU_MUTEX_DEMUX_OFFSET(s2)
     la      t1, _entry
     jr      t1
+
+#endif

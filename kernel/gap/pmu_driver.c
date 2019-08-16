@@ -201,7 +201,7 @@ static void PMU_ChangeDCDCSetting(PMU_RegulatorStateT DCDC_OperPoint, unsigned i
   unsigned int *ConfigReg = (unsigned int *) PMU_DCDC_CONFIG_REG;
   *ConfigReg = __builtin_bitinsert_r(*ConfigReg, Value, DCDC_RANGE, ToHWDCDC_Pos[DCDC_OperPoint]);
 }
-void __rt_pmu_cluster_power_down()
+void __rt_pmu_cluster_power_down(rt_event_t *event, int *pending)
 
 {
   if (rt_platform() == ARCHI_PLATFORM_FPGA) return;
@@ -236,7 +236,7 @@ void __rt_pmu_cluster_power_down()
 
 void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState);
 
-int __rt_pmu_cluster_power_up() // unsigned int ClusterFreq)
+int __rt_pmu_cluster_power_up(rt_event_t *event, int *pending) // unsigned int ClusterFreq)
 {
   if (CLUSTER_STATE(PMUState.State) == CLUSTER_OFF)
   {
@@ -429,11 +429,13 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
   } else {
     PMURetentionState.Fields.BootMode = BOOT_FROM_ROM;
     PMURetentionState.Fields.BootType = DEEP_SLEEP_BOOT;
+    //PMURetentionState.Fields.BootType = FAST_DEEP_SLEEP_BOOT;
   }
   PMURetentionState.Fields.WakeupState = REGULATOR_STATE(WakeUpState);
   PMURetentionState.Fields.ClusterWakeUpState = CLUSTER_STATE(WakeUpState);
 
   PMURetentionState.Fields.L2Retention = 0xF;
+  //PMURetentionState.Fields.FllSoCRetention = 1;
 
   PMUState.State = PMUState.State & 0x6; // Clear cluster on in case since at wake up it will not be on
   SetRetentiveState(PMURetentionState.Raw);
@@ -500,7 +502,7 @@ void FinalizeInitPMUDriver()
   PMURetentionState.Raw = GetRetentiveState();
   if (PMURetentionState.Fields.BootType != COLD_BOOT && PMURetentionState.Fields.ClusterWakeUpState) {
           // ChangePowerSystemState(POWER_SYSTEM_STATE(PMURetentionState.Fields.WakeupState, PMURetentionState.Fields.ClusterWakeUpState), 0);
-    __rt_pmu_cluster_power_up();
+    __rt_pmu_cluster_power_up(NULL, NULL);
     if (PMU_ClusterIsRunning() && PMURetentionState.Fields.FllClusterRetention) InitOneFll(FLL_CLUSTER, 1);
   }
 }
@@ -668,6 +670,8 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
   SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
 #endif
 
+#if PULP_CHIP == CHIP_GAP
+
 /* Return to close loop mode and give gain to feedback loop */
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_GAIN);
 
@@ -679,9 +683,8 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
 #if 1
       /* Check FLL converge by compare status register with multiply factor */
 
-  fll_reg_conf2_t fll_conf2;
-  fll_conf2.raw = hal_fll_conf_reg2_get(Fll);
-  int tolerance = fll_conf2.lock_tolerance;
+  // We set tolerance to Mult/20 to get a precision of 5% against specified freq
+  int tolerance = Mult / 20;
 
   do {
     int mult_factor_diff = hal_fll_status_reg_get(Fll) - Mult;
@@ -713,6 +716,18 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
           SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
           } 
   SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
+
+#else
+
+  Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT
+  Config.ConfigReg1.MultFactor = Mult;
+  Config.ConfigReg1.ClockOutDivider = Div;
+  SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
+
+  FllsFrequency[Fll] = SetFrequency;
+  PMUState.Frequency[Fll] = SetFrequency;
+
+#endif
 
   if (Fll == FLL_SOC)
     __rt_bridge_set_available();
@@ -758,6 +773,8 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
       SetFllConfiguration(WhichFll, FLL_INTEGRATOR, (unsigned int) Config.Raw);
     }
 
+#if PULP_CHIP == CHIP_GAP
+
     /* Lock Fll */
     // Config.Raw = FLL_CONFIG1_DEF_LOCK;
     Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT 
@@ -768,9 +785,8 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
 
 #if 1
 
-  fll_reg_conf2_t fll_conf2;
-  fll_conf2.raw = hal_fll_conf_reg2_get(WhichFll);
-  int tolerance = fll_conf2.lock_tolerance;
+  // We set tolerance to Mult/20 to get a precision of 5% against specified freq
+  int tolerance = Mult/20;
 
   do {
     int mult_factor_diff = hal_fll_status_reg_get(WhichFll) - Mult;
@@ -799,6 +815,21 @@ void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     PMUState.Frequency[WhichFll] = SetFrequency;
 
     SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
+
+#else
+
+    /* Lock Fll */
+    Config.Raw = FLL_CONFIG1_DEF_LOCK;
+    SetFrequency = SetFllMultDivFactors(50000000, &Mult, &Div);
+    Config.ConfigReg1.MultFactor = Mult;
+    Config.ConfigReg1.ClockOutDivider = Div;
+    SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
+
+    FllsFrequency[WhichFll] = SetFrequency;
+    PMUState.Frequency[WhichFll] = SetFrequency;
+
+#endif
+
   }
 }
 

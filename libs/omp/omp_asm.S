@@ -18,6 +18,8 @@
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
+ #include <archi/pulp.h>
+
   .global GOMP_parallel
 GOMP_parallel:   
   //c.bnez    a2, GOMP_parallel_notzero
@@ -33,11 +35,18 @@ GOMP_parallel_do:
   mv      a0, a1
   jalr      ra, a2
   lw        ra, %tiny(parallelTemp0)(x0)
+  lui       t0, 0x204000 >> 12
+#ifdef ARCHI_HAS_CC
+  // When having a cluster controller, the fork is using barrier 1 to
+  // sync all slaves.
+  p.elw     x0, 0x23c(t0)
+#else
   p.elw     x0, 0x21c(t0)
+#endif
   //c.jr      ra
   jr      ra
 
 GOMP_parallel_notzero:
-  la        t0, __NB_ACTIVE_PE
+  li        t0, ARCHI_CLUSTER_NB_PE
   beq       a2, t0, GOMP_parallel_do
   j partialParallelRegion

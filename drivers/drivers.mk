@@ -12,46 +12,21 @@ endif
 endif
 
 
-# SPIM
+# UDMA
 
-ifeq '$(CONFIG_SPIM_ENABLED)' '1'
-ifneq '$(soc/spi_master)' ''
-PULP_LIB_FC_SRCS_rt += drivers/spim/spim-v0.c
-endif
-
-ifneq '$(udma/spim)' ''
-PULP_LIB_FC_SRCS_rt += drivers/spim/spim-v$(udma/spim/version).c drivers/spim/spiflash-v$(udma/spim/version).c
-endif
+ifneq '$(udma/version)' ''
+PULP_LIB_FC_SRCS_rt     += drivers/udma/udma-v$(udma/archi).c
+PULP_LIB_FC_ASM_SRCS_rt += drivers/udma/udma-v$(udma/archi)_asm.S
 endif
 
 
 # HYPER
 
 ifeq '$(CONFIG_HYPER_ENABLED)' '1'
-ifneq '$(udma/hyper)' ''
-PULP_LIB_FC_SRCS_rt += drivers/hyper/hyperram-v$(udma/hyper/version).c drivers/hyper/hyperflash-v$(udma/hyper/version).c
-endif
-endif
-
-
-# UART
-
-ifeq '$(CONFIG_UART_ENABLED)' '1'
-ifneq '$(udma/uart)' ''
-PULP_LIB_FC_SRCS_rt += drivers/uart/uart.c
-endif
-
-ifneq '$(soc/apb_uart)' ''
-PULP_LIB_FC_SRCS_rt += drivers/uart/uart-v0.c
-endif
-endif
-
-
-# I2S
-
-ifeq '$(CONFIG_I2S_ENABLED)' '1'
-ifneq '$(udma/i2s/version)' ''
-PULP_LIB_FC_SRCS_rt += drivers/i2s/i2s-v$(udma/i2s/version).c
+ifneq '$(udma/hyper/version)' ''
+PULP_CFLAGS += -D__RT_HYPER_COPY_ASM=1
+PULP_LIB_FC_SRCS_rt += drivers/hyper/hyperram-v$(udma/hyper/version).c
+PULP_LIB_FC_ASM_SRCS_rt += drivers/hyper/hyperram-v$(udma/hyper/version)_asm.S
 endif
 endif
 
@@ -59,8 +34,9 @@ endif
 # CAM
 
 ifeq '$(CONFIG_CAM_ENABLED)' '1'
-ifneq '$(udma/cpi)' ''
-PULP_LIB_FC_SRCS_rt += drivers/camera/himax.c drivers/camera/ov7670.c drivers/camera/camera.c
+ifneq '$(udma/cpi/version)' ''
+PULP_CFLAGS += -D__RT_CPI_COPY_ASM=1
+PULP_LIB_FC_SRCS_rt += drivers/cpi/cpi-v1.c
 endif
 endif
 
@@ -69,51 +45,53 @@ endif
 
 ifeq '$(CONFIG_I2C_ENABLED)' '1'
 ifneq '$(udma/i2c/version)' ''
-PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c-v$(udma/i2c/version).c
-PULP_LIB_FC_SRCS_rt += drivers/i2c/eeprom.c
+PULP_CFLAGS += -D__RT_I2C_COPY_ASM=1
+PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c-v$(udma/i2c/version).c drivers/i2c/i2c-v$(udma/i2c/version)_asm.c
+endif
+endif
+
+# PWM
+
+ifeq '$(pulp_chip_family)' 'gap'
+ifeq '$(CONFIG_PWM_ENABLED)' '1'
+PULP_LIB_FC_CFLAGS += -DRT_CONFIG_PWM_ENABLED
+PULP_LIB_FC_SRCS_rt += drivers/pwm/pwm.c
+PULP_LIB_FC_ASM_SRCS_rt += drivers/pwm/pwm_asm.S
 endif
 endif
 
 
-# RTC
 
-ifeq '$(CONFIG_RTC_ENABLED)' '1'
-PULP_LIB_FC_CFLAGS += -DRT_CONFIG_RTC_ENABLED
-ifneq '$(rtc)' ''
-ifneq '$(rtc/version)' '1'
-PULP_LIB_FC_SRCS_rt += drivers/rtc/rtc_v$(rtc/version).c
-PULP_LIB_FC_ASM_SRCS_rt += drivers/rtc/rtc_v$(rtc/version)_asm.S
-else
-ifneq '$(rtc)' ''
-PULP_LIB_FC_SRCS_rt += drivers/dolphin/rtc.c
-endif
-endif
+# SPIM
+
+ifeq '$(CONFIG_SPIM_ENABLED)' '1'
+ifneq '$(udma/spim/version)' ''
+PULP_CFLAGS += -D__RT_SPIM_COPY_ASM=1
+PULP_LIB_FC_SRCS_rt += drivers/spi/spim-v$(udma/spim/version).c
+PULP_LIB_FC_ASM_SRCS_rt += drivers/spi/spim-v$(udma/spim/version)_asm.S
 endif
 endif
 
 
 # GPIO
 
+ifeq '$(pulp_chip_family)' 'gap'
 ifeq '$(CONFIG_GPIO_ENABLED)' '1'
-PULP_LIB_FC_CFLAGS += -DRT_CONFIG_GPIO_ENABLED
+PULP_FC_CFLAGS += -DRT_CONFIG_GPIO_ENABLED
 ifneq '$(gpio/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/gpio/gpio-v$(gpio/version).c
-ifeq '$(gpio/version)' '2'
-PULP_LIB_FC_ASM_SRCS_rt += kernel/riscv/gpio.S
+#PULP_LIB_FC_ASM_SRCS_rt += drivers/gpio/gpio-v$(gpio/version)_asm.S
 endif
 endif
-
-ifeq '$(pulp_chip_family)' 'usoc_v1'
-PULP_LIB_FC_SRCS_rt += kernel/usoc_v1/gpio.c
-endif
-
 endif
 
 
 
+# UART
 
-
-
-ifeq '$(CONFIG_FLASH_FS_ENABLED)' '1'
-PULP_LIB_FC_SRCS_rt += drivers/flash.c drivers/read_fs.c
+ifeq '$(CONFIG_UART_ENABLED)' '1'
+ifneq '$(udma/uart/version)' ''
+PULP_LIB_FC_SRCS_rt += drivers/uart/uart.c
 endif
+endif
+

@@ -14,125 +14,149 @@
  * limitations under the License.
  */
 
-#include "rt/rt_api.h"
+#include "pmsis.h"
 
-RT_FC_TINY_DATA uint32_t __rt_gpio_status;
-RT_FC_TINY_DATA rt_event_t *__rt_gpio_events[32];
-RT_FC_TINY_DATA uint32_t __rt_gpio_active_events;
+#define NB_GPIO_PORT ((ARCHI_NB_GPIO+31)/32)
 
-extern void __rt_gpio_handler();
+extern RT_FC_TINY_DATA uint32_t __rt_gpio_status;
 
-
-void rt_gpio_init(uint8_t group, int gpio)
+typedef struct 
 {
+  int port;
+} pi_gpio_t;
+
+static pi_gpio_t __rt_gpio[NB_GPIO_PORT];
+
+
+
+void pi_gpio_conf_init(struct pi_gpio_conf *conf)
+{
+  conf->port = 0;
 }
 
-void rt_gpio_deinit(uint8_t group, int gpio)
-{
-  rt_gpio_set_sensitivity(group, gpio, RT_GPIO_SENSITIVITY_NONE);
-  rt_gpio_set_event(group, gpio, NULL);
-}
 
-void rt_gpio_set_sensitivity(uint8_t group, uint8_t gpio, rt_gpio_sensitivity_e sensitivity)
+
+int pi_gpio_open(struct pi_device *device)
 {
   int irq = rt_irq_disable();
-  int inten = sensitivity != RT_GPIO_SENSITIVITY_NONE;
-  hal_gpio_inten_set((hal_gpio_inten_get() & ~(1<<gpio)) | (inten << gpio));
-  if (!inten) return;
-  int inttype = ARCHI_GPIO_INTTYPE_NO(gpio);
-  int mode =
-    sensitivity == RT_GPIO_SENSITIVITY_RISE ? ARCHI_GPIO_INTTYPE_RISE : 
-    sensitivity == RT_GPIO_SENSITIVITY_FALL ? ARCHI_GPIO_INTTYPE_FALL :
-    ARCHI_GPIO_INTTYPE_RISE_AND_FALL;
-  uint32_t prev = hal_gpio_inttype_get(inttype) & ~(((1<<ARCHI_GPIO_INTTYPE_SIZE) - 1) << ARCHI_GPIO_INTTYPE_BIT(gpio));
-  hal_gpio_inttype_set(inttype, prev | (mode << ARCHI_GPIO_INTTYPE_BIT(gpio)));
+
+  struct pi_gpio_conf *conf = (struct pi_gpio_conf *)device->config;
+
+  if (conf->port >= NB_GPIO_PORT)
+    goto error;
+
+  pi_gpio_t *gpio = &__rt_gpio[conf->port];
+
+  device->data = (void *)gpio;
+
+  gpio->port = conf->port;
+
   rt_irq_restore(irq);
+
+  return 0;
+
+error:
+  rt_irq_restore(irq);
+  return -1;
 }
 
-void rt_gpio_set_event(uint8_t group, uint8_t gpio, rt_event_t *event)
+
+int pi_gpio_pin_configure(struct pi_device *device, int pin, pi_gpio_flags_e flags)
+{
+  return pi_gpio_mask_configure(device, 1<<pin, flags);
+}
+
+int pi_gpio_pin_write(struct pi_device *device, int pin, uint32_t value)
 {
   int irq = rt_irq_disable();
-  __rt_gpio_events[gpio] = event;
-  if (event)
-    __rt_gpio_active_events |= 1 << gpio;
+  hal_gpio_set_pin_value(pin, value);
+  rt_irq_restore(irq);
+  return 0;
+}
+
+int pi_gpio_pin_read(struct pi_device *device, int pin, uint32_t *value)
+{
+  *value = (hal_gpio_get_value() >> pin) & 1;
+  return 0;
+}
+
+int pi_gpio_pin_task_add(struct pi_device *device, int pin, pi_task_t *task, pi_gpio_notif_e flags)
+{
+  return 0;
+}
+
+int pi_gpio_pin_task_remove(struct pi_device *device, int pin)
+{
+  return 0;
+}
+
+int pi_gpio_mask_configure(struct pi_device *device, uint32_t mask, pi_gpio_flags_e flags)
+{
+  int irq = rt_irq_disable();
+  int is_out = flags & PI_GPIO_OUTPUT;
+  hal_gpio_set_dir(mask, is_out);
+
+  if (is_out)
+    hal_gpio_en_set(hal_gpio_en_get() & ~mask);
   else
-    __rt_gpio_active_events &= ~(1 << gpio);
+    hal_gpio_en_set(hal_gpio_en_get() | mask);
+
   rt_irq_restore(irq);
-}
-
-
-
-void rt_gpio_wait(uint8_t group, uint8_t gpio)
-{
-  int irq = rt_irq_disable();
-  while(!(__rt_gpio_status & (1<<gpio)))
-  {
-    __rt_event_yield(NULL);
-  }
-  __rt_gpio_status &= ~(1<<gpio);
-  rt_irq_restore(irq);
-}
-
-
-
-void rt_gpio_clear(uint8_t group, uint8_t gpio)
-{
-  int irq = rt_irq_disable();
-  __rt_gpio_status &= ~(1<<gpio);
-  rt_irq_restore(irq);
-}
-
-
-
-int rt_gpio_configure(uint8_t group, uint32_t mask, rt_gpio_conf_e flags)
-{
-#if PULP_CHIP_FAMILY == CHIP_GAP
-
-  int strength = (flags >> __RT_GPIO_STRENGTH_BIT) & 3;
-  int pull = (flags >> __RT_GPIO_PULL_BIT) & 3;
-
-  while (mask)
-  {
-    int gpio = __FL1(mask);
-
-    int reg_id = ARCHI_GPIO_PADCFG_REG(gpio);
-    int group = ARCHI_GPIO_PADCFG_GROUP(gpio);
-    gpio_reg_padcfg_t reg = { .raw=gpio_padcfg_get(reg_id) };
-
-    if (strength)
-    {
-      reg.pin[group].strength = strength >> 1;
-    }
-
-    if (pull)
-      reg.pin[group].pull = pull >> 1;
-
-    gpio_padcfg_set(reg_id, reg.raw);
-
-    mask &= ~(1<<gpio);
-  }
-#endif
 
   return 0;
 }
 
-
-
-RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_gpio_init()
+int pi_gpio_mask_write(struct pi_device *device, uint32_t mask, uint32_t value)
 {
-#ifdef ARCHI_FC_EVT_GPIO
-  rt_irq_set_handler(ARCHI_FC_EVT_GPIO, __rt_gpio_handler);
-  rt_irq_mask_set(1<<ARCHI_FC_EVT_GPIO);
-#else
-#ifdef SOC_EU_VERSION
-  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_GPIO);
-#endif
-#endif
-  for (int i=0; i<32; i++)
+  hal_gpio_set_value(mask, value);
+  return 0;
+}
+
+int pi_gpio_mask_read(struct pi_device *device, uint32_t mask, uint32_t *value)
+{
+  *value = hal_gpio_get_value();
+  return 0;
+}
+
+int pi_gpio_mask_task_add(struct pi_device *device, uint32_t mask, pi_task_t *task, pi_gpio_notif_e flags)
+{
+  return 0;
+}
+
+int pi_gpio_mask_task_remove(struct pi_device *device, uint32_t mask)
+{
+  return 0;
+}
+
+void pi_gpio_pin_notif_configure(struct pi_device *device, int pin, pi_gpio_notif_e flags)
+{
+  int irq = rt_irq_disable();
+  if (flags == PI_GPIO_NOTIF_NONE)
   {
-    __rt_gpio_events[i] = NULL;
+    hal_gpio_inten_set(hal_gpio_inten_get() & ~(1<<pin));
   }
-  
-  __rt_gpio_status = 0;
-  __rt_gpio_active_events = 0;
+  else
+  {
+    hal_gpio_inten_set(hal_gpio_inten_get() | (1<<pin));
+    int inttype = ARCHI_GPIO_INTTYPE_NO(pin);
+    int mode =
+      flags == PI_GPIO_NOTIF_RISE ? ARCHI_GPIO_INTTYPE_RISE : 
+      flags == PI_GPIO_NOTIF_FALL ? ARCHI_GPIO_INTTYPE_FALL :
+      ARCHI_GPIO_INTTYPE_RISE_AND_FALL;
+    uint32_t prev = hal_gpio_inttype_get(inttype) & ~(((1<<ARCHI_GPIO_INTTYPE_SIZE) - 1) << ARCHI_GPIO_INTTYPE_BIT(pin));
+    hal_gpio_inttype_set(inttype, prev | (mode << ARCHI_GPIO_INTTYPE_BIT(pin)));
+  }
+  rt_irq_restore(irq);
+}
+
+void pi_gpio_pin_notif_clear(struct pi_device *device, int pin)
+{
+  int irq = rt_irq_disable();
+  __rt_gpio_status &= ~(1<<pin);
+  rt_irq_restore(irq);
+}
+
+int pi_gpio_pin_notif_get(struct pi_device *device, int pin)
+{
+  return (__rt_gpio_status >> pin) & 1;
 }
