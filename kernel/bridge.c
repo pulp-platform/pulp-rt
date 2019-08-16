@@ -773,6 +773,11 @@ void __rt_bridge_printf_flush()
 
 void __rt_bridge_req_shutdown()
 {
+#if PULP_CHIP == CHIP_WOLFE
+  // JTAG reg does not work well on wolfe
+  return;
+#endif
+
   hal_debug_struct_t *debug_struct = hal_debug_struct_get();
 
   __rt_bridge_check_connection();
@@ -793,10 +798,7 @@ void __rt_bridge_req_shutdown()
     }
 
     // Send the request for shutdown
-#if PULP_CHIP == CHIP_WOLFE
-#else
     apb_soc_jtag_reg_write(2<<1);
-#endif
 
     // And wait until it is acknowledged
     while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) != 7)
@@ -805,10 +807,7 @@ void __rt_bridge_req_shutdown()
     }
 
     // Update the status so that the bridge knows that we got the aknowledgement
-#if PULP_CHIP == CHIP_WOLFE
-#else
     apb_soc_jtag_reg_write(0<<1);
-#endif
 
     // And wait until it knows it
     while((apb_soc_jtag_reg_ext(apb_soc_jtag_reg_read()) >> 1) == 7)
