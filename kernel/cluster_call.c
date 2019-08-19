@@ -97,6 +97,7 @@ int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster
 
       data->stacks_size = stacks_size;
       data->stacks = rt_user_alloc(rt_alloc_l1(data->cid), stacks_size);
+
       if (data->stacks == NULL)
         goto error;
     }

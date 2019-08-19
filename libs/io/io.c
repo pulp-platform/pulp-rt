@@ -272,6 +272,7 @@ static void __rt_io_uart_wait_req(void *_req)
     __rt_io_event_current = NULL;
   }
   rt_io_wait_req_t *req = _req;
+  rt_compiler_barrier();
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
   rt_irq_restore(irq);

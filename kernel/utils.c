@@ -114,6 +114,7 @@ static int __rt_fc_unlock_to_cluster(rt_fc_lock_t *lock)
   if (lock->waiting) {
     rt_fc_lock_req_t *req = lock->waiting;
     lock->waiting = req->next;
+    rt_compiler_barrier();
     req->done = 1;
     __rt_cluster_notif_req_done(req->cid);
     return 1;
@@ -157,6 +158,7 @@ static void __rt_fc_cluster_lock_req(void *_req)
     }
     else
     {
+      rt_compiler_barrier();
       // The lock is not taken, take it and reply to the cluster
       req->done = 1;
       lock->locked = 1;
@@ -182,6 +184,7 @@ static void __rt_fc_cluster_lock_req(void *_req)
       lock->locked = 0;
     } 
 
+    rt_compiler_barrier();
     req->done = 1;
     __rt_cluster_notif_req_done(req->cid);
 

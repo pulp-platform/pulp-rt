@@ -522,6 +522,7 @@ void __rt_alloc_cluster_req(void *_req)
 {
   rt_alloc_req_t *req = (rt_alloc_req_t *)_req;
   req->result = rt_alloc(req->flags, req->size);
+  rt_compiler_barrier();
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
 }
@@ -530,6 +531,7 @@ void __rt_free_cluster_req(void *_req)
 {
   rt_free_req_t *req = (rt_free_req_t *)_req;
   rt_free(req->flags, req->chunk, req->size);
+  rt_compiler_barrier();
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
 }

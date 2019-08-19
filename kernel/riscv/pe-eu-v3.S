@@ -309,9 +309,11 @@ __rt_set_slave_stack:
 #ifdef ARCHI_HAS_CC
     // If the cluster has a cluster controller, the first slave has core ID 0
     // and thus we need to take the next stack
-    addi     s3, s3, 1
-#endif
+    addi     t5, s3, 1
+    p.mul   t4, t5, a0
+#else
     p.mul   t4, s3, a0
+#endif
     add     sp, t4, t0
 
 #ifdef __RT_USE_ASSERT
