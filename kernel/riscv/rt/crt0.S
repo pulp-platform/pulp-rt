@@ -32,13 +32,10 @@ _entry:
   # Cluster PEs will also starts here to avoid aligning another entry point
   # Just re-route them to the right entry
 #if defined(ARCHI_HAS_CLUSTER)
-#if RISCV_VERSION >= 4
-  csrr    a0, 0xF14
-#else
-  csrr    a0, 0xF10
-#endif
-  andi    a1, a0, 0x1f
-  srli    a0, a0, 5
+  csrr    a0, RV_CSR_MHARTID
+  li      a1, 0xFFFF
+  and     a1, a0, a1
+  srli    a0, a0, 16
 #if defined(ARCHI_HAS_FC)
   li      a2, ARCHI_FC_CID
   bne     a0, a2, __rt_pe_start
