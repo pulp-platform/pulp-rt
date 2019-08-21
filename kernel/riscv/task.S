@@ -22,7 +22,7 @@
 #if defined(ITC_VERSION)
 #include "archi/itc/itc_v1.h"
 #endif
-#include "archi/eu/eu_v3.h"
+#include "archi/eu/eu_mempool_v1.h"
 
 #if defined(ARCHI_HAS_CLUSTER) && defined(ARCHI_HAS_FC)
 
