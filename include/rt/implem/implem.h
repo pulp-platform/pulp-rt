@@ -40,6 +40,10 @@ static inline struct pi_task *pi_task_block(struct pi_task *task)
   return task;
 }
 
+static inline void pi_task_destroy(pi_task_t *task)
+{
+}
+
 extern int pmsis_exit_value;
 
 static inline int pmsis_kickoff(void *arg)
