@@ -51,6 +51,8 @@ RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_stride;
 RT_FC_TINY_DATA unsigned char __rt_hyper_pending_emu_do_memcpy;
 RT_FC_TINY_DATA struct pi_task *__rt_hyper_pending_emu_task;
 
+RT_FC_TINY_DATA void *__rt_hyper_udma_handle;
+
 // Local task used to enqueue cluster requests.
 // We cannot reuse the task coming from cluster side as it is used by the emulation
 // state machine so we copy the request here to improve performance.
@@ -170,6 +172,9 @@ void pi_hyper_conf_init(struct pi_hyper_conf *conf)
 #ifdef __RT_HYPER_COPY_ASM
 
 extern void __rt_hyper_handle_copy();
+extern void __rt_hyper_handle_burst();
+extern void __rt_hyper_handle_burst_rx();
+extern void __rt_hyper_handler();
 
 #else
 
@@ -244,7 +249,12 @@ int32_t pi_hyper_open(struct pi_device *device)
   if (__rt_hyper_open_count == 1)
   {
     // Activate routing of UDMA hyper soc events to FC to trigger interrupts
+#if PULP_CHIP == CHIP_GAP8_REVC
+    rt_irq_clr(1<<ARCHI_FC_IRQ_HYPER_RX);
+    rt_irq_mask_set(1<<ARCHI_FC_IRQ_HYPER_RX);
+#else
     soc_eu_fcEventMask_setEvent(channel);
+#endif
     soc_eu_fcEventMask_setEvent(channel + 1);
 
     // Deactivate Hyper clock-gating
@@ -253,6 +263,8 @@ int32_t pi_hyper_open(struct pi_device *device)
     // Redirect all UDMA hyper events to our callback
     __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy, NULL);
     __rt_udma_register_channel_callback(channel+1, __rt_hyper_handle_copy, NULL);
+
+    __rt_hyper_udma_handle = __rt_hyper_handle_copy;
   }
 
   int dt_val = conf->type == PI_HYPER_TYPE_RAM ? 1 : 0;
@@ -433,6 +445,14 @@ void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
     __rt_hyper_pending_addr = (unsigned int)addr;
     __rt_hyper_pending_repeat = 512;
     __rt_hyper_pending_repeat_size = size;
+#if PULP_CHIP == CHIP_GAP8_REVC
+    if (channel & 1)
+      __rt_hyper_udma_handle = __rt_hyper_handle_burst;
+    else
+      __rt_hyper_udma_handle = __rt_hyper_handle_burst_rx;
+#else
+    __rt_hyper_udma_handle = __rt_hyper_handle_burst;
+#endif
     size = 512;
   } else {
     __rt_hyper_pending_repeat = 0;
@@ -937,6 +957,9 @@ static void __attribute__((constructor)) __rt_hyper_init()
   __rt_hyper_open_count = 0;
   __rt_hyper_pending_emu_size = 0;
   __rt_hyper_pending_emu_size_2d = 0;
+#if PULP_CHIP == CHIP_GAP8_REVC
+  rt_irq_set_handler(ARCHI_FC_IRQ_HYPER_RX, __rt_hyper_handler);
+#endif
 }
 
 

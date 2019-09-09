@@ -47,9 +47,17 @@ __rt_fc_socevents_handler:
   // Extract ID part
   p.extractu x10, x8, EU_SOC_EVENTS_EVENT_MASK_BITS-1, EU_SOC_EVENTS_EVENT_MASK_OFFSET
 
+#ifdef ARCHI_UDMA_HAS_HYPER
+  lw    x12, %tiny(__rt_hyper_udma_handle)(x0)
+  p.bneimm x10, UDMA_EVENT_ID(ARCHI_UDMA_HYPER_ID(0)), __rt_fc_socevents_not_hyper_rx
+  jr x12
 
+__rt_fc_socevents_not_hyper_rx:
+  p.bneimm x10, UDMA_EVENT_ID(ARCHI_UDMA_HYPER_ID(0))+1, __rt_fc_socevents_not_hyper_tx
+  jr x12
+#endif
 
-
+__rt_fc_socevents_not_hyper_tx:
 
   // UDMA CHANNEL EVENTS
   li x9, ARCHI_SOC_EVENT_UDMA_NB_EVT
