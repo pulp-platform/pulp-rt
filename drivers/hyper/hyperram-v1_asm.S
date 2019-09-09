@@ -213,8 +213,14 @@ __rt_hyper_handle_burst_rx:
 
   lw        x11, %tiny(__rt_hyper_pending_base)(x0)
   
+#ifdef RV_ISA_RV32
+  li        x10, ~(1<<UDMA_CHANNEL_SIZE_LOG2)
+  and       x9, x11, x10
+  lw        x10, %tiny(__rt_hyper_pending_hyper_addr)(x0)
+#else
   lw        x10, %tiny(__rt_hyper_pending_hyper_addr)(x0)
   p.bclr    x9, x11, 0, UDMA_CHANNEL_SIZE_LOG2
+#endif
   add       x10, x10, x12
   sw        x10, HYPER_EXT_ADDR_CHANNEL_CUSTOM_OFFSET(x9)
   sw        x10, %tiny(__rt_hyper_pending_hyper_addr)(x0)
@@ -263,8 +269,14 @@ __rt_hyper_handle_burst:
 
   lw        x11, %tiny(__rt_hyper_pending_base)(x0)
   
+#ifdef RV_ISA_RV32
+  li        x10, ~(1<<UDMA_CHANNEL_SIZE_LOG2)
+  and       x9, x11, x10
+  lw        x10, %tiny(__rt_hyper_pending_hyper_addr)(x0)
+#else
   lw        x10, %tiny(__rt_hyper_pending_hyper_addr)(x0)
   p.bclr    x9, x11, 0, UDMA_CHANNEL_SIZE_LOG2
+#endif
   add       x10, x10, x12
   sw        x10, HYPER_EXT_ADDR_CHANNEL_CUSTOM_OFFSET(x9)
   sw        x10, %tiny(__rt_hyper_pending_hyper_addr)(x0)

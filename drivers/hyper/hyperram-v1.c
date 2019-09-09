@@ -174,8 +174,9 @@ void pi_hyper_conf_init(struct pi_hyper_conf *conf)
 extern void __rt_hyper_handle_copy();
 extern void __rt_hyper_handle_burst();
 extern void __rt_hyper_handle_burst_rx();
+#if PULP_CHIP == CHIP_GAP8_REVC
 extern void __rt_hyper_handler();
-
+#endif
 #else
 
 static void __rt_hyper_handle_copy()
