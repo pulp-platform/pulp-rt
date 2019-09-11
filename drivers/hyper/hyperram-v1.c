@@ -173,7 +173,6 @@ void pi_hyper_conf_init(struct pi_hyper_conf *conf)
 
 extern void __rt_hyper_handle_copy();
 extern void __rt_hyper_handle_burst();
-extern void __rt_hyper_handle_burst_rx();
 #if PULP_CHIP == CHIP_GAP8_REVC
 extern void __rt_hyper_handler();
 #endif
@@ -253,10 +252,12 @@ int32_t pi_hyper_open(struct pi_device *device)
 #if PULP_CHIP == CHIP_GAP8_REVC
     rt_irq_clr(1<<ARCHI_FC_IRQ_HYPER_RX);
     rt_irq_mask_set(1<<ARCHI_FC_IRQ_HYPER_RX);
+    rt_irq_clr(1<<ARCHI_FC_IRQ_HYPER_TX);
+    rt_irq_mask_set(1<<ARCHI_FC_IRQ_HYPER_TX);
 #else
     soc_eu_fcEventMask_setEvent(channel);
-#endif
     soc_eu_fcEventMask_setEvent(channel + 1);
+#endif
 
     // Deactivate Hyper clock-gating
     plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
@@ -446,14 +447,7 @@ void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
     __rt_hyper_pending_addr = (unsigned int)addr;
     __rt_hyper_pending_repeat = 512;
     __rt_hyper_pending_repeat_size = size;
-#if PULP_CHIP == CHIP_GAP8_REVC
-    if (channel & 1)
-      __rt_hyper_udma_handle = __rt_hyper_handle_burst;
-    else
-      __rt_hyper_udma_handle = __rt_hyper_handle_burst_rx;
-#else
     __rt_hyper_udma_handle = __rt_hyper_handle_burst;
-#endif
     size = 512;
   } else {
     __rt_hyper_pending_repeat = 0;
@@ -960,6 +954,7 @@ static void __attribute__((constructor)) __rt_hyper_init()
   __rt_hyper_pending_emu_size_2d = 0;
 #if PULP_CHIP == CHIP_GAP8_REVC
   rt_irq_set_handler(ARCHI_FC_IRQ_HYPER_RX, __rt_hyper_handler);
+  rt_irq_set_handler(ARCHI_FC_IRQ_HYPER_TX, __rt_hyper_handler);
 #endif
 }
 

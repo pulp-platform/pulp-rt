@@ -27,6 +27,8 @@ L2_DATA static pi_spim_t __rt_spim[ARCHI_UDMA_NB_SPIM];
 typedef struct 
 {
   pi_spim_t *spim;
+  uint8_t *ucode;
+  uint32_t ucode_size;
   int max_baudrate;
   unsigned int cfg;
   char cs;
@@ -238,13 +240,31 @@ void __rt_spi_handle_repeat(void *arg)
   pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)spim->pending_repeat_device->data;
   unsigned int len = spim->pending_repeat_len;
   int cs_mode = (spim->pending_repeat_flags >> 0) & 0x3;
-  int qspi = ((spim->pending_repeat_flags >> 2) & 0x3) == PI_SPI_LINES_QUAD;
-  if (len > 8192*8)
+  int qspi = ((spim->pending_repeat_flags >> 2) & 0x3) == 1;
+
+  if (spim->pending_repeat_misaligned_size)
   {
+    uint32_t size = spim->pending_repeat_misaligned_size;
+    uint32_t addr = (spim->pending_repeat_addr - size) & ~0x3;
+    uint32_t value = *(uint32_t *)addr;
+
+    value = __BITINSERT_R(spim->buffer, value, 32-size*8, 0);
+    *(uint32_t *)addr = value;
+
+    spim->pending_repeat_misaligned_size = 0;
+
+  }
+
+
+  int size = (len + 7) >> 3;
+
+  if (size > 8192)
+  {
+    size = 8192;
     len = 8192*8;
   }
+
   spim->pending_repeat_len -= len;
-  int size = (len + 7) >> 3;
 
   if (spim->pending_repeat_send == 1)
   {
@@ -328,7 +348,7 @@ void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_
 
   pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
   pi_spim_t *spim = spim_cs->spim;
-  int qspi = ((flags >> 2) & 0x3) == PI_SPI_LINES_QUAD;
+  int qspi = ((flags >> 2) & 0x3) == 1;
   int cs_mode = (flags >> 0) & 0x3;
 
   if (spim->pending_copy)
@@ -371,17 +391,22 @@ void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_
   // The rest will be sent by the assembly code.
   // First the user data and finally an epilogue with the EOT command.
 
-  spim->udma_cmd[0] = spim_cs->cfg;
-  spim->udma_cmd[1] = SPI_CMD_SOT(spim_cs->cs);
-  spim->udma_cmd[2] = SPI_CMD_TX_DATA(len, qspi, spim_cs->byte_align);
-
+  int cmd_size = 0;
+  spim->udma_cmd[cmd_size++] = spim_cs->cfg;
+  spim->udma_cmd[cmd_size++] = SPI_CMD_SOT(spim_cs->cs);
+  if (flags & PI_SPI_APPEND_UCODE)
+  {
+    memcpy(&spim->udma_cmd[cmd_size], spim_cs->ucode, spim_cs->ucode_size);
+    cmd_size += spim_cs->ucode_size / 4;
+  }
+  spim->udma_cmd[cmd_size++] = SPI_CMD_TX_DATA(len, qspi, spim_cs->byte_align);
 
   if (cs_mode == PI_SPI_CS_AUTO && spim->pending_repeat_len == 0)
   {
     // CS auto mode. We handle the termination with an EOT so we have to enqueue
     // 3 transfers.
     // Enqueue fist SOT and user buffer.
-    plp_udma_enqueue(base, (unsigned int)spim->udma_cmd, 3*4, UDMA_CHANNEL_CFG_EN);
+    plp_udma_enqueue(base, (unsigned int)spim->udma_cmd, cmd_size*4, UDMA_CHANNEL_CFG_EN);
     plp_udma_enqueue(base, (unsigned int)data, size, UDMA_CHANNEL_CFG_EN);
 
     // Then wait until first one is finished
@@ -401,7 +426,7 @@ void pi_spi_send_async(struct pi_device *device, void *data, size_t len, pi_spi_
     // We cannot use EOT due to HW limitations (generating EOT is always releasing CS)
     // so we have to use TX event instead.
     // TX event is current inactive, enqueue first transfer first EOT.
-    plp_udma_enqueue(base, (unsigned int)spim->udma_cmd, 3*4, UDMA_CHANNEL_CFG_EN);
+    plp_udma_enqueue(base, (unsigned int)spim->udma_cmd, cmd_size*4, UDMA_CHANNEL_CFG_EN);
     // Then wait until it is finished (should be very quick).
     while(plp_udma_busy(base));
     // Then activateTX event and enqueue user buffer.
@@ -428,14 +453,17 @@ void pi_spi_send(struct pi_device *device, void *data, size_t len, pi_spi_flags_
 void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_spi_flags_e flags, pi_task_t *task)
 {
   //rt_trace(RT_TRACE_SPIM, "[SPIM] Receive bitstream (handle: %p, buffer: %p, len: 0x%x, qspi: %d, keep_cs: %d, event: %p)\n", handle, data, len, qspi, cs_mode, event);
-
+  uint32_t addr = (uint32_t)data;
+  uint32_t size = (len + 7) >> 3;
   int irq = rt_irq_disable();
+  uint32_t iter_size = 0;
+  uint32_t misaligned_size = 0;
 
   __rt_task_init(task);
 
   pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
   pi_spim_t *spim = spim_cs->spim;
-  int qspi = ((flags >> 2) & 0x3) == PI_SPI_LINES_QUAD;
+  int qspi = ((flags >> 2) & 0x3) == 1;
   int cs_mode = (flags >> 0) & 0x3;
 
   if (spim->pending_copy)
@@ -459,24 +487,44 @@ void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_s
 
   spim->pending_copy = task;
 
+
+  if ((addr & 0x3) || size < 4)
+  {
+    iter_size = 4 - (addr & 0x3);
+    if (iter_size > size)
+      iter_size = size;
+    misaligned_size = iter_size;
+    addr = (uint32_t)&spim->buffer;
+  }
+  else if (size > 8192)
+  {
+    iter_size = 8192;
+  }
+
+
   unsigned int rx_base = hal_udma_channel_base(spim_cs->channel);
 
-  if (len > 8192*8)
+  if (iter_size)
   {
-    spim->pending_repeat_len = len - 8192*8;
-    spim->pending_repeat_addr = (uint32_t)data + 8192;
+    spim->pending_repeat_misaligned_size = misaligned_size;
+    spim->pending_repeat_len = len - iter_size*8;
+    spim->pending_repeat_addr = (uint32_t)data + iter_size;
     spim->pending_repeat_base = rx_base;
     spim->pending_repeat_device = device;
     spim->pending_repeat_send = 0;
     spim->pending_repeat_flags = flags;
-    len = 8192*8;
+    len = iter_size*8;
+    size = iter_size;
   }
   
-  int size = (len + 7) >> 3;
-
   int cmd_size = 0;
   spim->udma_cmd[cmd_size++] = spim_cs->cfg;
   spim->udma_cmd[cmd_size++] = SPI_CMD_SOT(spim_cs->cs);
+  if (flags & PI_SPI_APPEND_UCODE)
+  {
+    memcpy(&spim->udma_cmd[cmd_size], spim_cs->ucode, spim_cs->ucode_size);
+    cmd_size += spim_cs->ucode_size / 4;
+  }
   spim->udma_cmd[cmd_size++] = SPI_CMD_RX_DATA(len, qspi, spim_cs->byte_align);
 
   if (cs_mode == PI_SPI_CS_AUTO && !spim->pending_repeat_len)
@@ -490,7 +538,7 @@ void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_s
   }
 
   unsigned int tx_base = hal_udma_channel_base(spim_cs->channel + 1);
-  plp_udma_enqueue(rx_base, (unsigned int)data, size, UDMA_CHANNEL_CFG_EN | (2<<1));
+  plp_udma_enqueue(rx_base, addr, size, UDMA_CHANNEL_CFG_EN | (2<<1));
   plp_udma_enqueue(tx_base, (unsigned int)spim->udma_cmd, cmd_size*4, UDMA_CHANNEL_CFG_EN);
 
 end:
@@ -595,6 +643,18 @@ void pi_spi_transfer(struct pi_device *device, void *tx_data, void *rx_data, siz
   pi_spi_transfer_async(device, tx_data, rx_data, len, flags, pi_task_block(&task));
   pi_task_wait_on(&task);
 }
+
+
+
+
+void pi_spi_ucode_set(struct pi_device *device, uint8_t *ucode, uint32_t ucode_size)
+{
+  pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
+  spim_cs->ucode = ucode;
+  spim_cs->ucode_size = ucode_size;
+}
+
+
 
 void __pi_handle_waiting_copy(pi_task_t *task)
 {

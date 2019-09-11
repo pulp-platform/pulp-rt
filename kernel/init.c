@@ -100,9 +100,6 @@ void __rt_init()
   rt_irq_mask_set(1<<ARCHI_FC_EVT_SOC_EVT);
 #endif
 
-
-#ifndef __ariane__
-
 #ifdef FLL_VERSION
 #if PULP_CHIP_FAMILY == CHIP_GAP || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_WOLFE
   __rt_pmu_init();
@@ -155,16 +152,6 @@ void __rt_init()
 error:
   rt_fatal("There was an error during runtime initialization\n");
   exit(-1);
-
-#else
-
-#ifdef FLL_VERSION
-  // Initialize first the FLLs
-  __rt_freq_init();
-#endif
-
-#endif
-
 }
 
 void __rt_deinit()

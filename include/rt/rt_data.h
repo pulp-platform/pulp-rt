@@ -699,6 +699,10 @@ typedef struct
 
 extern rt_padframe_profile_t __rt_padframe_profiles[];
 
+#ifdef ARCHI_UDMA_HAS_HYPER
+extern RT_FC_TINY_DATA void *__rt_hyper_udma_handle;
+#endif
+
 #include "rt/data/rt_data_spim.h"
 #include "rt/data/rt_data_camera.h"
 #include "rt/data/rt_data_i2c.h"
@@ -712,7 +716,6 @@ extern rt_padframe_profile_t __rt_padframe_profiles[];
 #define RT_SCHED_T_FIRST      0
 #define RT_SCHED_T_LAST       4
 #define RT_SCHED_T_FIRST_FREE 8
-#define RT_SCHED_T_WAITING    12
 
 #define RT_PERIPH_COPY_CTRL_TYPE_BIT    0
 #define RT_PERIPH_COPY_CTRL_TYPE_WIDTH  4
