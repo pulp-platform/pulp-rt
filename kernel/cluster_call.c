@@ -109,6 +109,10 @@ int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster
   task->implem.core_mask = (1<<(task->nb_cores-1)) - 1;
 #else
   task->implem.core_mask = (1<<task->nb_cores) - 1;
+  if(task->nb_cores >= 32)
+  {
+    task->implem.core_mask = -1;
+  }
 #endif
 
   task->next = NULL;
