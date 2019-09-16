@@ -75,6 +75,8 @@ static rt_flash_t *__rt_hyperflash_open(rt_dev_t *dev, rt_flash_conf_t *conf, rt
 {
   rt_hyperflash_t *hyper = NULL;
 
+  printf("HYPERFLASH OPEN\n");
+
   hyper = rt_alloc(RT_ALLOC_FC_DATA, sizeof(rt_hyperflash_t));
   if (hyper == NULL) goto error;
 

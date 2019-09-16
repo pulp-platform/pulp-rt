@@ -22,6 +22,7 @@
 #include "rt/rt_data.h"
 #include "archi/pulp.h"
 
+
   // x9: channel, x10:event, x8,x11,x12:temp
   .global __pi_spim_handle_eot
 __pi_spim_handle_eot:
@@ -41,15 +42,16 @@ __pi_spim_handle_copy:
   lw     x8, %tiny(__rt_udma_channels)(x8)
 
   // Check if we have to repeat the current transfer
-  lw     x11, PI_SPIM_T_REPEAT_LEN(x8)
-  beqz   x11, __rt_spim_no_repeat
+  //lw     x12, PI_SPIM_T_REPEAT_CALLBACK(x8)
+  //beqz   x12, __rt_spim_no_repeat
+//
+//  //la     x9, udma_event_handler_end
+//  //mv     x10, x8
+//
+  //j      __rt_call_external_c_function
 
-  la     x9, udma_event_handler_end
-  la     x12, __rt_spi_handle_repeat
-  mv     x10, x8
-
-  j      __rt_call_external_c_function
-
+  .global __rt_spim_handle_end_of_copy
+__rt_spim_handle_end_of_copy:
 __rt_spim_no_repeat:
   // Check if we have to handle a waiting copy
   lw     x11, PI_SPIM_T_WAITING_FIRST(x8)
@@ -96,9 +98,13 @@ __rt_spim_handle_tx_copy:
 
   li     x12, ARCHI_SOC_EU_ADDR
   lw     x11, SOC_FC_MASK_LSB(x12)
+  #if defined(RV_ISA_RV32)
   li     x8, 1
   sll    x8, x8, x10
   or     x8, x8, x11
+  #else
+   p.bsetr x8,x11,x10
+  #endif
   sw     x8, SOC_FC_MASK_LSB(x12)
 
   j      __pi_spim_handle_copy
@@ -112,16 +118,42 @@ __rt_spim_handle_tx_copy:
   // x9: channel, x10:event, x8,x11,x12:temp
 __rt_spim_handle_rx_copy:
 
+  // Get the SPI context
+  slli   x8, x10, 2  
+  lw     x8, %tiny(__rt_udma_channels)(x8)
+
+  // Call the callback
+  lw     x12, PI_SPIM_T_REPEAT_CALLBACK(x8)
+  beqz   x12, __rt_spim_no_callback
+
+  la     x9, udma_event_handler_end
+  mv     x10, x8
+
+  j      __rt_call_external_c_function
+
+__rt_spim_no_callback:
+  lw     x12, PI_SPIM_T_REPEAT_ASM_CALLBACK(x8)
+  beqz   x12, udma_event_handler_end
+  jr     x12
+
+
+
+
+
   // This handler is only used for CS keep mode where
   // EOT can not be used for the termination
   // TX soc event was temporarly activated due to that, now we
   // have to deactivate it
 
-  li     x12, ARCHI_SOC_EU_ADDR
-  lw     x11, SOC_FC_MASK_LSB(x12)
-  li     x8, 1
-  sll    x8, x8, x10
-  or     x8, x8, x11
-  sw     x8, SOC_FC_MASK_LSB(x12)
+ // li     x12, ARCHI_SOC_EU_ADDR
+ // lw     x11, SOC_FC_MASK_LSB(x12)
+ // #if defined(RV_ISA_RV32)
+ // li     x8, 1
+ // sll    x8, x8, x10
+ // or     x8, x8, x11
+ // #else
+ //  p.bsetr x8,x11,x10
+ // #endif
+ // sw     x8, SOC_FC_MASK_LSB(x12)
 
   j      __pi_spim_handle_copy
