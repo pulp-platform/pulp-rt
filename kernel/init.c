@@ -31,6 +31,24 @@ static fptr dtor_list[1] __attribute__((section(".dtors.start"))) = { (fptr) -1 
 
 static int __rt_check_clusters_start();
 
+#if defined(ARCHI_HAS_CLUSTER)
+extern int main();
+extern int _entry();
+
+void __rt_wait_dispatch() {
+
+  if(rt_core_id()) {
+    // Trigger barrier non-blocking and return
+    pulp_write32(ARCHI_CLUSTER_PERIPHERALS_ADDR+EU_BARRIER_DEMUX_OFFSET+EU_BARRIER_DEMUX_OFFSET+EU_BARRIER_AREA_OFFSET_GET(0)+EU_HW_BARR_TRIGGER_SELF,1);
+  } else {
+    // Trigger barrier blocking and then trigger the FC
+    pulp_read32(ARCHI_CLUSTER_PERIPHERALS_ADDR+EU_BARRIER_DEMUX_OFFSET+EU_BARRIER_DEMUX_OFFSET+EU_BARRIER_AREA_OFFSET_GET(0)+EU_HW_BARR_TRIGGER_WAIT_CLEAR);
+    // Trigger the FC
+    hal_itc_status_set(1<<RT_FC_ENQUEUE_EVENT);
+  }
+}
+#endif
+
 RT_BOOT_CODE static void do_ctors(void)
 {
   //plp_trace(RT_TRACE_INIT, "Constructors execution\n");

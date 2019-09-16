@@ -60,6 +60,7 @@ __rt_pe_start:
     p.mul   t3, t3, t4                         // Multiply the stack size by the core ID to get the offset to the end of the stack
     add     sp, t2, t3                         // Calculate the stack pointer
 
+
     // Set sensitivity to wakeup event
     li      s0, ARCHI_EU_DEMUX_ADDR
     li      t0, 1<<RT_CLUSTER_CALL_EVT
@@ -73,8 +74,11 @@ __rt_pe_start:
     lw      s1, RT_CLUSTER_TASK_ENTRY(t1)
     jalr    x1, s1
 
+    // Now that we have a stack use C functions
+    jal     __rt_wait_dispatch
     // Trigger barrier non-blocking
-    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_SELF(s0)
+
+#    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_SELF(s0)
 
     j       __rt_pe_start
 
