@@ -32,8 +32,8 @@
 __rt_task_master_entry:
     la      t0, __rt_task_loop_entry
     li      t1, ARCHI_EU_DEMUX_ADDR
-    sw      t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(t1)
-    sw      a0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(t1)
+//    sw      t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(t1)
+//    sw      a0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(t1)
 
 
 
