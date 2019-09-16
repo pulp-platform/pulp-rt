@@ -67,7 +67,7 @@ extern char _l1_preload_size[];
 
 extern void _start();
 
-static void __rt_init_cluster_data(int cid)
+void __rt_init_cluster_data(int cid)
 {
 
 #if defined(ARCHI_HAS_FC) && ARCHI_HAS_FC == 1
