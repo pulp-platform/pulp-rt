@@ -26,7 +26,7 @@ _entry:
 #ifndef PLP_NO_PERF_COUNTERS
   // Performance counters are active after reset, deactivate them to let the
   // user control when they should start counting
-  csrw    0x7A1, x0
+  csrw    0x7A1, x0 // CSR_PCMR ??
 #endif
 
   # Cluster PEs will also starts here to avoid aligning another entry point
@@ -46,39 +46,6 @@ _entry:
   bne     a0, x0, __rt_pe_start
 #endif
 #endif
-
-#if defined(__ariane__)
-
-  csrr    a0, 0xF14
-  srli    a0, a0, 5
-  li      a2, 0x1f
-  bne     a0, a2, is_ariane
-
-  la      t1, _start
-  li      t2, 0x1a104000
-  li      t3, 0x8
-  li      t4, 0xC
-
-  sw      t1, 0x80(t2)
-  sw      x0, 0x84(t2)
-  sw      t3, 0x70(t2)
-  sw      x0, 0x70(t2)
-  sw      t3, 0x70(t2)
-  sw      t4, 0x70(t2)
-
-  lui     t5,0x1a10a
-  addi    t5,t5,-2040
-  addi    t6, x0, -1
-  sw t6, 0(t5)
-
-loop:
-  wfi
-  j loop
-
-is_ariane:
-
-#endif
-
 
   # clear the bss segment
   la      t0, _bss_start
