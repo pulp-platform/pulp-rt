@@ -32,9 +32,6 @@ static fptr dtor_list[1] __attribute__((section(".dtors.start"))) = { (fptr) -1 
 static int __rt_check_clusters_start();
 
 #if defined(ARCHI_HAS_CLUSTER)
-extern int main();
-extern int _entry();
-
 void __rt_wait_dispatch() {
 
   if(rt_core_id()) {
@@ -93,7 +90,12 @@ extern unsigned char stack_start;
 
 void __rt_init()
 {
-  // __rt_bridge_set_available();
+#if PULP_CHIP_FAMILY == CHIP_GAP
+  // Always allow JTAG accesses for now as security is not implemented
+  hal_pmu_bypass_set (ARCHI_REG_FIELD_SET (hal_pmu_bypass_get (), 1, 11, 1) );
+#endif
+
+  __rt_bridge_set_available();
 
   if (rt_platform() == ARCHI_PLATFORM_GVSOC)
   {
@@ -102,97 +104,72 @@ void __rt_init()
 
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
 
-  // // Configure HW Barrier for end of computation
-  // // Enable all cores for the barrier
-  // int i = 0;
-  // for (i = 0; i < ARCHI_CLUSTER_NB_PE/32; i++)
-  // {
-  //   // Write 32 cores at a time
-  //   pulp_write32(ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(0) + ARCHI_EU_OFFSET + EU_BARRIER_AREA_OFFSET + EU_BARRIER_AREA_OFFSET_GET(0) + EU_HW_BARR_TRIGGER_MASK + (4*i), -1);
-  // }
-  // int remainder = ARCHI_CLUSTER_NB_PE % 32;
-  // if (remainder)
-  // {
-  //   // Write the remaining cores
-  //   remainder = (1 << remainder) - 1;
-  //   pulp_write32(ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(0) + ARCHI_EU_OFFSET + EU_BARRIER_AREA_OFFSET + EU_BARRIER_AREA_OFFSET_GET(0) + EU_HW_BARR_TRIGGER_MASK + (4*i), remainder);
-  // }
-  // // Only wake up core 0
-  // pulp_write32(ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(0) + ARCHI_EU_OFFSET + EU_BARRIER_AREA_OFFSET + EU_BARRIER_AREA_OFFSET_GET(0) + EU_HW_BARR_TARGET_MASK, 1);
-
-  // // __rt_irq_init();
-  // plp_ctrl_bootaddr_set_remote(0, (int)((void*) _entry));
-  // eoc_fetch_enable_remote(0, -1);
-
-
-
-
+  __rt_irq_init();
 
 #if defined(ARCHI_HAS_FC)
   // Deactivate all soc events as they are active by default
-  // soc_eu_eventMask_reset(SOC_FC_FIRST_MASK);
+  soc_eu_eventMask_reset(SOC_FC_FIRST_MASK);
 #endif
 
   // Activate soc events handler
 #if defined(ARCHI_HAS_FC)
-  // rt_irq_set_handler(ARCHI_FC_EVT_SOC_EVT, __rt_fc_socevents_handler);
-  // rt_irq_mask_set(1<<ARCHI_FC_EVT_SOC_EVT);
+  rt_irq_set_handler(ARCHI_FC_EVT_SOC_EVT, __rt_fc_socevents_handler);
+  rt_irq_mask_set(1<<ARCHI_FC_EVT_SOC_EVT);
 #endif
-
 
 #ifdef FLL_VERSION
 #if PULP_CHIP_FAMILY == CHIP_GAP || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_WOLFE
-  // __rt_pmu_init();
+  __rt_pmu_init();
 #endif
 
   // Initialize first the FLLs
+  // FIXME: GVSOC crashes on frequency initializaton...
   // __rt_freq_init();
 #endif
 
   if (rt_is_fc()) {
 #if defined(ARCHI_FC_HAS_ICACHE)
-    // icache_enable(ARCHI_FC_ICACHE_ADDR);
+    icache_enable(ARCHI_FC_ICACHE_ADDR);
 #endif
   } else {
 #if defined(ARCHI_HAS_CLUSTER)
     // Enable instruction cache, initialize all memories
-    // enable_all_icache_banks();
+    enable_all_icache_banks();
 #endif
   }
 
   // Initialize first the memory allocators and the utils so that they are
   // available for constructors, especially to let them declare
   // callbacks
-  // __rt_utils_init();
-  // __rt_allocs_init();
+  __rt_utils_init();
+  __rt_allocs_init();
 
   // Schedulers are also initialized now as other modules are accessing directly
   // some of their variables.
-  // __rt_thread_sched_init();
-  // __rt_event_sched_init();
+  __rt_thread_sched_init();
+  __rt_event_sched_init();
 
 #ifdef PADS_VERSION
   // Initialize now the default padframe so that the user can overwrite it
-  // __rt_padframe_init();
+  __rt_padframe_init();
 #endif
 
   // Call global and static constructors
   // Each module may do private initializations there
-  // do_ctors();
+  do_ctors();
 
-  // rt_irq_enable(); // Sets bootcode
+  rt_irq_enable();
 
   // Now do individual modules initializations.
-  // if (__rt_cbsys_exec(RT_CBSYS_START)) goto error;
+  if (__rt_cbsys_exec(RT_CBSYS_START)) goto error;
 
-  // if (__rt_check_clusters_start()) goto error;
+  if (__rt_check_clusters_start()) goto error;
 
   return;
 
-// error:
+error:
   rt_fatal("There was an error during runtime initialization\n");
   exit(-1);
-
 }
 
 void __rt_deinit()
@@ -217,6 +194,8 @@ void __rt_deinit()
 
 
 #if defined(ARCHI_HAS_CLUSTER)
+
+extern int main();
 
 RT_L1_GLOBAL_DATA static int retval;
 RT_L2_DATA void (*__rt_cluster_entry)(void *) = NULL;
