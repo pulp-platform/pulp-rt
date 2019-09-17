@@ -91,7 +91,7 @@ void rt_pad_control(rt_pad_cmd_e cmd, void *arg);
 #endif
 
 
-#if PULP_CHIP != CHIP_VEGA
+#if PULP_CHIP != CHIP_VEGA && PULP_CHIP != CHIP_GAP9
 
 /** \enum rt_pad_sleep_state_e
  * \brief Pad state when the chip is sleeping.

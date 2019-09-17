@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef __RT_CHIPS_RT_VEGA_H__
-#define __RT_CHIPS_RT_VEGA_H__
+#ifndef __RT_CHIPS_RT_GAP9_H__
+#define __RT_CHIPS_RT_GAP9_H__
 
-#ifdef CONFIG_VEGA
+#ifdef CONFIG_GAP9
 
 /// @cond IMPLEM
 

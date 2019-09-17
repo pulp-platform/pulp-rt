@@ -19,7 +19,7 @@
 
 /// @cond IMPLEM
 
-#if PULP_CHIP != CHIP_VEGA
+#if PULP_CHIP != CHIP_VEGA && PULP_CHIP != CHIP_GAP9
 
 typedef enum {
   RT_VOLTAGE_DOMAIN_MAIN     = 0,

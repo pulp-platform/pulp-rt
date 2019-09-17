@@ -52,7 +52,7 @@ RT_BOOT_CODE static void do_dtors(void)
 
 void __rt_putc_debug_bridge(char c);
 
-#if PULP_CHIP_FAMILY == CHIP_GAP || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_WOLFE
+#if PULP_CHIP_FAMILY == CHIP_GAP || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_WOLFE || PULP_CHIP == CHIP_GAP9
 void __rt_pmu_init();
 #endif
 

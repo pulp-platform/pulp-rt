@@ -79,8 +79,13 @@ ifeq '$(pulp_chip_family)' 'vega'
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
 else
+ifeq '$(pulp_chip_family)' 'gap9'
+PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
+PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
+else
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
+endif
 endif
 endif
 endif
@@ -113,6 +118,10 @@ endif
 
 ifeq '$(pulp_chip_family)' 'vega'
 PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c kernel/vega/maestro_irq.c kernel/vega/pad.c
+endif
+
+ifeq '$(pulp_chip_family)' 'gap9'
+PULP_LIB_FC_SRCS_rt += kernel/gap9/maestro.c kernel/gap9/maestro_irq.c kernel/gap9/pad.c
 endif
 
 ifeq '$(pulp_chip_family)' 'gap'

@@ -41,6 +41,8 @@
 #include "rt/chips/gap/config.h"
 #elif PULP_CHIP == CHIP_VEGA
 #include "rt/chips/vega/config.h"
+#elif PULP_CHIP == CHIP_GAP9
+#include "rt/chips/gap9/config.h"
 #endif
 
 #define INLINE static inline

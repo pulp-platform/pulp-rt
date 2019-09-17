@@ -99,6 +99,10 @@ ifeq '$(pulp_chip_family)' 'vega'
 CHIP_TARGETS += gen_linker_script
 endif
 
+ifeq '$(pulp_chip_family)' 'gap9'
+CHIP_TARGETS += gen_linker_script
+endif
+
 
 build_rt: build $(CHIP_TARGETS)
 
