@@ -24,6 +24,7 @@
 #include "pmsis/cluster/cluster_sync/fc_to_cl_delegate.h"
 #include "pmsis/cluster/cl_malloc.h"
 #include "pmsis/rtos/os_frontend_api/pmsis_time.h"
+#include "pmsis/rtos/os_frontend_api/pmsis_freq.h"
 #include "pmsis/rtos/malloc/pmsis_malloc.h"
 #include "pmsis/rtos/malloc/pmsis_l1_malloc.h"
 #include "pmsis/rtos/malloc/pmsis_l2_malloc.h"
