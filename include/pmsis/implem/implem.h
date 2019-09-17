@@ -28,6 +28,8 @@
 #endif
 #include "rt/implem/implem.h"
 
+#if PULP_CHIP_FAMILY != CHIP_VIVOSOC3 && PULP_CHIP_FAMILY != CHIP_VIVOSOC3_1
+
 static inline int32_t pi_freq_set(pi_freq_domain_e domain, uint32_t freq)
 {
   return rt_freq_set_and_get(domain, freq, NULL);
@@ -37,5 +39,7 @@ static inline uint32_t pi_freq_get(pi_freq_domain_e domain)
 {
   return __rt_freq_domains[domain];
 }
+
+#endif
 
 #endif
