@@ -51,6 +51,7 @@ __rt_pe_start:
     and     a1, a0, a1
     srli    a0, a0, 16
 
+#ifdef MANUAL_DISPATCH_LOOP
     // Load the stack
     la      t0, __rt_cluster_pool              // Load fixed address which holds pointer to synchronization struct
     lw      t1, 0(t0)                          // Load synchronization struct
@@ -81,21 +82,7 @@ __rt_pe_start:
 #    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_SELF(s0)
 
     j       __rt_pe_start
-
-    // Hack in a stack
-    // L1 base = 0x1000 0000 -> alias = 0x0000 0000
-    // L1 size = 0x0010 0000
-    //
-    li      t0, ARCHI_APB_SOC_CTRL_ADDR + APB_SOC_INFO_OFFSET
-    lw      t0, 0(t0) // NUmber of cores and clusters
-    andi    t0, t0, 0x7FF // Number of cores
-    lui     t1, 0x100 // HACK L1 size
-    divu    t1, t1, t0 // Bytes per core
-    mul     t0, t1, a1 // Base of this core's stack
-    li      t1, 0x0000800 // HACK stack size
-    add     x2, t0, t1
-    jal     x1, main
-    jal     x1, exit
+#endif
 
     // Activate a few events
     li      t0, (1<<PULP_DISPATCH_EVENT) | (1<<PULP_HW_BAR_EVENT) | (1<<PULP_MUTEX_EVENT)
@@ -207,24 +194,29 @@ __rt_master_loop_update_next:
 
 __rt_no_stack_check:
     // Whatever the number of cores, we need to setup the barrier as the master code is compiled to use it
-//    sw      t5, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
-#ifdef ARCHI_HAS_CC
-    // When we have a cluster controller, don't configure the slave barrier
-    // if we don't have have any slave
-//    beqz    t5, __rt_master_no_slave_barrier
-#endif
-    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
-    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
+    // TODO
+//    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
+//    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
 __rt_master_no_slave_barrier:
-#ifdef ARCHI_HAS_CC
-    ori     t6, t5, 1<<ARCHI_CC_CORE_ID
-    sw      t6, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK + EU_BARRIER_SIZE(s3)
-    sw      t6, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK + EU_BARRIER_SIZE(s3)
-#endif
 
     // Set stack on slaves
     // For that we push first the function for setting stack, then the stack size and the base
     p.beqimm t5, 0, __rt_master_loop_no_slave
+    // Dispatch the stack initialization
+    la      a0, dispatch_node
+    li      t1, -1
+    sw      s10, 0(a0) // entry: __rt_set_slave_stack
+    sw      t2,  4(a0) // arg: stack size
+    sw      sp,  8(a0) // stack: stack address
+    sw      t1,  12(a0) // barrier: -1 for none
+    sw      t6,  16(a0) // nb_cores
+    // Wake the slaves
+    li      t1, (1<<PULP_DISPATCH_EVENT)
+    sw      t1, EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT(s3)
+    // Remove event from own status
+    sw      t1, EU_CORE_DEMUX_OFFSET + EU_CORE_BUFFER_CLEAR(s3)
+
+    // TODO
 //    sw      s10, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
 //    sw      t2, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
 //    sw      sp, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
@@ -279,18 +271,8 @@ __rt_slave_start:
 
 __rt_fork_return:
 
-#ifdef ARCHI_HAS_CC
-    // When the cluster has a controller barrier 0 is used for normal team barrier
-    // and barrier 1 is used for end of offload
-    p.elw   t0, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_WAIT_CLEAR + EU_BARRIER_SIZE(s2)
-#else
-#ifndef ARCHI_HAS_NO_BARRIER
+    // s1 contains barrier ID to trigger
     p.elw   t0, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_WAIT_CLEAR(s2)
-#else
-    jal     ra, __rt_team_barrier
-#endif
-#endif
-
 
 __rt_wait_for_dispatch:
 
@@ -303,6 +285,18 @@ __rt_wait_for_dispatch:
 #endif
 
     // Wait for PC + arg information from dispatcher
+    p.elw   x0, EU_CORE_EVENT_WAIT_CLEAR(s2)
+
+    // Check if this core is part of the dispatch task!
+    la      a0, dispatch_node
+    lw      t0, 16(a0) // number of cores
+    bge     s3, t0, __rt_wait_for_dispatch
+
+    // Load the entry point and the arguments from the structure
+    lw      s1, 12(a0) // barrier
+    lw      t0, 0(a0) // funtion pointer
+    lw      a0, 4(a0) // argument
+
 //    p.elw   t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
 //    p.elw   a0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
 
@@ -318,8 +312,8 @@ __rt_wait_for_dispatch:
 #endif
 
     // Check if this is an entry with a barrier at the end (fork entry)
-    andi    t1, t0, 1
-    bne     t1, zero, __rt_other_entry
+    addi    t1, s1, 1
+    beq     t1, zero, __rt_other_entry
 
 __rt_fork_entry:
 
@@ -343,14 +337,10 @@ __rt_set_slave_stack:
 #endif
 
     // Multiply the stack size by the core ID and add the stack base to get our stack
-//    p.elw   t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
-#ifdef ARCHI_HAS_CC
-    // If the cluster has a cluster controller, the first slave has core ID 0
-    // and thus we need to take the next stack
-    addi     s3, s3, 1
-#endif
+    la      t1, dispatch_node
+    lw      sp, 8(t1) // stack address
     p.mul   t4, s3, a0
-    add     sp, t4, t0
+    add     sp, sp, t4
 
 #ifdef __RT_USE_ASSERT
     beqz    a0, __rt_no_stack_check_end
