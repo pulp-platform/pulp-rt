@@ -191,8 +191,25 @@ static int __rt_cluster_setup(rt_fc_cluster_data_t *cluster)
     // Activate icache
     hal_icache_cluster_enable(cid);
 
+#if PULP_CHIP_FAMILY == CHIP_MEMPOOL
+    // Only one bootaddress for all cores
+    plp_ctrl_bootaddr_set_remote(cid, (int)_start);
 
+    // Enable the cores
+    if (rt_nb_active_pe() > 31)
+    {
+      // NOTE: The current cluster control unit has only one register to mask
+      // the fetch enable of the cores. Therefore, the cores 31-X all listen to
+      // the most significant bits. In other words, the programmer can only
+      // choose to enable any number of the first 31 cores or all cores.
+      eoc_fetch_enable_remote(cid, -1);
+    }
+    else
+    {
+      eoc_fetch_enable_remote(cid, (1<<rt_nb_active_pe()) - 1);
+    }
 
+#else
 #if defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
 
     // Fetch all cores, they will directly jump to the PE loop waiting from orders through the dispatcher
@@ -207,7 +224,7 @@ static int __rt_cluster_setup(rt_fc_cluster_data_t *cluster)
 #ifndef ARCHI_HAS_NO_DISPATCH
     eoc_fetch_enable_remote(cid, (1<<rt_nb_active_pe()) - 1);
 #endif
-
+#endif
 #endif
 
     return 0;
