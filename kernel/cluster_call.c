@@ -136,7 +136,11 @@ int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster
     cl_data->first_call_fc_for_cl = task;
 
   rt_compiler_barrier();
+#if PULP_CHIP_FAMILY == CHIP_MEMPOOL
+  eu_evt_trig(eu_evt_trig_cluster_addr(data->cid, 0), 1 << RT_CLUSTER_CALL_EVT);
+#else
   eu_evt_trig(eu_evt_trig_cluster_addr(data->cid, RT_CLUSTER_CALL_EVT), 0);
+#endif
 
   __rt_cluster_unlock(data, lock);
 
