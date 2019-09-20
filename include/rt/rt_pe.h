@@ -213,9 +213,9 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
   gv_vcd_dump_trace(trace, 1);
 #endif
 
-  if (!nb_cores)
+  if (!nb_cores || nb_cores > __rt_cluster_nb_active_pe)
   {
-    nb_cores = rt_nb_pe();
+    nb_cores = __rt_cluster_nb_active_pe;
   }
 
   // TODO barrier should be configurable, -1 means no barrier
