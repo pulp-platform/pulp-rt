@@ -123,8 +123,7 @@ void __rt_init()
 #endif
 
   // Initialize first the FLLs
-  // FIXME: GVSOC crashes on frequency initializaton...
-  // __rt_freq_init();
+  __rt_freq_init();
 #endif
 
   if (rt_is_fc()) {
