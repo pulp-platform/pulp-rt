@@ -65,6 +65,11 @@ rt_alloc_t __rt_alloc_l2[__RT_NB_ALLOC_L2];
 #define Max(x, y) (((x)>(y))?(x):(y))
 #endif
 
+#ifdef CONFIG_ALLOC_L2_PWD_NB_BANKS
+static uint32_t __rt_alloc_account_0[CONFIG_ALLOC_L2_PWD_NB_BANKS];
+static uint32_t __rt_alloc_account_1[CONFIG_ALLOC_L2_PWD_NB_BANKS];
+#endif
+
 /*
   A semi general purpose memory allocator based on the assumption that when something is freed it's size is known.
   The rationnal is to get rid of the usual meta data overhead attached to traditionnal memory allocators.
@@ -478,8 +483,8 @@ void __rt_allocs_init()
   rt_user_alloc_init(&__rt_alloc_l2[2], rt_l2_shared_base(), rt_l2_shared_size());
 #ifdef CONFIG_ALLOC_L2_PWD_NB_BANKS
   __rt_alloc_l2[2].track_pwd = 1;
-  __rt_alloc_l2[2].pwd_count = rt_alloc(RT_ALLOC_FC_DATA, sizeof(int)*CONFIG_ALLOC_L2_PWD_NB_BANKS);
-  __rt_alloc_l2[2].ret_count = rt_alloc(RT_ALLOC_FC_DATA, sizeof(int)*CONFIG_ALLOC_L2_PWD_NB_BANKS);
+  __rt_alloc_l2[2].pwd_count = __rt_alloc_account_0;
+  __rt_alloc_l2[2].ret_count = __rt_alloc_account_0;
   for (int i=0; i<CONFIG_ALLOC_L2_PWD_NB_BANKS; i++)
   {
     __rt_alloc_l2[2].pwd_count[i] = 0;
