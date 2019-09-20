@@ -218,17 +218,11 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
     nb_cores = rt_nb_pe();
   }
 
-  // TODO barrier should be configurable
+  // TODO barrier should be configurable, -1 means no barrier
   int barrier = 0;
 
-  // Make sure the core ID will not overflow
-  if (first_core + nb_cores > ARCHI_CLUSTER_NB_PE)
-  {
-    first_core = 0;
-  }
-
   // Write the dispatch
-  dispatch_node_t *dispatch = dispatch_node_init(first_core, nb_cores, entry, arg, barrier);
+  dispatch_node_t *dispatch = dispatch_node_init(nb_cores, entry, arg, barrier);
 
   // Setup the barrier
   if (barrier >= 0)
@@ -238,20 +232,17 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
     {
       pulp_write32(ARCHI_EU_DEMUX_ADDR + EU_BARRIER_DEMUX_OFFSET + EU_BARRIER_AREA_OFFSET_GET(barrier) + 4*i + EU_HW_BARR_TARGET_MASK, 0);
     }
-    unsigned first = dispatch->first_core;
-    unsigned last  = dispatch->first_core + dispatch->nb_cores;
     for (int i = 0; i < ARCHI_CLUSTER_NB_PE/32; i ++)
     {
       // Disable mask
-      unsigned disable = first < 32 ? (1 << first) - 1 : -1;
-      unsigned enable  = last  < 32 ? (1 <<  last) - 1 : -1;
-      unsigned mask    = enable & ~disable;
-      printf("0x%8x 0x%8x 0x%8x, %d %d\n", mask, enable, disable, first, last);
+      unsigned mask = nb_cores < 32 ? (1 << nb_cores) - 1 : -1;
       eu_bar_setup(ARCHI_EU_DEMUX_ADDR + EU_BARRIER_DEMUX_OFFSET + EU_BARRIER_AREA_OFFSET_GET(barrier) + 4*i, mask);
-      first = first > 32 ? first - 32 : 0;
-      last  = last  > 32 ? last  - 32 : 0;
+      nb_cores = nb_cores > 32 ? nb_cores - 32 : 0;
     }
   }
+
+  // Everything needs to be in place before triggering the cores
+  rt_compiler_barrier();
 
   // Trigger the event
   pulp_write32(ARCHI_EU_DEMUX_ADDR + EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT, 1<<PULP_DISPATCH_EVENT);
@@ -264,9 +255,6 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
   {
     __rt_team_barrier();
   }
-
-  // Update the first core
-  first_core = first_core + nb_cores;
 
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 0);
