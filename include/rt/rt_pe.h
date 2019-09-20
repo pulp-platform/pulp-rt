@@ -198,6 +198,82 @@ static inline void cl_team_critical_exit()
   rt_team_critical_exit();
 }
 
+#if PULP_CHIP_FAMILY == CHIP_MEMPOOL
+static unsigned first_core = 0;
+
+static inline void rt_team_init()
+{
+  first_core = 0;
+}
+
+static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
+{
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 1);
+#endif
+
+  if (!nb_cores)
+  {
+    nb_cores = rt_nb_pe();
+  }
+
+  // TODO barrier should be configurable
+  int barrier = 0;
+
+  // Make sure the core ID will not overflow
+  if (first_core + nb_cores > ARCHI_CLUSTER_NB_PE)
+  {
+    first_core = 0;
+  }
+
+  // Write the dispatch
+  dispatch_node_t *dispatch = dispatch_node_init(first_core, nb_cores, entry, arg, barrier);
+
+  // Setup the barrier
+  if (barrier >= 0)
+  {
+    // Clear the target mask first to ensure no core gets triggered by some invalid states
+    for (int i = 0; i < ARCHI_CLUSTER_NB_PE/32; ++i)
+    {
+      pulp_write32(ARCHI_EU_DEMUX_ADDR + EU_BARRIER_DEMUX_OFFSET + EU_BARRIER_AREA_OFFSET_GET(barrier) + 4*i + EU_HW_BARR_TARGET_MASK, 0);
+    }
+    unsigned first = dispatch->first_core;
+    unsigned last  = dispatch->first_core + dispatch->nb_cores;
+    for (int i = 0; i < ARCHI_CLUSTER_NB_PE/32; i ++)
+    {
+      // Disable mask
+      unsigned disable = first < 32 ? (1 << first) - 1 : -1;
+      unsigned enable  = last  < 32 ? (1 <<  last) - 1 : -1;
+      unsigned mask    = enable & ~disable;
+      printf("0x%8x 0x%8x 0x%8x, %d %d\n", mask, enable, disable, first, last);
+      eu_bar_setup(ARCHI_EU_DEMUX_ADDR + EU_BARRIER_DEMUX_OFFSET + EU_BARRIER_AREA_OFFSET_GET(barrier) + 4*i, mask);
+      first = first > 32 ? first - 32 : 0;
+      last  = last  > 32 ? last  - 32 : 0;
+    }
+  }
+
+  // Trigger the event
+  pulp_write32(ARCHI_EU_DEMUX_ADDR + EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT, 1<<PULP_DISPATCH_EVENT);
+  // Remove the event from own status
+  pulp_write32(ARCHI_EU_DEMUX_ADDR + EU_CORE_DEMUX_OFFSET + EU_CORE_BUFFER_CLEAR, 1<<PULP_DISPATCH_EVENT);
+
+  entry(arg);
+
+  if (barrier >= 0)
+  {
+    __rt_team_barrier();
+  }
+
+  // Update the first core
+  first_core = first_core + nb_cores;
+
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 0);
+#endif
+}
+
+#else
 #if !defined(ARCHI_HAS_CC)
 
 static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
@@ -233,6 +309,7 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) 
   rt_team_offload_wait();
 }
 
+#endif
 #endif
 
 
