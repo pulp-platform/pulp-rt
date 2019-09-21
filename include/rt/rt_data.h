@@ -510,6 +510,7 @@ typedef struct rt_i2s_dev_s {
   void (*capture)(rt_i2s_t *dev_name, void *buffer, size_t size, rt_event_t *event);
   void (*start)(rt_i2s_t *handle);
   void (*stop)(rt_i2s_t *handle);
+  void (*channel_capture)(rt_i2s_t *dev_name, int channel, void *buffer, size_t size, rt_event_t *event);
 } rt_i2s_dev_t;
 
 typedef struct rt_i2s_s {
@@ -525,6 +526,7 @@ typedef struct rt_i2s_s {
   char dual;
   char running;
   char width;
+  char channels;
 } rt_i2s_t;
 
 typedef struct rt_fs_l2_s {

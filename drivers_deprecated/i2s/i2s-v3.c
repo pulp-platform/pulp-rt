@@ -36,13 +36,13 @@
 
 #include "rt/rt_api.h"
 
-rt_i2s_dev_t i2s_desc;
-static rt_i2s_t *__rt_i2s_first[ARCHI_UDMA_NB_I2S];
-
 static inline uint32_t udma_i2s_addr(int itf)
 {
   return ARCHI_UDMA_ADDR + UDMA_PERIPH_OFFSET(ARCHI_UDMA_I2S_ID(itf));
 }
+
+rt_i2s_dev_t i2s_desc;
+static rt_i2s_t *__rt_i2s_first[ARCHI_UDMA_NB_I2S];
 
 static inline int __rt_i2s_id(rt_i2s_t *i2s)
 {
@@ -93,8 +93,10 @@ static rt_i2s_t *__rt_i2s_open(rt_dev_t *dev, rt_i2s_conf_t *conf, rt_event_t*ev
   // The actual I2S frequency is the sampling one multiplied by the decimation
   // as we get one 1 decimiation bit per cycle.
   int i2s_freq = conf->frequency;
-  if (conf->pdm) i2s_freq *= (1<<conf->decimation_log2);
-  else i2s_freq *= conf->width;
+  if (conf->pdm)
+    i2s_freq *= (1<<conf->decimation_log2);
+  else
+    i2s_freq *= conf->width * conf->channels;
 
   if (periph_freq < i2s_freq*2) {
     return NULL;
@@ -107,6 +109,8 @@ static rt_i2s_t *__rt_i2s_open(rt_dev_t *dev, rt_i2s_conf_t *conf, rt_event_t*ev
   i2s->i2s_freq = i2s_freq;
   i2s->pdm = conf->pdm;
   i2s->decimation_log2 = conf->decimation_log2;
+  i2s->channels = conf->channels;
+
 
   i2s->periph_id = periph_id;
   i2s->udma_channel = i2s->periph_id*2;
@@ -127,6 +131,15 @@ static rt_i2s_t *__rt_i2s_open(rt_dev_t *dev, rt_i2s_conf_t *conf, rt_event_t*ev
   // Now configure the I2s part
 
   soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id));
+
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id) + 4);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id) + 5);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id) + 8);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id) + 9);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id) + 12);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id) + 13);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id) + 16);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PERIPH_EVT_BASE(periph_id) + 17);
 
   int shift = 10 - i2s->decimation_log2;
   if (shift > 7) shift = 7;
@@ -296,6 +309,24 @@ static void __rt_i2s_capture(rt_i2s_t *dev, void *buffer, size_t size, rt_event_
   rt_irq_restore(irq);
 }
 
+
+static void __rt_i2s_channel_capture(rt_i2s_t *dev, int channel, void *buffer, size_t size, rt_event_t *event)
+{
+  rt_trace(RT_TRACE_CAM, "[I2S] Capture (buffer: %p, size: 0x%x)\n", buffer, size);
+
+  int irq = rt_irq_disable();
+
+  rt_event_t *call_event = __rt_wait_event_prepare(event);
+
+  rt_periph_copy_init(&call_event->implem.copy, 0);
+
+  rt_periph_copy(&call_event->implem.copy, dev->udma_channel + 2 + channel, (unsigned int) buffer, size, UDMA_CHANNEL_CFG_SIZE_16, call_event);
+
+  __rt_wait_event_check(event, call_event);
+
+  rt_irq_restore(irq);
+}
+
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_i2s_init()
 {
   // In case the peripheral clock can dynamically change, we need to be notified
@@ -344,8 +375,6 @@ rt_i2s_t* rt_i2s_open(char *dev_name, rt_i2s_conf_t *conf, rt_event_t*event)
 
   memcpy((void *)&i2s->desc, (void *)desc, sizeof(rt_i2s_dev_t));
 
-  i2s->channels = conf->channels;
-
   rt_irq_restore(irq);
 
   return i2s;
@@ -361,4 +390,5 @@ rt_i2s_dev_t i2s_desc = {
   .capture   = &__rt_i2s_capture,
   .start     = &__rt_i2s_start,
   .stop      = &__rt_i2s_stop,
+  .channel_capture   = &__rt_i2s_channel_capture,
 };

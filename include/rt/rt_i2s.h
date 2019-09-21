@@ -70,6 +70,7 @@ typedef struct rt_i2s_conf_s {
   unsigned char  width;             /*!< Width of the samples (8 or 16 bits). */
   signed char id;                   /*!< If it is different from -1, this specifies on which I2S interface the device is connected. */
   unsigned int flags;               /*!< Additional flags. Some of these flags may be platform-specific. */
+  unsigned int channels;            /*!< Number of channels for this interface. */
 } rt_i2s_conf_t;
 
 
@@ -113,6 +114,8 @@ rt_i2s_t *rt_i2s_open(char *dev_name, rt_i2s_conf_t *conf, rt_event_t *event);
  * \param event     The event used for managing termination. The event will be notified as soon as the specified amount of bytes have been captured.
  */
 static inline void rt_i2s_capture(rt_i2s_t *handle, void *buffer, size_t size, rt_event_t *event);
+
+static inline void rt_i2s_channel_capture(rt_i2s_t *handle, int channel, void *buffer, size_t size, rt_event_t *event);
 
 
 
@@ -171,6 +174,11 @@ static inline void rt_i2s_close(rt_i2s_t *dev, rt_event_t *event)
 static inline void rt_i2s_capture(rt_i2s_t *dev, void *buffer, size_t size, rt_event_t *event)
 {
   dev->desc.capture(dev, buffer, size, event);
+}
+
+static inline void rt_i2s_channel_capture(rt_i2s_t *dev, int channel, void *buffer, size_t size, rt_event_t *event)
+{
+  dev->desc.channel_capture(dev, channel, buffer, size, event);
 }
 
 static inline void rt_i2s_start(rt_i2s_t *dev)
