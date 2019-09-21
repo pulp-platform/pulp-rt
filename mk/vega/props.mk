@@ -20,3 +20,4 @@ udma/archi=3
 udma/version=3
 soc_eu/version=2
 rtc/version=1
+udma/mram/version=1
