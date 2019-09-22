@@ -729,8 +729,10 @@ unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
 
 #endif
 
+#ifdef __RT_USE_BRIDGE
   if (Fll == FLL_SOC)
     __rt_bridge_set_available();
+#endif
   
   return SetFrequency;
 }
@@ -840,7 +842,9 @@ void  __attribute__ ((noinline)) InitFlls()
   InitOneFll(FLL_SOC, PMURetentionState.Fields.FllSoCRetention);
   if (PMU_ClusterIsRunning()) InitOneFll(FLL_CLUSTER, PMURetentionState.Fields.FllClusterRetention);
 
+#ifdef __RT_USE_BRIDGE
   __rt_bridge_set_available();
+#endif
 }
 
 

@@ -41,7 +41,6 @@
 
 #include "hal/pulp.h"
 
-extern unsigned int __rt_platform;
 extern unsigned int __rt_iodev;
 extern unsigned int __rt_iodev_uart_baudrate;
 extern unsigned int __rt_iodev_uart_channel;
@@ -287,28 +286,52 @@ static inline int rt_nb_pe()
 #endif
 
 
+#ifndef __PLATFORM__
+
+extern unsigned int __rt_platform;
 
 static inline int rt_platform()
 {
   return __rt_platform;
 }
 
+#else
+
+static inline int rt_platform()
+{
+  return __PLATFORM__;
+}
+
+#endif
+
 #define RT_IODEV_DEFAULT 0
 #define RT_IODEV_UART 1
 
 static inline int rt_iodev()
 {
+#ifdef CONFIG_IODEV
+  return CONFIG_IODEV;
+#else
   return __rt_iodev;
+#endif
 }
 
 static inline int rt_iodev_uart_baudrate()
 {
+#ifdef CONFIG_UART_BAUDRATE
+  return CONFIG_UART_BAUDRATE;
+#else
   return __rt_iodev_uart_baudrate;
+#endif
 }
 
 static inline int rt_iodev_uart_channel()
 {
+#ifdef CONFIG_UART_CHANNEL
+  return CONFIG_UART_CHANNEL;
+#else
   return __rt_iodev_uart_channel;
+#endif
 }
 
 

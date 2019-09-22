@@ -86,12 +86,6 @@ static inline int rt_debug_config_werror();
     rt_msg("\033[34mINFO\033[0m: " fmt, ##x); \
   } while(0)
 
-#define rt_warning(fmt, x...) \
-  do { \
-    if (rt_debug_config_warnings()) rt_msg("\033[33mWARNING\033[0m: " fmt, ##x); \
-    if (rt_debug_config_werror()) abort(); \
-  } while(0)
-
 #define rt_error(fmt, x...) \
   do { \
     rt_msg("\033[31mERROR\033[0m: " fmt, ##x); \
@@ -121,6 +115,20 @@ static inline int rt_debug_config_werror();
 
 #endif
 
+
+#if defined(__RT_USE_WARNING)
+
+#define rt_warning(fmt, x...) \
+  do { \
+    if (rt_debug_config_warnings()) rt_msg("\033[33mWARNING\033[0m: " fmt, ##x); \
+    if (rt_debug_config_werror()) abort(); \
+  } while(0)
+
+#else
+
+#define rt_warning(x...) while(0)
+
+#endif
 
 
 

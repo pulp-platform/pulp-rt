@@ -78,7 +78,9 @@ void __rt_init()
   hal_pmu_bypass_set (ARCHI_REG_FIELD_SET (hal_pmu_bypass_get (), 1, 11, 1) );
 #endif
 
+#ifdef __RT_USE_BRIDGE
   __rt_bridge_set_available();
+#endif
 
   if (rt_platform() == ARCHI_PLATFORM_GVSOC)
   {
@@ -128,12 +130,14 @@ void __rt_init()
 
   // Schedulers are also initialized now as other modules are accessing directly
   // some of their variables.
-  __rt_thread_sched_init();
+  //__rt_thread_sched_init();
   __rt_event_sched_init();
 
 #ifdef PADS_VERSION
+#ifdef CONFIG_PADS_ENABLED
   // Initialize now the default padframe so that the user can overwrite it
   __rt_padframe_init();
+#endif
 #endif
 
   // Call global and static constructors
@@ -145,7 +149,9 @@ void __rt_init()
   // Now do individual modules initializations.
   if (__rt_cbsys_exec(RT_CBSYS_START)) goto error;
 
+#if defined(CONFIG_CHECK_CLUSTER_START) && CONFIG_CHECK_CLUSTER_START == 1
   if (__rt_check_clusters_start()) goto error;
+#endif
 
   return;
 
