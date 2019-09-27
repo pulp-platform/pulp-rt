@@ -26,6 +26,7 @@
 #include "rt/chips/rt_vega.h"
 #include "rt/chips/rt_gap9.h"
 #include "rt/chips/rt_pulpissimo.h"
+#include "rt/chips/rt_pulp.h"
 
 #include "rt/rt_irq.h"
 #include "rt/rt_utils.h"
