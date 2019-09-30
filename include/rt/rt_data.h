@@ -393,6 +393,8 @@ typedef struct
   struct pi_cluster_task *first_call_fc_for_cl;
   struct pi_cluster_task *first_call_fc;
   struct pi_cluster_task *last_call_fc;
+  unsigned int tls_base;
+  unsigned int tls_size;
 } rt_cluster_call_pool_t;
 
 typedef struct cluster_data_t {
@@ -823,14 +825,27 @@ extern RT_FC_TINY_DATA void *__rt_hyper_udma_handle;
 #define RT_CLUSTER_TASK_NB_CORES              (5*4)
 #define RT_CLUSTER_TASK_COMPLETION_CALLBACK   (6*4)
 #define RT_CLUSTER_TASK_STACK_ALLOCATED       (7*4)
+#define RT_CLUSTER_TASK_IS_CC_TASK            (8*4)
 #define RT_CLUSTER_TASK_NEXT                  (9*4)
 #define RT_CLUSTER_TASK_PENDING               (10*4)
 #define RT_CLUSTER_TASK_CORE_MASK             (11*4)
 
+#define CL_TASK_STACKS           (0*4)
+#define CL_TASK_STACK_SIZE       (1*4)
+#define CL_TASK_NB_CORES         (2*4)
+#define CL_TASK_CLUSTER_TASK     (3*4)
+#define CL_TASK_DISPATCHER_BASE  (4*4)
+#define CL_TASK_BARRIER_BASE     (5*4)
+#define CL_TASK_MUTEX_BASE       (6*4)
+#define CL_TASK_CORE_MASK        (7*4)
+#define CL_TASK_SLAVE_MASK       (8*4)
+#define CL_TASK_PENDING          (9*4)
 
 #define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC_FOR_CL    (0*4)
 #define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC           (1*4)
 #define RT_CLUSTER_CALL_POOL_T_FIRST_LAST_FC           (2*4)
+#define RT_CLUSTER_CALL_POOL_T_TLS_BASE                (3*4)
+#define RT_CLUSTER_CALL_POOL_T_TLS_SIZE                (4*4)
 
 
 #define PI_TASK_T_ARG_0          (0*4)

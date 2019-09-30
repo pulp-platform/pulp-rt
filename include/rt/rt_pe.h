@@ -115,6 +115,10 @@ static inline void rt_team_critical_exit();
 
 #if defined(ARCHI_HAS_CLUSTER)
 
+extern __thread uint32_t dispatcher_base;
+extern __thread uint32_t barrier_base;
+extern __thread uint32_t mutex_base;
+
 static inline void __rt_team_barrier();
 
 #if defined(EU_VERSION) && EU_VERSION >= 3
@@ -165,13 +169,13 @@ static inline void __rt_team_barrier_config(unsigned int core_mask)
 #ifdef ARCHI_HAS_NO_BARRIER
   __rt_barrier_wait_mask = core_mask;
 #else
-  eu_bar_setup(eu_bar_addr(0), core_mask);
+  eu_bar_setup(barrier_base, core_mask);
 #endif
 }
 
 static inline void __rt_team_config(int nb_cores) {
   unsigned int core_mask = (1<<nb_cores) - 1;
-  eu_dispatch_team_config(core_mask);
+  eu_dispatch_team_config_base(dispatcher_base, core_mask);
   __rt_team_barrier_config(core_mask);
 }
 
@@ -207,9 +211,11 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
   gv_vcd_dump_trace(trace, 1);
 #endif
 
+  unsigned int base = dispatcher_base;
+
   if (nb_cores) __rt_team_config(nb_cores);
-  eu_dispatch_push((int)entry);
-  eu_dispatch_push((int)arg);
+  eu_dispatch_push_base(base, (int)entry);
+  eu_dispatch_push_base(base, (int)arg);
   entry(arg);
 
   __rt_team_barrier();
@@ -221,23 +227,39 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
 
 #else
 
-static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg) {
-  rt_team_offload(nb_cores, entry, arg);
+static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
+{
+  // if (pi_core_id() == ARCHI_CC_CORE_ID)
+  // {
+  //   rt_team_offload(nb_cores, entry, arg);
 
-  if (nb_cores == 0)
-    nb_cores = rt_team_nb_cores();
+  //   if (nb_cores == 0)
+  //     nb_cores = rt_team_nb_cores();
 
-  if (nb_cores == ARCHI_CLUSTER_NB_PE + 1)
+  //   if (nb_cores == ARCHI_CLUSTER_NB_PE + 1)
+  //     entry(arg);
+
+  //   rt_team_offload_wait();
+  // }
+  // else
+  {
+    unsigned int base = dispatcher_base;
+
+    eu_dispatch_push_base(base, (int)entry);
+    eu_dispatch_push_base(base, (int)arg);
+
     entry(arg);
 
-  rt_team_offload_wait();
+    __rt_team_barrier();
+  }
 }
 
 #endif
 
 
-static inline void __rt_team_barrier() {
-  eu_bar_trig_wait_clr(eu_bar_addr(0));
+static inline void __rt_team_barrier()
+{
+  eu_bar_trig_wait_clr(barrier_base);
 }
 
 static inline void rt_team_barrier() {
@@ -258,7 +280,7 @@ static inline void rt_team_critical_enter()
   gv_vcd_dump_trace(trace, 3);
 #endif
 
-  eu_mutex_lock(eu_mutex_addr(0));
+  eu_mutex_lock(mutex_base);
 }
 
 static inline void rt_team_critical_exit()
@@ -268,7 +290,7 @@ static inline void rt_team_critical_exit()
   gv_vcd_dump_trace(trace, 1);
 #endif
 
-  eu_mutex_unlock(eu_mutex_addr(0));
+  eu_mutex_unlock(mutex_base);
 }
 
 #else

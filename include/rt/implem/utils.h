@@ -204,7 +204,8 @@ extern unsigned char __fc_tcdm_heap_size;
 #endif
 
 #endif
-extern unsigned char __l1_heap_start;;
+extern unsigned char __tdata_size;
+extern unsigned char __l1_heap_start;
 extern unsigned char __l1_heap_size;
 extern unsigned char __irq_vector_base;
 
@@ -488,6 +489,11 @@ static inline int rt_l2_size() { return 0; }
 
 #endif
 
+static inline int rt_tls_size()
+{
+  return (int)&__tdata_size;
+}
+
 static inline void *rt_l1_base(int cid)
 {
 #if defined(ARCHI_HAS_L1)
@@ -685,6 +691,101 @@ static inline void __rt_wait_for_event(unsigned int mask) {
   eu_evt_maskWaitAndClr(mask);
 #endif
 }
+
+static inline void __rt_bitfield_mask_init(unsigned int *bitfield, unsigned int mask)
+{
+  *bitfield = mask;
+}
+
+static inline void __rt_bitfield_init(unsigned int *bitfield, int nb_bits)
+{
+  if (nb_bits == 32)
+    *bitfield = 0xffffffff;
+  else
+    *bitfield = (1 << nb_bits) - 1;
+}
+
+static inline void __rt_bitfield_clear(unsigned int *bitfield)
+{
+  *bitfield = 0;
+}
+
+static inline int __rt_bitfield_get(unsigned int bitfield)
+{
+#ifndef RV_ISA_RV32
+  int result = __builtin_pulp_ff1(bitfield);
+  if (result == 32)
+    return -1;
+  else
+    return result;
+#else
+  return 0;
+#endif
+}
+
+static inline int __rt_bitfield_get_nocheck(unsigned int bitfield)
+{
+#ifndef RV_ISA_RV32
+  return __builtin_pulp_ff1(bitfield);
+#else
+  return 0;
+#endif
+}
+
+static inline int __rt_bitfield_alloc(unsigned int *bitfield)
+{
+  int bit = __rt_bitfield_get(*bitfield);
+  if (bit == -1)
+    return -1;
+  *bitfield ^= 1<<bit;
+  return bit;
+}
+
+static inline int __rt_bitfield_alloc_nocheck(unsigned int *bitfield)
+{
+  unsigned int free = *bitfield;
+  int bit = __rt_bitfield_get_nocheck(free);
+  free = __BITCLR_R(free, 1, bit);
+  *bitfield = free;
+  return bit;
+}
+
+static inline unsigned int __rt_bitfield_alloc_set_nocheck(unsigned int *bitfield, unsigned int size)
+{
+  unsigned int core_mask = 0;
+  unsigned int free = *bitfield;
+  unsigned int free_save = free;
+  for (unsigned int i=0; i<size; i++)
+  {
+    int bit = __rt_bitfield_get_nocheck(free);
+    free = __BITCLR_R(free, 1, bit);
+  }
+
+  *bitfield = free;
+
+  return free ^ free_save;
+}
+
+static inline int __rt_bitfield_reserve(unsigned int *bitfield, int id)
+{
+  if (!(*bitfield & (1<<id)))
+  {
+    return -1;
+  }
+  *bitfield &= ~(1<<id);
+  return 0;
+}
+
+static inline void __rt_bitfield_free(unsigned int *bitfield, int id)
+{
+  *bitfield |= 1 << id;
+}
+
+static inline void __rt_bitfield_free_set(unsigned int *bitfield, uint32_t set)
+{
+  *bitfield |= set;
+}
+
 
 /// @endcond
 

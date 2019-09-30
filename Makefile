@@ -14,7 +14,7 @@ PULP_PROPERTIES += host/archi fc_itc/version udma/hyper/version udma/cpi/version
 PULP_PROPERTIES += udma/i2s/version udma/uart/version event_unit/version perf_counters
 PULP_PROPERTIES += fll/version soc/spi_master soc/apb_uart padframe/version
 PULP_PROPERTIES += udma/spim/version gpio/version udma/archi udma/version
-PULP_PROPERTIES += soc_eu/version compiler rtc/version udma/mram/version
+PULP_PROPERTIES += soc_eu/version compiler rtc/version udma/mram/version cluster/has_cc
 
 include $(TARGET_INSTALL_DIR)/rules/pulp_properties.mk
 
@@ -52,7 +52,7 @@ ifdef CONFIG_CFLAGS
 PULP_CFLAGS += $(CONFIG_CFLAGS)
 endif
 
-PULP_CFLAGS += -Os -g -fno-jump-tables -Werror
+PULP_CFLAGS += -O2 -g -fno-jump-tables -Werror
 PULP_CFLAGS += -Wextra -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wundef
 ifneq '$(compiler)' 'llvm'
 PULP_CFLAGS += -fno-tree-loop-distribute-patterns

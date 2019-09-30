@@ -28,6 +28,29 @@
 #endif
 #include "rt/implem/implem.h"
 
+static inline void cl_task_offload(cl_task_t *task, void (*entry)(void *), void *arg)
+{
+  uint32_t dispatcher_base = task->dispatcher_base;
+
+  // TODO ADD supprot for partial team
+
+  task->pending = 1;
+
+  eu_dispatch_team_config(1<<__builtin_pulp_ff1(task->core_mask));
+
+  eu_dispatch_push_base(dispatcher_base, (int)entry);
+  eu_dispatch_push_base(dispatcher_base, (int)arg);
+}
+
+static inline void cl_task_wait(cl_task_t *task)
+{
+  while(*(volatile int *)&task->pending)
+  {
+  	eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+  }
+}
+
+
 #if PULP_CHIP_FAMILY != CHIP_VIVOSOC3 && PULP_CHIP_FAMILY != CHIP_VIVOSOC3_1
 
 static inline int32_t pi_freq_set(pi_freq_domain_e domain, uint32_t freq)

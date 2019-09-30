@@ -108,7 +108,11 @@ PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/soc_event_eu.S
 endif
 endif
 
+ifneq '$(cluster/has_cc)' ''
+PULP_LIB_CL_ASM_SRCS_rt += kernel/$(fc_archi)/pe-eu-v$(event_unit/version)-cc.S
+else
 PULP_LIB_CL_ASM_SRCS_rt += kernel/$(fc_archi)/pe-eu-v$(event_unit/version).S
+endif
 
 ifeq '$(event_unit/version)' '1'
 PULP_LIB_FC_SRCS_rt += kernel/riscv/pe-eu-v1-entry.c

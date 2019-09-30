@@ -197,6 +197,18 @@ SECTIONS
     _bss_end = .;
   } > L2
 
+  .tdata : {
+    _tdata_start = .;
+    . = ALIGN(8);
+    *(.tbss)
+    *(.tbss.*)
+    *(.tdata)
+    *(.tdata.*)
+    . = ALIGN(4);
+    _tdata_end = .;
+  } > L2
+
+
 
   /* Following sections are keeping the cluster data
    * in L2 until the cluster is powered up */
@@ -238,6 +250,8 @@ SECTIONS
   __l1_end = ALIGN(4);
 
   __l2_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
+
+  __tdata_size = _tdata_end - _tdata_start;
 
 
 

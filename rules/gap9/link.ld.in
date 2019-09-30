@@ -193,6 +193,17 @@ SECTIONS
     _bss_end = .;
   } > L2
 
+  .tdata : {
+    _tdata_start = .;
+    . = ALIGN(8);
+    *(.tbss)
+    *(.tbss.*)
+    *(.tdata)
+    *(.tdata.*)
+    . = ALIGN(4);
+    _tdata_end = .;
+  } > L2
+
 
   __l2_priv0_end = ALIGN(8);
 
@@ -291,6 +302,8 @@ SECTIONS
   __l1_end = ALIGN(8);
 
   __l2_shared_end = LOADADDR(.bss_l1) + SIZEOF(.bss_l1);
+
+  __tdata_size = _tdata_end - _tdata_start;
 
 
 
