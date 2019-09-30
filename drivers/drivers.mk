@@ -6,6 +6,7 @@
 
 # PADS
 ifeq '$(CONFIG_PADS_ENABLED)' '1'
+PULP_CFLAGS += -DCONFIG_PADS_ENABLED=1
 ifneq '$(padframe/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/pads/pads-v$(padframe/version).c
 endif
