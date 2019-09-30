@@ -823,9 +823,9 @@ extern RT_FC_TINY_DATA void *__rt_hyper_udma_handle;
 #define RT_CLUSTER_TASK_NB_CORES              (5*4)
 #define RT_CLUSTER_TASK_COMPLETION_CALLBACK   (6*4)
 #define RT_CLUSTER_TASK_STACK_ALLOCATED       (7*4)
-#define RT_CLUSTER_TASK_NEXT                  (9*4)
-#define RT_CLUSTER_TASK_PENDING               (10*4)
-#define RT_CLUSTER_TASK_CORE_MASK             (11*4)
+#define RT_CLUSTER_TASK_NEXT                  (8*4)
+#define RT_CLUSTER_TASK_PENDING               (9*4)
+#define RT_CLUSTER_TASK_CORE_MASK             (10*4)
 
 
 #define RT_CLUSTER_CALL_POOL_T_FIRST_CALL_FC_FOR_CL    (0*4)
