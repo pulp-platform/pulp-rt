@@ -34,6 +34,9 @@ ifeq '$(CONFIG_SCHED_ENABLED)' '1'
 PULP_LIB_FC_SRCS_rt     += kernel/thread.c kernel/events.c
 endif
 
+ifeq '$(CONFIG_CHECK_CLUSTER_START)' '1'
+PULP_CFLAGS             += -DCONFIG_CHECK_CLUSTER_START=1
+endif
 
 
 ifeq '$(CONFIG_ALLOC_ENABLED)' '1'
