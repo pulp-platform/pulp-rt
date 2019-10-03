@@ -26,6 +26,10 @@ endif
 
 include $(PULP_RT_CONFIG)
 
+ifdef ARCHI_DIR
+PULP_CFLAGS += -I$(ARCHI_DIR)
+endif
+
 PULP_CFLAGS += -I$(CURDIR)/kernel
 
 ifdef USE_PMSIS
