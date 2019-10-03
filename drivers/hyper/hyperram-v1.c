@@ -163,7 +163,6 @@ static char __pi_hyper_temp_buffer[__PI_HYPER_TEMP_BUFFER_SIZE];
 void pi_hyper_conf_init(struct pi_hyper_conf *conf)
 {
   conf->id = -1;
-  conf->ram_size = 0;
   conf->type = PI_HYPER_TYPE_RAM;
   conf->cs = 0;
 }
@@ -226,18 +225,16 @@ int32_t pi_hyper_open(struct pi_device *device)
   struct pi_hyper_conf *conf = (struct pi_hyper_conf *)device->config;
   int periph_id;
   int channel;
-  int ramsize;
 
   periph_id = ARCHI_UDMA_HYPER_ID(conf->id);
   channel = UDMA_EVENT_ID(periph_id);
-  ramsize = conf->ram_size;
 
   pi_hyper_t *hyper = pmsis_l2_malloc(sizeof(pi_hyper_t));
   if (hyper == NULL) return -1;
 
   if (conf->type == PI_HYPER_TYPE_RAM)
   {
-    if (__pi_hyper_init(hyper, ramsize))
+    if (__pi_hyper_init(hyper, 1000000))
       goto error;
   }
 
