@@ -237,7 +237,7 @@ static void __rt_uart_cluster_req(void *_req)
   rt_irq_restore(irq);
 }
 
-void pi_uart_cluster_write(rt_uart_t *handle, void *buffer, size_t size, rt_uart_req_t *req)
+void pi_cl_uart_cluster_write(rt_uart_t *handle, void *buffer, size_t size, rt_uart_req_t *req)
 {
   req->uart = handle;
   req->buffer = buffer;
