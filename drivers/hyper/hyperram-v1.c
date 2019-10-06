@@ -23,6 +23,8 @@
 
 // If not NULL, this task is enqueued when the current transfer is finished.
 RT_FC_TINY_DATA struct pi_task *__rt_hyper_end_task;
+// If not NULL, a task is on-going, all other should be put on-hold
+RT_FC_TINY_DATA struct pi_task *__rt_hyper_current_task;
 
 // Following variables are used to reenqueue transfers to overcome burst limit.
 // This is used directly by assebly to quickly reenqueue the transfer.
@@ -201,6 +203,7 @@ static void __rt_hyper_handle_copy()
     if (task != NULL)
     {
       __rt_hyper_end_task = NULL;
+      __rt_hyper_current_task = NULL;
       __rt_event_handle_end_of_task(task);
     }
 
@@ -588,6 +591,7 @@ static int __pi_hyper_resume_misaligned_read(struct pi_task *task)
       }
 
       __rt_hyper_pending_emu_task = NULL;
+      __rt_hyper_current_task = NULL;
       __rt_event_handle_end_of_task(task);
 
       return 1;
@@ -743,6 +747,7 @@ static int __pi_hyper_resume_misaligned_write(struct pi_task *task)
       }
 
       __rt_hyper_pending_emu_task = NULL;
+      __rt_hyper_current_task = NULL;
       __rt_event_handle_end_of_task(task);
 
       return 1;
@@ -773,6 +778,8 @@ static void __pi_hyper_copy_misaligned(struct pi_task *task)
 
 static void __pi_hyper_copy_exec(int channel, uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event)
 {
+  __rt_hyper_current_task = event;
+
   // Check if we are in the fast case where everything is correctly aligned.
   if (likely((((int)addr & 0x3) == 0) && (((int)hyper_addr) & 0x1) == 0 && (((int)size & 0x3) == 0 || ((channel & 1) && ((int)size & 0x1) == 0))))
   {
@@ -796,6 +803,8 @@ static void __pi_hyper_copy_exec(int channel, uint32_t addr, uint32_t hyper_addr
 
 static void __pi_hyper_2d_copy_exec(int channel, uint32_t addr, uint32_t hyper_addr, uint32_t size, int stride, uint32_t length, pi_task_t *event)
 {
+  __rt_hyper_current_task = event;
+
   // Otherwise go through the slow misaligned case.
   __rt_hyper_pending_emu_channel = channel;
   __rt_hyper_pending_emu_hyper_addr = hyper_addr;
@@ -867,7 +876,7 @@ void __pi_hyper_copy(int channel,
   if (cs)
     hyper_addr |= REG_MBR1;
 
-  if (__rt_hyper_end_task != NULL || __rt_hyper_pending_emu_size != 0)
+  if (__rt_hyper_current_task != NULL)
   {
     if (__rt_hyper_pending_tasks != NULL)
     __rt_hyper_pending_tasks_last->implem.next = event;
@@ -899,7 +908,7 @@ void __pi_hyper_copy_2d(int channel,
   if (cs)
     hyper_addr |= REG_MBR1;
 
-  if (__rt_hyper_end_task != NULL || __rt_hyper_pending_emu_size_2d != 0)
+  if (__rt_hyper_current_task != NULL)
   {
     if (__rt_hyper_pending_tasks != NULL)
     __rt_hyper_pending_tasks_last->implem.next = event;
@@ -943,6 +952,7 @@ void __rt_hyper_resume_copy(struct pi_task *task)
 static void __attribute__((constructor)) __rt_hyper_init()
 {
   __rt_hyper_end_task = NULL;
+  __rt_hyper_current_task = NULL;
   __rt_hyper_pending_tasks = NULL;
   __pi_hyper_cluster_reqs_first = NULL;
   __rt_hyper_pending_emu_channel = -1;
