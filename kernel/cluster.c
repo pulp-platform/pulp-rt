@@ -30,6 +30,9 @@
 #define ARCHI_NB_CLUSTER 1
 #endif
 
+dispatch_node_t dispatch_node;
+// __attribute__ ((tiny)) __attribute__((section(".data_tiny_l1"))) dispatch_node_t dispatch_node;
+
 typedef enum 
 {
   RT_CLUSTER_MOUNT_START,
