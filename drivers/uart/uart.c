@@ -213,40 +213,35 @@ void pi_uart_close(struct pi_device *device)
 
 
 
+#if defined(ARCHI_HAS_CLUSTER)
+
 static void __rt_uart_cluster_req_done(void *_req)
 {
-  int irq = rt_irq_disable();
-  rt_uart_req_t *req = _req;
+  pi_cl_uart_req_t *req = _req;
   req->done = 1;
-#if defined(ARCHI_HAS_CLUSTER)
   __rt_cluster_notif_req_done(req->cid);
-#endif
-  rt_irq_restore(irq);
 }
-
-#if defined(ARCHI_HAS_CLUSTER)
 
 static void __rt_uart_cluster_req(void *_req)
 {
-  int irq = rt_irq_disable();
-  rt_uart_req_t *req = _req;
-  rt_event_t *event = &req->event;
-  __rt_init_event(event, rt_event_internal_sched(), __rt_uart_cluster_req_done, (void *)req);
-  __rt_event_set_pending(event);
-  rt_uart_write(req->uart, req->buffer, req->size, event);
-  rt_irq_restore(irq);
+  pi_cl_uart_req_t *req = _req;
+  pi_task_t *event = &req->event;
+  pi_task_callback(event, __rt_uart_cluster_req_done, (void* )req);
+  pi_uart_write_async(req->device, req->buffer, req->size, event);
 }
 
-void pi_cl_uart_cluster_write(rt_uart_t *handle, void *buffer, size_t size, rt_uart_req_t *req)
+int pi_cl_uart_write(pi_device_t *device, void *buffer, uint32_t size, pi_cl_uart_req_t *req)
 {
-  req->uart = handle;
+  req->device = device;
   req->buffer = buffer;
   req->size = size;
   req->cid = rt_cluster_id();
   req->done = 0;
-  __rt_init_event(&req->event, __rt_cluster_sched_get(), __rt_uart_cluster_req, (void *)req);
-  __rt_event_set_pending(&req->event);
+  __rt_task_init_from_cluster(&req->event);
+  pi_task_callback(&req->event, __rt_uart_cluster_req, (void* )req);
   __rt_cluster_push_fc_event(&req->event);
+
+  return 0;
 }
 
 #endif

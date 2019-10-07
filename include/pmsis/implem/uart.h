@@ -21,7 +21,12 @@
 #include "pmsis/data/data.h"
 
 struct pi_cl_uart_req_s {
+  pi_device_t *device;
+  void *buffer;
+  size_t size;
+  rt_event_t event;
   int done;
+  char cid;
 };
 
 #ifdef ARCHI_HAS_CLUSTER
