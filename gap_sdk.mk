@@ -55,14 +55,14 @@ $(HEADER_DIR):
 
 install_headers: $(HEADER_DIR)
 	make -C $(GAP_SDK_HOME)/tools/pulp_tools/pulp-configs all_scons INSTALL_DIR=$(INSTALL_DIR) TARGET_INSTALL_DIR=$(TARGET_INSTALL_DIR)
-	cd $(GAP_SDK_HOME)/runtime/pulp/archi && make build $(TARGET_INSTALL_DIR)/include
-	cd $(GAP_SDK_HOME)/runtime/pulp/hal && make build $(TARGET_INSTALL_DIR)/include
+	cd $(GAP_SDK_HOME)/rtos/pulp/archi && make build $(TARGET_INSTALL_DIR)/include
+	cd $(GAP_SDK_HOME)/rtos/pulp/hal && make build $(TARGET_INSTALL_DIR)/include
 
 install_rt_gap8: install_headers
-	make -C  $(GAP_SDK_HOME)/runtime/pulp/pulp-os MK_ROOT=$(GAP_SDK_HOME)/runtime/pulp/pulp-os/mk/gap header build install
+	make -C  $(GAP_SDK_HOME)/rtos/pulp/pulp-os MK_ROOT=$(GAP_SDK_HOME)/rtos/pulp/pulp-os/mk/gap header build install
 
 install_rt_vega: install_headers
-	make -C  $(GAP_SDK_HOME)/runtime/pulp/pulp-os MK_ROOT=$(GAP_SDK_HOME)/runtime/pulp/pulp-os/mk/vega header build install
+	make -C  $(GAP_SDK_HOME)/rtos/pulp/pulp-os MK_ROOT=$(GAP_SDK_HOME)/rtos/pulp/pulp-os/mk/vega header build install
 
 # Rules for creating the libs.
 #------------------------------------------
