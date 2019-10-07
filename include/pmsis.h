@@ -41,5 +41,8 @@
 
 #include "pmsis/implem/implem.h"
 
+#include "hal/utils.h"
+#include "pmsis/cluster/cluster_sync/cl_synchronisation.h"
+
 #endif
 

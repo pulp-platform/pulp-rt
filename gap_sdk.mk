@@ -55,8 +55,8 @@ $(HEADER_DIR):
 
 install_headers: $(HEADER_DIR)
 	make -C $(GAP_SDK_HOME)/tools/pulp_tools/pulp-configs all_scons INSTALL_DIR=$(INSTALL_DIR) TARGET_INSTALL_DIR=$(TARGET_INSTALL_DIR)
-	cd $(GAP_SDK_HOME)/rtos/pulp/archi && make build $(TARGET_INSTALL_DIR)/include
-	cd $(GAP_SDK_HOME)/rtos/pulp/hal && make build $(TARGET_INSTALL_DIR)/include
+	if [ -e $(GAP_SDK_HOME)/rtos/pulp/archi ]; then cd $(GAP_SDK_HOME)/rtos/pulp/archi && make build $(TARGET_INSTALL_DIR)/include; fi
+	if [ -e $(GAP_SDK_HOME)/rtos/pulp/archi ]; then cd $(GAP_SDK_HOME)/rtos/pulp/hal && make build $(TARGET_INSTALL_DIR)/include; fi
 
 install_rt_gap8: install_headers
 	make -C  $(GAP_SDK_HOME)/rtos/pulp/pulp-os MK_ROOT=$(GAP_SDK_HOME)/rtos/pulp/pulp-os/mk/gap header build install
