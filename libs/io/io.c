@@ -480,11 +480,11 @@ RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_io_init()
   _rt_io_uart = NULL;
   __rt_io_event_current = NULL;
   
-  if (rt_iodev() == RT_IODEV_UART)
-  {
+  // if (rt_iodev() == RT_IODEV_UART)
+  // {
     __rt_cbsys_add(RT_CBSYS_START, __rt_io_start, NULL);
     __rt_cbsys_add(RT_CBSYS_STOP, __rt_io_stop, NULL);
-  }
+  // }
 #endif
 
 }
