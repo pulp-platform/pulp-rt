@@ -170,6 +170,7 @@ PMU_StateT RT_L2_DATA PMUState = {0, 0, {0, 0, 0, 0}, {0, 0}};
 PMU_RetentionStateT RT_L2_DATA PMURetentionState;
 
 unsigned int RT_L2_DATA FllsFrequency[N_FLL];
+unsigned int __rt_wakeup_use_fast;
 
 
 static unsigned char RT_L2_DATA SystemStateToSCUFastSeq[PMU_LAST_STATE+1] = {
@@ -414,6 +415,11 @@ void rt_pm_wakeup_gpio_conf(int active, int gpio, rt_pm_wakeup_gpio_mode_e mode)
   SetRetentiveState(PMURetentionState.Raw);
 }
 
+void rt_pm_wakeup_use_fast()
+{
+  __rt_wakeup_use_fast = 1;
+}
+
 void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
 {
   int irq = rt_irq_disable();
@@ -429,13 +435,18 @@ void PMU_ShutDown(int Retentive, PMU_SystemStateT WakeUpState)
   } else {
     PMURetentionState.Fields.BootMode = BOOT_FROM_ROM;
     PMURetentionState.Fields.BootType = DEEP_SLEEP_BOOT;
-    //PMURetentionState.Fields.BootType = FAST_DEEP_SLEEP_BOOT;
+    if (__rt_wakeup_use_fast)
+      PMURetentionState.Fields.BootType = FAST_DEEP_SLEEP_BOOT;
+    else
+      PMURetentionState.Fields.BootType = DEEP_SLEEP_BOOT;
   }
   PMURetentionState.Fields.WakeupState = REGULATOR_STATE(WakeUpState);
   PMURetentionState.Fields.ClusterWakeUpState = CLUSTER_STATE(WakeUpState);
 
   PMURetentionState.Fields.L2Retention = 0xF;
-  //PMURetentionState.Fields.FllSoCRetention = 1;
+#if PULP_CHIP == CHIP_GAP8_REVC
+  PMURetentionState.Fields.FllSoCRetention = 1;
+#endif
 
   PMUState.State = PMUState.State & 0x6; // Clear cluster on in case since at wake up it will not be on
   SetRetentiveState(PMURetentionState.Raw);
@@ -456,6 +467,8 @@ void __rt_pmu_init()
   if (rt_platform() == ARCHI_PLATFORM_FPGA) {
     return;
   }
+
+  __rt_wakeup_use_fast = 0;
 
   unsigned int DCDCValue = GetDCDCSetting();
 
