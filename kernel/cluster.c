@@ -53,8 +53,8 @@ RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
 
 RT_L1_TINY_DATA rt_cluster_call_pool_t __rt_cluster_pool;
 RT_L1_TINY_DATA int __rt_cluster_nb_active_pe;
-RT_L1_TINY_DATA cl_dma_cmd_t *__rt_dma_first_pending;
-RT_L1_TINY_DATA cl_dma_cmd_t *__rt_dma_last_pending;
+RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_first_pending;
+RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_last_pending;
 
 
 
@@ -333,7 +333,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
 }
 
 
-void pi_cluster_conf_init(struct cluster_driver_conf *conf)
+void pi_cluster_conf_init(struct pi_cluster_conf *conf)
 {
   conf->id = 0;
 }
@@ -343,7 +343,7 @@ int pi_cluster_open(struct pi_device *cluster_dev)
 {
   int irq = rt_irq_disable();
 
-  struct cluster_driver_conf *conf = (struct cluster_driver_conf *)cluster_dev->config;
+  struct pi_cluster_conf *conf = (struct pi_cluster_conf *)cluster_dev->config;
   int cid = conf->id;
 
   cluster_dev->data = (void *)&__rt_fc_cluster_data[cid];

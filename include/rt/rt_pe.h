@@ -150,14 +150,14 @@ static inline void rt_team_offload_wait() {
 extern RT_L1_TINY_DATA unsigned int __rt_barrier_wait_mask;
 #endif
 
-static inline int cl_team_nb_cores()
+static inline int pi_cl_team_nb_cores()
 {
   return __FL1(pulp_read32(eu_bar_addr(0) + EU_HW_BARR_TRIGGER_MASK) + 1);
 }
 
 static inline int rt_team_nb_cores()
 {
-  return cl_team_nb_cores();
+  return pi_cl_team_nb_cores();
 }
 
 static inline void __rt_team_barrier_config(unsigned int core_mask)
@@ -177,23 +177,23 @@ static inline void __rt_team_config(int nb_cores) {
 
 extern RT_L1_TINY_DATA int __rt_pe_trace[];
 
-static inline void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg)
+static inline void pi_cl_team_fork(int nb_cores, void (*entry)(void *), void *arg)
 {
   rt_team_fork(nb_cores, entry, arg);
 }
 
-static inline void cl_team_barrier()
+static inline void pi_cl_team_barrier()
 {
   rt_team_barrier();
 }
 
-static inline void cl_team_critical_enter()
+static inline void pi_cl_team_critical_enter()
 {
   rt_team_critical_enter();
 }
 
 
-static inline void cl_team_critical_exit()
+static inline void pi_cl_team_critical_exit()
 {
   rt_team_critical_exit();
 }

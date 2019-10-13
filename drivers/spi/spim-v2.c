@@ -671,7 +671,6 @@ void pi_spi_conf_init(struct pi_spi_conf *conf)
   conf->wordsize = PI_SPI_WORDSIZE_8;
   conf->big_endian = 0;
   conf->max_baudrate = 10000000;
-  conf->cs_gpio = -1;
   conf->cs = -1;
   conf->itf = 0;
   conf->polarity = 0;

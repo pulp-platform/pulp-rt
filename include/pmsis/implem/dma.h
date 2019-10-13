@@ -21,7 +21,7 @@
 #include "pmsis.h"
 #include "hal/pulp.h"
 
-struct cl_dma_cmd_s
+struct pi_cl_dma_cmd_s
 {
   int id;
   uint32_t cmd;
@@ -30,13 +30,13 @@ struct cl_dma_cmd_s
   uint32_t length;
   uint32_t loc_addr;
   uint32_t ext_addr;
-  struct cl_dma_cmd_s *next;
+  struct pi_cl_dma_cmd_s *next;
 };
 
-extern RT_L1_TINY_DATA cl_dma_cmd_t *__rt_dma_first_pending;
-extern RT_L1_TINY_DATA cl_dma_cmd_t *__rt_dma_last_pending;
+extern RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_first_pending;
+extern RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_last_pending;
 
-static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned short size, cl_dma_dir_e dir, int merge, cl_dma_cmd_t *copy)
+static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned short size, pi_cl_dma_dir_e dir, int merge, pi_cl_dma_cmd_t *copy)
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[rt_core_id()];
@@ -60,7 +60,7 @@ static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned 
 }
 
 
-static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned int size, unsigned int stride, unsigned short length, cl_dma_dir_e dir, int merge, cl_dma_cmd_t *copy)
+static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned int size, unsigned int stride, unsigned short length, pi_cl_dma_dir_e dir, int merge, pi_cl_dma_cmd_t *copy)
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[rt_core_id()];
@@ -128,7 +128,7 @@ static inline void __cl_dma_flush()
 #endif
 }
 
-static inline void __cl_dma_wait(cl_dma_cmd_t *copy)
+static inline void __cl_dma_wait(pi_cl_dma_cmd_t *copy)
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[rt_core_id()];
@@ -150,42 +150,42 @@ static inline void __cl_dma_wait(cl_dma_cmd_t *copy)
 #endif
 }
 
-static inline void cl_dma_memcpy(cl_dma_copy_t *copy)
+static inline void pi_cl_dma_memcpy(pi_cl_dma_copy_t *copy)
 {
-  __cl_dma_memcpy(copy->ext, copy->loc, copy->size, copy->dir, copy->merge, (cl_dma_cmd_t *)copy);
+  __cl_dma_memcpy(copy->ext, copy->loc, copy->size, copy->dir, copy->merge, (pi_cl_dma_cmd_t *)copy);
 }
 
 
-static inline void cl_dma_memcpy_2d(cl_dma_copy_2d_t *copy)
+static inline void pi_cl_dma_memcpy_2d(pi_cl_dma_copy_2d_t *copy)
 {
-  __cl_dma_memcpy_2d(copy->ext, copy->loc, copy->size, copy->stride, copy->length, copy->dir, copy->merge, (cl_dma_cmd_t *)copy);
+  __cl_dma_memcpy_2d(copy->ext, copy->loc, copy->size, copy->stride, copy->length, copy->dir, copy->merge, (pi_cl_dma_cmd_t *)copy);
 }
 
 
-static inline void cl_dma_flush()
+static inline void pi_cl_dma_flush()
 {
   __cl_dma_flush();
 }
 
 
-static inline void cl_dma_wait(void *copy)
+static inline void pi_cl_dma_wait(void *copy)
 {
   __cl_dma_wait(copy);
 }
 
-static inline void cl_dma_cmd(uint32_t ext, uint32_t loc, uint32_t size, cl_dma_dir_e dir, cl_dma_cmd_t *cmd)
+static inline void pi_cl_dma_cmd(uint32_t ext, uint32_t loc, uint32_t size, pi_cl_dma_dir_e dir, pi_cl_dma_cmd_t *cmd)
 {
-  __cl_dma_memcpy(ext, loc, size, dir, 0, (cl_dma_cmd_t *)cmd);
+  __cl_dma_memcpy(ext, loc, size, dir, 0, (pi_cl_dma_cmd_t *)cmd);
 }
 
-static inline void cl_dma_cmd_2d(uint32_t ext, uint32_t loc, uint32_t size, uint32_t stride, uint32_t length, cl_dma_dir_e dir, cl_dma_cmd_t *cmd)
+static inline void pi_cl_dma_cmd_2d(uint32_t ext, uint32_t loc, uint32_t size, uint32_t stride, uint32_t length, pi_cl_dma_dir_e dir, pi_cl_dma_cmd_t *cmd)
 {
-  __cl_dma_memcpy_2d(ext, loc, size, stride, length, dir, 0, (cl_dma_cmd_t *)cmd);
+  __cl_dma_memcpy_2d(ext, loc, size, stride, length, dir, 0, (pi_cl_dma_cmd_t *)cmd);
 }
 
-static inline void cl_dma_cmd_wait(cl_dma_cmd_t *cmd)
+static inline void pi_cl_dma_cmd_wait(pi_cl_dma_cmd_t *cmd)
 {
-  __cl_dma_wait((cl_dma_cmd_t *)cmd);
+  __cl_dma_wait((pi_cl_dma_cmd_t *)cmd);
 }
 
 #endif

@@ -69,7 +69,7 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event)
 {
   if (mount)
   {
-    struct cluster_driver_conf conf;
+    struct pi_cluster_conf conf;
     pi_cluster_conf_init(&conf);
     pi_open_from_conf(&__rt_fc_cluster_device[cid], &conf);
     conf.id = cid;
