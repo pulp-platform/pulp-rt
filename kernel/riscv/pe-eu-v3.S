@@ -29,7 +29,6 @@
 #endif
 #include "archi/eu/eu_v3.h"
 #include "archi/cluster_ctrl/cluster_ctrl_v2.h"
-#include "archi/dma/mchan_v6.h"
 
     .section .cluster.text , "ax"
 #ifdef RV_ISA_RV32
@@ -398,16 +397,16 @@ __rt_dma_2d_redo:
     mv  a1, a0
 
 __rt_dma_2d_not_last:
-    p.inserti x9, a1, PLP_DMA_SIZE_WIDTH-1, PLP_DMA_SIZE_BIT
+    p.inserti x9, a1, MCHAN_CMD_CMD_LEN_WIDTH-1, MCHAN_CMD_CMD_LEN_BIT
 
-    sw  x9, PLP_DMA_QUEUE_OFFSET(a2)   // cmd
+    sw  x9, MCHAN_CMD_OFFSET(a2)   // cmd
 
     sub a0, a0, a1
     sw  a0, CL_DMA_CMD_T_SIZE(x8)
 
     lw  a0, CL_DMA_CMD_T_LOC_ADDR(x8)
 
-    sw  a0, PLP_DMA_QUEUE_OFFSET(a2)   // local address
+    sw  a0, MCHAN_CMD_OFFSET(a2)   // local address
     add a0, a0, a1
     sw  a0, CL_DMA_CMD_T_LOC_ADDR(x8)
 
@@ -415,7 +414,7 @@ __rt_dma_2d_not_last:
     lw  a0, CL_DMA_CMD_T_EXT_ADDR(x8)
     lw  a1, CL_DMA_CMD_T_STRIDE(x8)
 
-    sw  a0, PLP_DMA_QUEUE_OFFSET(a2)   // external address
+    sw  a0, MCHAN_CMD_OFFSET(a2)   // external address
     add a0, a0, a1
     sw  a0, CL_DMA_CMD_T_EXT_ADDR(x8)
 
