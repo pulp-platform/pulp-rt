@@ -100,6 +100,8 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 // This event is used by the external debug bridge to enqueue tasks to pulp
 #define RT_BRIDGE_ENQUEUE_EVENT 4
 
+#define RT_DMA_EVENT 5
+
 #if defined(EU_VERSION) && (EU_VERSION == 1)
 #define RT_FORK_EVT 0
 #endif
@@ -854,6 +856,15 @@ extern RT_FC_TINY_DATA void *__rt_hyper_udma_handle;
 #define PI_TASK_T_DATA_5         (18*4)
 #define PI_TASK_T_DATA_6         (19*4)
 #define PI_TASK_T_DATA_7         (20*4)
+
+#define CL_DMA_CMD_T_ID          (0*4)
+#define CL_DMA_CMD_T_CMD         (1*4)
+#define CL_DMA_CMD_T_SIZE        (2*4)
+#define CL_DMA_CMD_T_STRIDE      (3*4)
+#define CL_DMA_CMD_T_LENGTH      (4*4)
+#define CL_DMA_CMD_T_LOC_ADDR    (5*4)
+#define CL_DMA_CMD_T_EXT_ADDR    (6*4)
+#define CL_DMA_CMD_T_NEXT        (7*4)
 
 /// @endcond
 

@@ -47,11 +47,16 @@ extern void __rt_fc_socevents_handler();
 
 static inline int rt_irq_disable()
 {
-  return hal_irq_disable();
+  int irq = hal_irq_disable();
+  // This memory barrier is needed to prevent the compiler to cross the irq barrier
+  __asm__ __volatile__ ("" : : : "memory");
+  return irq;
 }
 
 static inline void rt_irq_restore(int irq)
 {
+  // This memory barrier is needed to prevent the compiler to cross the irq barrier
+  __asm__ __volatile__ ("" : : : "memory");
   hal_irq_restore(irq);
 }
 
@@ -68,6 +73,7 @@ static inline void restore_irq(int irq_enable)
 
 static inline void rt_irq_enable()
 {
+  __asm__ __volatile__ ("" : : : "memory");
   hal_irq_enable();
 }
 

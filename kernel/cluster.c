@@ -53,6 +53,8 @@ RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
 
 RT_L1_TINY_DATA rt_cluster_call_pool_t __rt_cluster_pool;
 RT_L1_TINY_DATA int __rt_cluster_nb_active_pe;
+RT_L1_TINY_DATA cl_dma_cmd_t *__rt_dma_first_pending;
+RT_L1_TINY_DATA cl_dma_cmd_t *__rt_dma_last_pending;
 
 
 
@@ -374,7 +376,7 @@ int pi_cluster_close(struct pi_device *cluster_dev)
 }
 
 
-
+void __rt_dma_2d();
 
 static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
 {
@@ -387,6 +389,8 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
   {
     __rt_fc_cluster_data[i].cid = i;
   }
+
+  rt_irq_set_handler(ARCHI_CL_EVT_DMA1, __rt_dma_2d);
 
   rt_irq_set_handler(RT_FC_ENQUEUE_EVENT, __rt_remote_enqueue_event);
   rt_irq_mask_set(1<<RT_FC_ENQUEUE_EVENT);
