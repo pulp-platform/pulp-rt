@@ -56,7 +56,9 @@ __rt_pe_start:
     li      t1, ARCHI_EU_DEMUX_ADDR
     sw      t0, EU_CORE_MASK(t1)
 
+#ifndef ARCHI_NO_L1_TINY
     sw      x0, %tiny(__rt_dma_first_pending)(x0)
+#endif
 
 #ifdef ARCHI_HAS_CC
     li      t2, ARCHI_CC_CORE_ID
@@ -370,6 +372,7 @@ __rt_slave_wait_call:
 
 
 #if defined(ARCHI_HAS_CLUSTER)
+#ifndef ARCHI_NO_L1_TINY
     .global __rt_dma_2d
 __rt_dma_2d:
 
@@ -437,4 +440,5 @@ __rt_dma_2d_done:
     j   __rt_dma_2d_exit
 
 
+#endif
 #endif

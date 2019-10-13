@@ -390,7 +390,9 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
     __rt_fc_cluster_data[i].cid = i;
   }
 
+#ifndef ARCHI_NO_L1_TINY
   rt_irq_set_handler(ARCHI_CL_EVT_DMA1, __rt_dma_2d);
+#endif
 
   rt_irq_set_handler(RT_FC_ENQUEUE_EVENT, __rt_remote_enqueue_event);
   rt_irq_mask_set(1<<RT_FC_ENQUEUE_EVENT);
