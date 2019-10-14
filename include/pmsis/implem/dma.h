@@ -69,7 +69,10 @@ static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsign
 
   int id = -1;
   if (!merge) id = plp_dma_counter_alloc();
+
+#if MCHAN_VERSION <= 6
   if (stride < (1<<15))
+#endif
   {
     unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
     // Prevent the compiler from pushing the transfer before all previous
@@ -79,6 +82,7 @@ static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsign
     if (!merge) copy->id = id;
     copy->length = 0;
   }
+#if MCHAN_VERSION <= 6
   else
   {
     uint32_t iter_length = size < length ? size : length;
@@ -110,6 +114,7 @@ static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsign
     rt_compiler_barrier();
     rt_irq_restore(irq);
   }
+#endif
 
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 1);
