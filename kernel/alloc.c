@@ -594,7 +594,7 @@ void *pi_l2_malloc(int size)
   return rt_alloc(RT_ALLOC_PERIPH, size);
 }
 
-void pi_l2_malloc_free(void *_chunk, int size)
+void pi_l2_free(void *_chunk, int size)
 {
   return rt_free(RT_ALLOC_PERIPH, _chunk, size);
 }
