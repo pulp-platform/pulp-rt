@@ -579,22 +579,22 @@ void pi_cl_l2_free(void *chunk, int size, pi_cl_free_req_t *req)
   rt_free_cluster(RT_ALLOC_PERIPH, chunk, size, (rt_free_req_t *)req);
 }
 
-void *pmsis_l1_malloc(uint32_t size)
+void *pi_l1_malloc(struct pi_device *device, uint32_t size)
 {
   return rt_alloc(RT_ALLOC_CL_DATA, size);
 }
 
-void pmsis_l1_malloc_free(void *_chunk, int size)
+void pi_l1_free(struct pi_device *device, void *_chunk, int size)
 {
   return rt_free(RT_ALLOC_CL_DATA, _chunk, size);
 }
 
-void *pmsis_l2_malloc(int size)
+void *pi_l2_malloc(int size)
 {
   return rt_alloc(RT_ALLOC_PERIPH, size);
 }
 
-void pmsis_l2_malloc_free(void *_chunk, int size)
+void pi_l2_malloc_free(void *_chunk, int size)
 {
   return rt_free(RT_ALLOC_PERIPH, _chunk, size);
 }
