@@ -55,8 +55,20 @@ $(HEADER_DIR):
 
 install_headers: $(HEADER_DIR)
 	make -C $(GAP_SDK_HOME)/tools/pulp_tools/pulp-configs all_scons INSTALL_DIR=$(INSTALL_DIR) TARGET_INSTALL_DIR=$(TARGET_INSTALL_DIR)
-	if [ -e $(GAP_SDK_HOME)/rtos/pulp/archi ]; then cd $(GAP_SDK_HOME)/rtos/pulp/archi && make build $(TARGET_INSTALL_DIR)/include; fi
-	if [ -e $(GAP_SDK_HOME)/rtos/pulp/archi ]; then cd $(GAP_SDK_HOME)/rtos/pulp/hal && make build $(TARGET_INSTALL_DIR)/include; fi
+	if [ -e $(GAP_SDK_HOME)/rtos/pulp/archi ]; then \
+		cd $(GAP_SDK_HOME)/rtos/pulp/archi && \
+		export INSTALL_DIR=$(GAP_SDK_HOME)/rtos/pulp/archi_gap/workstation && \
+		export TARGET_INSTALL_DIR=$(GAP_SDK_HOME)/rtos/pulp/archi_gap/target && \
+		make build; \
+	fi
+	if [ -e $(GAP_SDK_HOME)/rtos/pulp/hal ]; then \
+		cd $(GAP_SDK_HOME)/rtos/pulp/hal && \
+		export TARGET_INSTALL_DIR=$(GAP_SDK_HOME)/rtos/pulp/hal_gap/target && \
+		make build; \
+	fi
+	rsync -avR $(GAP_SDK_HOME)/rtos/pulp/archi_gap/target $(TARGET_INSTALL_DIR)
+	rsync -avR $(GAP_SDK_HOME)/rtos/pulp/archi_gap/workstation $(INSTALL_DIR)
+	rsync -avR $(GAP_SDK_HOME)/rtos/pulp/hal_gap/target $(TARGET_INSTALL_DIR)
 
 install_rt_gap8: install_headers
 	make -C  $(GAP_SDK_HOME)/rtos/pulp/pulp-os MK_ROOT=$(GAP_SDK_HOME)/rtos/pulp/pulp-os/mk/gap header build install
@@ -71,6 +83,9 @@ gap: install_headers install_rt_gap8
 gap_rev1: install_headers install_rt_gap8
 
 vega: install_headers install_rt_vega
+
+clean:
+	rm -rf $(GAP_SDK_HOME)/rtos/pulp/archi_gap $(GAP_SDK_HOME)/rtos/pulp/hal_gap
 
 #all: install_headers $(TARGET_CHIP)
 
