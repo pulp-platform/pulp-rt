@@ -66,9 +66,9 @@ install_headers: $(HEADER_DIR)
 		export TARGET_INSTALL_DIR=$(GAP_SDK_HOME)/rtos/pulp/hal_gap/target && \
 		make build; \
 	fi
-	rsync -avR $(GAP_SDK_HOME)/rtos/pulp/archi_gap/target $(TARGET_INSTALL_DIR)
-	rsync -avR $(GAP_SDK_HOME)/rtos/pulp/archi_gap/workstation $(INSTALL_DIR)
-	rsync -avR $(GAP_SDK_HOME)/rtos/pulp/hal_gap/target $(TARGET_INSTALL_DIR)
+	cd $(GAP_SDK_HOME)/rtos/pulp/archi_gap/target && rsync -avR * $(TARGET_INSTALL_DIR)
+	cd $(GAP_SDK_HOME)/rtos/pulp/archi_gap/workstation && rsync -avR * $(INSTALL_DIR)
+	cd $(GAP_SDK_HOME)/rtos/pulp/hal_gap/target && rsync -avR * $(TARGET_INSTALL_DIR)
 
 install_rt_gap8: install_headers
 	make -C  $(GAP_SDK_HOME)/rtos/pulp/pulp-os MK_ROOT=$(GAP_SDK_HOME)/rtos/pulp/pulp-os/mk/gap header build install
