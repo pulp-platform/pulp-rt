@@ -128,6 +128,11 @@ void rt_freq_wait_convergence(int fll)
 
 unsigned int __rt_fll_init(int fll)
 {
+#if PULP_CHIP == CHIP_ARNOLD
+  // Not able yet to have fll working
+  return 0;
+#endif
+
   rt_trace(RT_TRACE_INIT, "Initializing FLL (fll: %d)\n", fll);
   
   fll_reg_conf1_t reg1 = { .raw = hal_fll_conf_reg1_get(fll) };
