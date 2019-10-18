@@ -87,6 +87,12 @@ vega: install_headers install_rt_vega
 clean:
 	rm -rf $(GAP_SDK_HOME)/rtos/pulp/archi_gap $(GAP_SDK_HOME)/rtos/pulp/hal_gap
 
+DEFAULT_EXCLUDES=--exclude=".git*" --exclude="BUILD*" --exclude="build*" --exclude="_build*" --exclude="__pycache__/" --exclude=junit-reports
+
+artifact:
+	mkdir -p $(PULPOS_ARTIFACT_PATH)
+	rsync -avR $(DEFAULT_EXCLUDES) * $(PULPOS_ARTIFACT_PATH)
+
 #all: install_headers $(TARGET_CHIP)
 
 
