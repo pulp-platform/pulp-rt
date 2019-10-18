@@ -131,7 +131,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #define L1_DATA RT_L1_DATA
 #define PI_L1 RT_L1_DATA
 
-#if (defined(ARCHI_HAS_FC_TCDM) || defined(ARCHI_HAS_L2_ALIAS)) && !defined(__LLVM__)
+#if (defined(ARCHI_HAS_FC_TCDM) || defined(ARCHI_HAS_L2_ALIAS)) && !defined(__LLVM__) && !defined(RV_ISA_RV32)
 #define RT_FC_TINY_DATA __attribute__((section(".data_tiny_fc"))) __attribute__ ((tiny))
 #else
 #define RT_FC_TINY_DATA __attribute__((section(".data_tiny_fc")))
