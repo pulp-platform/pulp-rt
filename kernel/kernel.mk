@@ -99,6 +99,8 @@ endif
 
 ifeq '$(pulp_chip)' 'mempool'
 PULP_LIB_CL_ASM_SRCS_rt += kernel/$(fc_archi)/pe-eu-mempool-v1.S
+PULP_LIB_FC_SRCS_rt += kernel/halide_api.c
+PULP_LIB_CL_SRCS_rt += kernel/halide_api.c
 else
 PULP_LIB_CL_ASM_SRCS_rt += kernel/$(fc_archi)/pe-eu-v$(event_unit/version).S
 endif
@@ -125,12 +127,12 @@ endif
 
 
 ifeq '$(pulp_chip_family)' 'vivosoc3'
-PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/fll.c 
+PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/fll.c
 PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/freq.c
 endif
 
 ifeq '$(pulp_chip_family)' 'vivosoc3_1'
-PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/fll.c 
+PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/fll.c
 PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/freq.c
 endif
 
@@ -153,7 +155,7 @@ endif
 endif
 
 ifeq '$(pulp_chip_family)' 'pulpissimo'
-PULP_LIB_FC_SRCS_rt += kernel/pulpissimo/pulpissimo.c	
+PULP_LIB_FC_SRCS_rt += kernel/pulpissimo/pulpissimo.c
 endif
 
 INSTALL_TARGETS += $(INSTALL_DIR)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o
