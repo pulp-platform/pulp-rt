@@ -10,7 +10,7 @@ MEMORY
 }
 
 /*
- * This linker script try to put FC data in L2 private bank0 and FC code 
+ * This linker script try to put FC data in L2 private bank0 and FC code
  * in L2 private bank1 to avoid contention between FC code and data
  * as FC has no instruction cache and is so often accessing L2 to
  * get instructions. Everything can be shifted in case one bank is full.
@@ -29,7 +29,7 @@ SECTIONS
    * Contains FC data
    */
 
-  /* This section is for tiny FC data which benefits 
+  /* This section is for tiny FC data which benefits
    * from the alias at 0
    */
   .data_tiny_fc :
@@ -281,6 +281,13 @@ SECTIONS
   _l1_preload_size = SIZEOF(.data_tiny_l1) + SIZEOF(.l1cluster_g);
 
   __cluster_text_size = __cluster_text_end - __cluster_text_start;
+
+  .halide :
+  {
+    . = ALIGN(4);
+    *(.*)
+    . = ALIGN(4);
+  } > L2
 
   __l1_heap_start = ALIGN(4);
   __l1_heap_size = LENGTH(L1) - __l1_heap_start + ORIGIN(L1);
