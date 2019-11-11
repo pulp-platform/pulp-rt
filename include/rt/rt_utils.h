@@ -205,7 +205,7 @@ static inline uint32_t pi_cluster_id()
   return rt_cluster_id();
 }
 
-static inline uint32_t pi_cl_cluster_nb_cores()
+static inline int pi_cl_cluster_nb_cores()
 {
   return rt_nb_pe();
 }
