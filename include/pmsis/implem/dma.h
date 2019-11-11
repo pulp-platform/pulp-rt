@@ -43,6 +43,10 @@ static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned 
   gv_vcd_dump_trace(trace, 4);
 #endif
 
+#if MCHAN_VERSION >= 7
+  eu_mutex_lock_from_id(0);
+#endif
+  
   int id = -1;
   if (!merge) id = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_1D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
@@ -52,6 +56,10 @@ static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned 
   plp_dma_cmd_push(cmd, loc, ext);
   if (!merge) copy->id = id;
 
+#if MCHAN_VERSION >= 7
+  eu_mutex_unlock_from_id(0);
+#endif
+  
   copy->length = 0;
 
 #ifdef __RT_USE_PROFILE
@@ -67,6 +75,10 @@ static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsign
   gv_vcd_dump_trace(trace, 4);
 #endif
 
+#if MCHAN_VERSION >= 7
+  eu_mutex_lock_from_id(0);
+#endif
+  
   int id = -1;
   if (!merge) id = plp_dma_counter_alloc();
 
@@ -116,6 +128,11 @@ static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsign
   }
 #endif
 
+#if MCHAN_VERSION >= 7
+  eu_mutex_unlock_from_id(0);
+#endif
+  
+
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 1);
 #endif
@@ -133,6 +150,36 @@ static inline void __cl_dma_flush()
 #endif
 }
 
+#if MCHAN_VERSION >= 7
+
+static inline void __cl_dma_wait(pi_cl_dma_cmd_t *copy)
+{
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 5);
+#endif
+
+  int counter = copy->id;
+
+  eu_mutex_lock_from_id(0);
+
+  while(DMA_READ(MCHAN_STATUS_OFFSET) & (1 << counter)) {
+    eu_mutex_unlock_from_id(0);
+    eu_evt_maskWaitAndClr(1<<ARCHI_CL_EVT_DMA0);
+    eu_mutex_lock_from_id(0);
+  }
+
+  plp_dma_counter_free(counter);
+
+  eu_mutex_unlock_from_id(0);
+  
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 1);
+#endif
+}
+
+#else
+
 static inline void __cl_dma_wait(pi_cl_dma_cmd_t *copy)
 {
 #ifdef __RT_USE_PROFILE
@@ -141,19 +188,22 @@ static inline void __cl_dma_wait(pi_cl_dma_cmd_t *copy)
 #endif
   if (copy->length == 0)
   {
-    plp_dma_wait(copy->id);
+    plp_dma_wait_no_free(copy->id);
   }
   else
   {
     while(*(volatile uint32_t *)&copy->size > 0)
       eu_evt_maskWaitAndClr(1<<RT_DMA_EVENT);
-
-    plp_dma_counter_free(copy->id);
   }
+  
+  plp_dma_counter_free(copy->id);
+
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 1);
 #endif
 }
+
+#endif
 
 static inline void pi_cl_dma_memcpy(pi_cl_dma_copy_t *copy)
 {

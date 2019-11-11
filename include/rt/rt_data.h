@@ -101,6 +101,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #define RT_BRIDGE_ENQUEUE_EVENT 4
 
 #define RT_DMA_EVENT 5
+#define RT_USER_EVENT 6
 
 #if defined(EU_VERSION) && (EU_VERSION == 1)
 #define RT_FORK_EVT 0
