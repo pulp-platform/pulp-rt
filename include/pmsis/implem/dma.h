@@ -45,6 +45,8 @@ static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned 
 
 #if MCHAN_VERSION >= 7
   eu_mutex_lock_from_id(0);
+#else
+  int irq = rt_irq_disable();
 #endif
   
   int id = -1;
@@ -58,6 +60,8 @@ static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned 
 
 #if MCHAN_VERSION >= 7
   eu_mutex_unlock_from_id(0);
+#else
+  rt_irq_restore(irq);
 #endif
   
   copy->length = 0;
@@ -77,6 +81,8 @@ static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsign
 
 #if MCHAN_VERSION >= 7
   eu_mutex_lock_from_id(0);
+#else
+  int irq = rt_irq_disable();
 #endif
   
   int id = -1;
@@ -110,9 +116,6 @@ static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsign
     copy->id = id;
     copy->next = NULL;
 
-    int irq = rt_irq_disable();
-    rt_compiler_barrier();
-
     if (__rt_dma_first_pending)
       __rt_dma_last_pending->next = copy;
     else
@@ -123,13 +126,13 @@ static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsign
     }
 
     __rt_dma_last_pending = copy;
-    rt_compiler_barrier();
-    rt_irq_restore(irq);
   }
 #endif
 
 #if MCHAN_VERSION >= 7
   eu_mutex_unlock_from_id(0);
+#else
+  rt_irq_restore(irq);
 #endif
   
 
@@ -188,16 +191,28 @@ static inline void __cl_dma_wait(pi_cl_dma_cmd_t *copy)
 #endif
   if (copy->length == 0)
   {
-    plp_dma_wait_no_free(copy->id);
+    int irq = rt_irq_disable();
+
+    while(DMA_READ(PLP_DMA_STATUS_OFFSET) & (1 << copy->id)) {
+      rt_irq_restore(irq);
+      eu_evt_maskWaitAndClr(1<<ARCHI_CL_EVT_DMA0);
+      irq = rt_irq_disable();
+    }
+
+    plp_dma_counter_free(copy->id);
+
+    rt_irq_restore(irq);
   }
   else
   {
     while(*(volatile uint32_t *)&copy->size > 0)
       eu_evt_maskWaitAndClr(1<<RT_DMA_EVENT);
+
+    int irq = rt_irq_disable();
+    plp_dma_counter_free(copy->id);
+    rt_irq_restore(irq);
   }
   
-  plp_dma_counter_free(copy->id);
-
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 1);
 #endif
