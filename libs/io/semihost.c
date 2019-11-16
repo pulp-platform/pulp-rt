@@ -36,7 +36,7 @@ int semihost_write(int fd, uint8_t *buffer, int len)
 int semihost_seek(int fd, uint32_t pos)
 {
     uint32_t args[2] = {(uint32_t)fd,pos};
-    return __internal_semihost(SEMIHOSTING_SYS_WRITE, (long) args);
+    return __internal_semihost(SEMIHOSTING_SYS_SEEK, (long) args);
 }
 
 int semihost_flen(int fd)

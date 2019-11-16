@@ -88,10 +88,14 @@ __internal_semihost(long n, long _a1)
 		: "r"(a1)
 		);
 
+#if 0
   if (a0 < 0)
-    return 0; //__syscall_error (a0);
+    return __syscall_error (a0);
   else
     return a0;
+#else
+  return a0;
+#endif
 }
 
 
