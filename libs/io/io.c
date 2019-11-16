@@ -404,6 +404,7 @@ typedef struct __rt_putc_host_req_s {
   unsigned char c;
 } rt_putc_host_req_t;
 
+#if defined(ARCHI_HAS_CLUSTER)
 static void __rt_putc_host_cluster_req(void *arg)
 {
   rt_putc_host_req_t *req = (rt_putc_host_req_t *)arg;
@@ -411,6 +412,7 @@ static void __rt_putc_host_cluster_req(void *arg)
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
 }
+#endif
 
 static void __rt_putc_host(char c)
 {
@@ -420,6 +422,7 @@ static void __rt_putc_host(char c)
   }
   else
   {
+#if defined(ARCHI_HAS_CLUSTER)
     rt_putc_host_req_t req;
     __rt_task_init_from_cluster(&req.event);
     req.done = 0;
@@ -431,6 +434,7 @@ static void __rt_putc_host(char c)
     {
       eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
     }
+#endif
   }
 }
 
