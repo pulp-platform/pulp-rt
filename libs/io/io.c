@@ -422,7 +422,7 @@ static void __rt_putc_host(char c)
   }
   else
   {
-#if defined(ARCHI_HAS_CLUSTER)
+#if defined(ARCHI_HAS_CLUSTER) && defined(ARCHI_HAS_FC)
     rt_putc_host_req_t req;
     __rt_task_init_from_cluster(&req.event);
     req.done = 0;
