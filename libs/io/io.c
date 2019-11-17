@@ -644,7 +644,15 @@ void exit(int status)
 void exit(int status)
 {
   apb_soc_status_set(status);
-  __rt_exit_debug_bridge(status);
+  
+  if (rt_iodev() == RT_IODEV_HOST)
+  {
+    semihost_exit(status);
+  }
+  else
+  {
+    __rt_exit_debug_bridge(status);
+  }
   __wait_forever();
 }
 
