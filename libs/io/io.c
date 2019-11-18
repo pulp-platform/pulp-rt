@@ -647,7 +647,7 @@ void exit(int status)
   
   if (rt_iodev() == RT_IODEV_HOST)
   {
-    semihost_exit(status);
+    semihost_exit(status == 0 ? SEMIHOST_EXIT_SUCCESS : SEMIHOST_EXIT_ERROR);
   }
   else
   {
@@ -735,6 +735,19 @@ static int __rt_io_stop(void *arg)
 }
 #endif
 
+
+void __rt_io_set()
+{
+#if defined(__RT_USE_UART)
+  if (rt_iodev() == RT_IODEV_UART)
+  {
+    __rt_io_start(NULL);
+    __rt_cbsys_add(RT_CBSYS_STOP, __rt_io_stop, NULL);
+    __rt_io_pending_flush = 0;
+    rt_event_alloc(NULL, 1);
+  }
+#endif
+}
 
 RT_FC_BOOT_CODE void __attribute__((constructor)) __rt_io_init()
 {

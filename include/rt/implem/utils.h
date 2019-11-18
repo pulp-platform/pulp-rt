@@ -308,6 +308,9 @@ static inline int rt_platform()
 #define RT_IODEV_UART 1
 #define RT_IODEV_HOST 2
 
+
+void __rt_io_set();
+
 static inline int rt_iodev()
 {
 #ifdef CONFIG_IODEV

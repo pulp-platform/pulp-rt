@@ -19,6 +19,9 @@
 
 #include "pmsis/data/data.h"
 
+
+#include "pmsis/rtos/pulpos.h"
+
 #include "pmsis/device.h"
 #include "pmsis/task.h"
 #include "pmsis/cluster/cluster_sync/fc_to_cl_delegate.h"
@@ -40,6 +43,8 @@
 #include "pmsis/cluster/dma/cl_dma.h"
 
 #include "pmsis/implem/implem.h"
+
+#include "pmsis/rtos/pmsis_os.h"
 
 #include "hal/utils.h"
 #include "pmsis/cluster/cluster_sync/cl_synchronisation.h"
