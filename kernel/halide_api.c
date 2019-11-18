@@ -54,10 +54,13 @@ int fclose(FILE *stream) {
   printf("fclose not implemented!\n");
   return -1;
 }
+
 int fileno(FILE *stream) {
   printf("fileno not implemented!\n");
   return -1;
 }
+
+void halide_print(void *user_context, const char *msg) { printf("%s\n", msg); }
 
 /////////////
 // Atomics //
@@ -66,13 +69,13 @@ int fileno(FILE *stream) {
 ///////////
 // LR/SC //
 ///////////
-#define LR(bytes, type)                                          \
-  inline type __load_reserved_##bytes(type *mem, int memorder) { \
-    type ret;                                                    \
-    __asm__ volatile("lr.w %[ret], (%[mem])"                     \
-                     : [ ret ] "=r"(ret)                         \
-                     : [ mem ] "r"(mem), "m"(mem));              \
-    return ret;                                                  \
+#define LR(bytes, type)                                                        \
+  inline type __load_reserved_##bytes(type *mem, int memorder) {               \
+    type ret;                                                                  \
+    __asm__ volatile("lr.w %[ret], (%[mem])"                                   \
+                     : [ ret ] "=r"(ret)                                       \
+                     : [ mem ] "r"(mem), "m"(mem));                            \
+    return ret;                                                                \
   }
 
 LR(1, uint8_t)
@@ -109,13 +112,13 @@ SC(8, uint64_t)
 /////////////////
 // void __atomic_load (size_t size, void *ptr, void *return, int memorder)
 
-#define ATOMIC_LOAD(bytes, type)                               \
-  inline type __atomic_load_##bytes(type *ptr, int memorder) { \
-    type ret;                                                  \
-    __asm__ volatile("lr.w %[ret], (%[ptr])"                   \
-                     : [ ret ] "=r"(ret)                       \
-                     : [ ptr ] "r"(ptr), "m"(ptr));            \
-    return ret;                                                \
+#define ATOMIC_LOAD(bytes, type)                                               \
+  inline type __atomic_load_##bytes(type *ptr, int memorder) {                 \
+    type ret;                                                                  \
+    __asm__ volatile("lr.w %[ret], (%[ptr])"                                   \
+                     : [ ret ] "=r"(ret)                                       \
+                     : [ ptr ] "r"(ptr), "m"(ptr));                            \
+    return ret;                                                                \
   }
 
 ATOMIC_LOAD(1, uint8_t)
@@ -128,12 +131,12 @@ ATOMIC_LOAD(8, uint64_t)
 //////////////////
 // void __atomic_store (size_t size, void *mem, void *val, int memorder)
 
-#define ATOMIC_STORE(bytes, type)                                         \
-  inline void __atomic_store_##bytes(type *ptr, type val, int memorder) { \
-    register int reg_zero asm("x0");                                      \
-    __asm__ volatile("amoswap.w %[ret], %[val], (%[ptr])"                 \
-                     : [ ret ] "=r"(reg_zero)                             \
-                     : [ val ] "r"(val), [ ptr ] "r"(ptr), "m"(ptr));     \
+#define ATOMIC_STORE(bytes, type)                                              \
+  inline void __atomic_store_##bytes(type *ptr, type val, int memorder) {      \
+    register int reg_zero asm("x0");                                           \
+    __asm__ volatile("amoswap.w %[ret], %[val], (%[ptr])"                      \
+                     : [ ret ] "=r"(reg_zero)                                  \
+                     : [ val ] "r"(val), [ ptr ] "r"(ptr), "m"(ptr));          \
   }
 
 ATOMIC_STORE(1, uint8_t)
@@ -145,15 +148,15 @@ ATOMIC_STORE(8, uint64_t)
 // Atomic Exchange //
 /////////////////////
 // void __atomic_exchange (type *ptr, type *val, type *ret, int memorder)
-#define ATOMIC_EXCHANGE(bytes, type)                                         \
-  inline type __atomic_exchange_##bytes(type *ptr, type val, int memorder) { \
-    type ret;                                                                \
-    __asm__ __volatile__("" : : : "memory");                                 \
-    __asm__ volatile("amoswap.w %[ret], %[val], (%[ptr])"                    \
-                     : [ ret ] "=r"(ret), "+m"(*ptr)                         \
-                     : [ val ] "r"(val), [ ptr ] "r"(ptr));                  \
-    __asm__ __volatile__("" : : : "memory");                                 \
-    return ret;                                                              \
+#define ATOMIC_EXCHANGE(bytes, type)                                           \
+  inline type __atomic_exchange_##bytes(type *ptr, type val, int memorder) {   \
+    type ret;                                                                  \
+    __asm__ __volatile__("" : : : "memory");                                   \
+    __asm__ volatile("amoswap.w %[ret], %[val], (%[ptr])"                      \
+                     : [ ret ] "=r"(ret), "+m"(*ptr)                           \
+                     : [ val ] "r"(val), [ ptr ] "r"(ptr));                    \
+    __asm__ __volatile__("" : : : "memory");                                   \
+    return ret;                                                                \
   }
 
 ATOMIC_EXCHANGE(1, uint8_t)
@@ -166,20 +169,20 @@ ATOMIC_EXCHANGE(8, uint64_t)
 ////////////////
 // bool __atomic_compare_exchange (size_t size, void *obj, void *expected, void
 // *desired, int success_memorder, int failure_memorder)
-#define ATOMIC_CAS(bytes, type)                                               \
-  inline bool __atomic_compare_exchange_##bytes(                              \
-      type *ptr, type *expected, type desired, bool weak,                     \
-      int success_memorder, int failure_memorder) {                           \
-    type prev = *expected;                                                    \
-    while (1) {                                                               \
-      *expected = __load_reserved_##bytes(ptr, success_memorder);             \
-      if (prev != *expected) {                                                \
-        return false;                                                         \
-      }                                                                       \
-      if (__store_conditional_##bytes(ptr, desired, success_memorder) == 0) { \
-        return true;                                                          \
-      }                                                                       \
-    }                                                                         \
+#define ATOMIC_CAS(bytes, type)                                                \
+  inline bool __atomic_compare_exchange_##bytes(                               \
+      type *ptr, type *expected, type desired, bool weak,                      \
+      int success_memorder, int failure_memorder) {                            \
+    type prev = *expected;                                                     \
+    while (1) {                                                                \
+      *expected = __load_reserved_##bytes(ptr, success_memorder);              \
+      if (prev != *expected) {                                                 \
+        return false;                                                          \
+      }                                                                        \
+      if (__store_conditional_##bytes(ptr, desired, success_memorder) == 0) {  \
+        return true;                                                           \
+      }                                                                        \
+    }                                                                          \
   }
 
 ATOMIC_CAS(1, uint8_t)
@@ -191,27 +194,27 @@ ATOMIC_CAS(8, uint64_t)
 // Atomic Operation //
 //////////////////////
 // type __atomic_fetch_add (type *ptr, type val, int memorder)
-#define ATOMIC_OP(bytes, type, op)                               \
-  inline type __atomic_fetch_##op##_##bytes(type *mem, type val, \
-                                            int memorder) {      \
-    type ret;                                                    \
-    __asm__ __volatile__("" : : : "memory");                     \
-    __asm__ volatile("amo" #op ".w %[ret], %[val], (%[mem])"     \
-                     : [ ret ] "=r"(ret), "+m"(*mem)             \
-                     : [ val ] "r"(val), [ mem ] "r"(mem));      \
-    __asm__ __volatile__("" : : : "memory");                     \
-    return ret;                                                  \
+#define ATOMIC_OP(bytes, type, op)                                             \
+  inline type __atomic_fetch_##op##_##bytes(type *mem, type val,               \
+                                            int memorder) {                    \
+    type ret;                                                                  \
+    __asm__ __volatile__("" : : : "memory");                                   \
+    __asm__ volatile("amo" #op ".w %[ret], %[val], (%[mem])"                   \
+                     : [ ret ] "=r"(ret), "+m"(*mem)                           \
+                     : [ val ] "r"(val), [ mem ] "r"(mem));                    \
+    __asm__ __volatile__("" : : : "memory");                                   \
+    return ret;                                                                \
   }
 
-#define ATOMIC_SUB(bytes, type)                                               \
-  inline type __atomic_fetch_sub_##bytes(type *mem, type val, int memorder) { \
-    type ret;                                                                 \
-    __asm__ __volatile__("" : : : "memory");                                  \
-    __asm__ volatile("amoadd.w %[ret], %[val], (%[mem])"                      \
-                     : [ ret ] "=r"(ret), "+m"(*mem)                          \
-                     : [ val ] "r"(-val), [ mem ] "r"(mem));                  \
-    __asm__ __volatile__("" : : : "memory");                                  \
-    return ret;                                                               \
+#define ATOMIC_SUB(bytes, type)                                                \
+  inline type __atomic_fetch_sub_##bytes(type *mem, type val, int memorder) {  \
+    type ret;                                                                  \
+    __asm__ __volatile__("" : : : "memory");                                   \
+    __asm__ volatile("amoadd.w %[ret], %[val], (%[mem])"                       \
+                     : [ ret ] "=r"(ret), "+m"(*mem)                           \
+                     : [ val ] "r"(-val), [ mem ] "r"(mem));                   \
+    __asm__ __volatile__("" : : : "memory");                                   \
+    return ret;                                                                \
   }
 
 ATOMIC_OP(1, uint8_t, add)
