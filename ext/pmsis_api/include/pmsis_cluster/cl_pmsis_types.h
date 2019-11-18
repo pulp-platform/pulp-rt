@@ -45,6 +45,7 @@ struct pi_cluster_task {
     // entry function and its argument(s)
     void (*entry)(void*);
     void *arg;
+    unsigned nb_arg;
     // pointer to first stack, and size for each cores
     void *stacks;
     uint32_t stack_size;

@@ -165,6 +165,7 @@ __rt_master_loop_update_next:
 
     // Reads entry point information
     lw      a0, RT_CLUSTER_TASK_ARG(t3)
+    lw      a1, RT_CLUSTER_TASK_NB_ARG(t3)
     lw      t0, RT_CLUSTER_TASK_ENTRY(t3)
     lw      sp, RT_CLUSTER_TASK_STACKS(t3)
     lw      t1, RT_CLUSTER_TASK_STACK_SIZE(t3)
@@ -173,6 +174,14 @@ __rt_master_loop_update_next:
     lw      s6, RT_CLUSTER_TASK_COMPLETION_CALLBACK(t3)
     lw      t6, RT_CLUSTER_TASK_NB_CORES(t3)
     mv      ra, s5
+
+    li      a2, 1
+    ble     a1, a2, __rt_master_argument_1
+    lw      a2, 8(a0)
+    lw      a1, 4(a0)
+    lw      a0, 0(a0)
+
+__rt_master_argument_1:
 
     add     sp, sp, t1
 
@@ -203,13 +212,14 @@ __rt_master_no_slave_barrier:
     // For that we push first the function for setting stack, then the stack size and the base
     p.beqimm t5, 0, __rt_master_loop_no_slave
     // Dispatch the stack initialization
-    la      a0, dispatch_node
+    la      t6, dispatch_node
     li      t1, -1
-    sw      s10, 0(a0) // entry: __rt_set_slave_stack
-    sw      t2,  4(a0) // arg: stack size
-    sw      sp,  8(a0) // stack: stack address
-    sw      t1,  12(a0) // barrier: -1 for none
-    sw      t6,  16(a0) // nb_cores
+    sw      s10, 0(t6) // entry: __rt_set_slave_stack
+    sw      t2,  4(t6) // arg: stack size
+    sw      sp,  8(t6) // stack: stack address
+    sw      t1,  12(t6) // barrier: -1 for none
+    sw      t6,  16(t6) // nb_cores
+    sw      a1,  20(t6) // nb_arg
     // Wake the slaves
     li      t1, (1<<PULP_DISPATCH_EVENT)
     sw      t1, EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT(s3)
@@ -296,6 +306,7 @@ __rt_wait_for_dispatch:
     lw      s1, 12(a0) // barrier
     lw      t0, 0(a0) // funtion pointer
     lw      a0, 4(a0) // argument
+    lw      a1, 16(a0) // argument
 
 //    p.elw   t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
 //    p.elw   a0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)

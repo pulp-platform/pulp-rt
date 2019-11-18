@@ -88,14 +88,15 @@ void rt_cluster_mount(int mount, int cid, int flags, rt_event_t *event);
  * \param call    A pointer to the cluster call structure, needed by the runtime to manage the call. This is only needed if more than 2 calls are enqueued at the same time, otherwise it can be NULL.
  * \param cid     The identifier of the cluster on which to call the function.
  * \param entry   The function to be called.
- * \param arg     The argument of the function to be called.
+ * \param arg[]   The arguments of the function to be called.
+ * \param nb_arg  The number of arguments of the function to be called.
  * \param stacks  The stacks of the cores. This must contain the master stack and one stack for each slave core. If NULL the stack will be allocated and freed automatically. The free occurs the next time that rt_cluster_call is invoked.
  * \param master_stack_size  Stack size of the master core which will execute the function. If stacks is NULL can be 0 to indicate to use the default master stack size. See rt_cl_master_stack_size_get().
  * \param slave_stack_size   Stack size of each core associated to the execution of the function. If stacks is NULL can be 0 to indicate to use the default slave core stack size. See rt_cl_slave_stack_size_get().
  * \param nb_pe   Number of cores involved in the execution of the function. Can be 0 to select the maximum number of cores.
  * \param event   An event to specify how to be notified when the cluster function has returned. If NULL, the function will only return when this is done. Otherwise the event can be used to either call a callback or to wait on the event afterwards.
  */
-int rt_cluster_call(rt_cluster_call_t *call, int cid, void (*entry)(void *arg), void *arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event);
+int rt_cluster_call(rt_cluster_call_t *call, int cid, void (*entry)(void *arg), void *arg, unsigned nb_arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event);
 
 
 /** \brief Can be used to trigger a notification to all cluster cores */
@@ -104,7 +105,7 @@ int rt_cluster_call(rt_cluster_call_t *call, int cid, void (*entry)(void *arg), 
 
 /** \brief Initialize a notification structure.
  *
- * Notifications can be used to make a cluster core go to sleep until a notification is sent to him. This is useful for example for polling a variable without consuming power for nothing.  
+ * Notifications can be used to make a cluster core go to sleep until a notification is sent to him. This is useful for example for polling a variable without consuming power for nothing.
  * Can only be called from fabric controller.
  *
  * \param notif    A pointer to the notification structure, needed by the runtime to manage the notification. This must be allocated by the caller and must be kept alive until the notification is closed.

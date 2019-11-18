@@ -249,7 +249,7 @@ static int __rt_check_cluster_start(int cid, rt_event_t *event)
     void *stacks = rt_alloc(RT_ALLOC_CL_DATA+cid, 0x800*rt_nb_active_pe());
     if (stacks == NULL) return -1;
 
-    if (rt_cluster_call(NULL, cid, cluster_start, NULL, stacks, 0x800, 0x800, rt_nb_active_pe(), event)) return -1;
+    if (rt_cluster_call(NULL, cid, cluster_start, NULL, 0, stacks, 0x800, 0x800, rt_nb_active_pe(), event)) return -1;
   }
   else
   {
