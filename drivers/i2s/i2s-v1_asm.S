@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
+ * Copyright (C) 2018 GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS__DATA__DATA_H__
-#define __PMSIS__DATA__DATA_H__
+/* 
+ * Authors: Germain Haugou, GreenWaves Technologies (germain.haugou@greenwaves-technologies.com)
+ */
 
-#include "rt/rt_api_decl.h"
-#include "udma.h"
-#include "cpi.h"
-#include "i2s.h"
-#include "spi.h"
-#include "i2c.h"
-#include "uart.h"
+#include "pmsis/data/i2s.h"
+#include "rt/rt_data.h"
+#include "archi/pulp.h"
 
-#endif
+  // x8: callback arg, x9: channel, x10:event, x11,x12:temp
+  .global __pos_i2s_handle_copy_asm
+__pos_i2s_handle_copy_asm:
 
+  mv        x10, x8
+  la        x12, __pos_i2s_handle_copy
+  la        x9, udma_event_handler_end
+  j         __rt_call_external_c_function
+
+	

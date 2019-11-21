@@ -17,10 +17,12 @@
 #ifndef __PMSIS__H__
 #define __PMSIS__H__
 
-#include "pmsis/data/data.h"
-
+#include <stdint.h>
+#include <stddef.h>
 
 #include "pmsis/rtos/pulpos.h"
+
+#include "rt/rt_data.h"
 
 #include "pmsis/device.h"
 #include "pmsis/task.h"
@@ -36,11 +38,14 @@
 #include "pmsis/drivers/hyperbus.h"
 #include "pmsis/drivers/cpi.h"
 #include "pmsis/drivers/i2c.h"
+#include "pmsis/drivers/i2s.h"
 #include "pmsis/drivers/spi.h"
 #include "pmsis/drivers/gpio.h"
 #include "pmsis/drivers/uart.h"
 #include "pmsis/drivers/pad.h"
 #include "pmsis/cluster/dma/cl_dma.h"
+
+#include "pmsis/data/data.h"
 
 #include "pmsis/implem/implem.h"
 
