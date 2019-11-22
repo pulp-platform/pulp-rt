@@ -47,17 +47,6 @@ void __pos_i2s_handle_copy(pos_i2s_t *i2s)
         plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[buffer], i2s->conf.block_size, UDMA_CHANNEL_CFG_EN | UDMA_CHANNEL_CFG_SIZE_16);
         i2s->current_buffer = buffer ^ 1;
     }
-    else
-    {
-        i2s->nb_drain_buffers--;
-        if (i2s->nb_drain_buffers == 0)
-        {
-            // We are done draining the buffers, we can now stop the interface
-            hal_i2s_cfg_clkgen_set(i2s->conf.itf, i2s->clk, 0);
-        }
-
-        i2s->reenqueue = 0;
-    }
 
     pi_task_t *waiting = i2s->waiting_first;
 
@@ -90,7 +79,7 @@ int pi_i2s_open(struct pi_device *device)
     {
         int periph_id = ARCHI_UDMA_I2S_ID(itf_id >> 1);
         int sub_periph_id = itf_id & 1;
-        int channel_id = UDMA_EVENT_ID(periph_id);
+        int channel_id = UDMA_EVENT_ID(periph_id) + sub_periph_id;
         int pdm = (i2s->conf.format & PI_I2S_FMT_DATA_FORMAT_MASK) == PI_I2S_FMT_DATA_FORMAT_PDM;
 
         i2s->channel = channel_id;
@@ -99,14 +88,16 @@ int pi_i2s_open(struct pi_device *device)
         i2s->nb_ready_buffer = 0;
         i2s->waiting_first = NULL;
         i2s->reenqueue = 0;
+        if (conf->word_size == 16)
+            i2s->udma_cfg = UDMA_CHANNEL_CFG_EN | UDMA_CHANNEL_CFG_SIZE_16;
+        else
+            i2s->udma_cfg = UDMA_CHANNEL_CFG_EN | UDMA_CHANNEL_CFG_SIZE_32;
 
         i2s->i2s_freq = i2s->conf.frame_clk_freq;
-        if (pdm)
-            i2s->i2s_freq *= (1<<conf->pdm_decimation_log2);
 
 
         // Activate routing of UDMA i2s soc events to FC to trigger interrupts
-        soc_eu_fcEventMask_setEvent(channel_id + i2s->clk);
+        soc_eu_fcEventMask_setEvent(channel_id);
 
         // Deactivate i2s clock-gating
         plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
@@ -116,11 +107,6 @@ int pi_i2s_open(struct pi_device *device)
 
         i2s->clk = sub_periph_id;
 
-        int shift = 10 - i2s->conf.pdm_decimation_log2;
-        if (shift > 7) shift = 7;
-
-        hal_i2s_filt_ch_set(i2s->conf.itf, i2s->clk, (shift << 16) | ((1<<i2s->conf.pdm_decimation_log2)-1));
-
         unsigned int mode = hal_i2s_chmode_get(itf_id);
         int clk = i2s->clk;
 
@@ -128,20 +114,36 @@ int pi_i2s_open(struct pi_device *device)
         I2S_CHMODE_CH_PDM_USEFILTER_MASK(clk) | I2S_CHMODE_CH_PDM_EN_MASK(clk) | 
         I2S_CHMODE_CH_USEDDR_MASK(clk) | I2S_CHMODE_CH_MODE_MASK(clk));
 
+        if (pdm)
+        {
+            i2s->i2s_freq *= (1<<conf->pdm_decimation_log2);
+
+            int shift = 10 - i2s->conf.pdm_decimation_log2;
+            if (shift > 7) shift = 7;
+
+            hal_i2s_filt_ch_set(i2s->conf.itf, i2s->clk, (shift << 16) | ((1<<i2s->conf.pdm_decimation_log2)-1));
+
+            mode |= I2S_CHMODE_CH_PDM_USEFILTER_ENA(clk) | I2S_CHMODE_CH_PDM_EN_ENA(clk);
+
+            if (conf->channels == 2)
+            {
+                mode |= I2S_CHMODE_CH_USEDDR_ENA(clk);
+            }
+
+        }
+        else
+        {
+            i2s->i2s_freq *= conf->word_size;
+
+            if (conf->channels == 2)
+                i2s->i2s_freq *= 2;
+        }
+
         mode |= I2S_CHMODE_CH_LSBFIRST_DIS(clk);
 
         // Configure each channel on a different clock generator to avoid activating a channel
         // when the other is first activated
         mode |= I2S_CHMODE_CH_MODE_CLK(0,0) | I2S_CHMODE_CH_MODE_CLK(1,1);
-
-        //if (i2s->dual) {
-        //mode |= I2S_CHMODE_CH_USEDDR_ENA(clk);
-        //}
-
-        if (pdm)
-        {
-            mode |= I2S_CHMODE_CH_PDM_USEFILTER_ENA(clk) | I2S_CHMODE_CH_PDM_EN_ENA(clk);
-        }
 
         hal_i2s_chmode_set(itf_id, mode);
     }
@@ -155,23 +157,24 @@ int pi_i2s_open(struct pi_device *device)
 
 static inline void __pos_i2s_suspend(pos_i2s_t *i2s)
 {
-    // Don't stop the clock now, we need to drain the pending buffers as the udma is not able to
-    // clear the fifos. The IRQ handler 
+    unsigned int base = hal_udma_channel_base(i2s->channel);
+
     i2s->reenqueue = 0;
-    i2s->nb_drain_buffers = 2;
-}
 
+    // Stop the clock now
+    hal_i2s_cfg_clkgen_set(i2s->conf.itf, i2s->clk, 0);
 
-static void __pos_wait_channel_drain(pos_i2s_t *i2s)
-{
-    while(*(volatile uint8_t *)&i2s->nb_drain_buffers)
-    {
-        rt_wait_for_interrupt();
-        rt_irq_enable();
-        rt_irq_disable();
-    }
+    // And wait a bit so that the pending samples within UDMA internal FIFOs
+    // are moved to the buffers.
+    // Also reactivate the interrupts in case these pending samples trigger an
+    // end of transfer
+    rt_irq_enable();
+    pi_time_wait_us(1);
 
-    rt_compiler_barrier();
+    // Then clear the channels so that we start from a clean state the next time.
+    rt_irq_disable();
+    plp_udma_clr(base);
+    i2s->nb_ready_buffer = 0;
 }
 
 
@@ -181,9 +184,17 @@ void pi_i2s_close(struct pi_device *device)
 
     int irq = rt_irq_disable();
 
-    // In case the interface was previously stopped and we haven't finished to drain the buffers yet
-    // just block the caller until it is done;
-    __pos_wait_channel_drain(i2s);
+    i2s->open_count++;
+    if (i2s->open_count == 0)
+    {
+        int periph_id = ARCHI_UDMA_I2S_ID(i2s->conf.itf >> 1);
+
+        // Deactivate event routing
+        soc_eu_fcEventMask_clearEvent(i2s->channel);
+
+        // Reactivate clock-gating
+        plp_udma_cg_set(plp_udma_cg_get() & ~(1<<periph_id));
+    }
 
     rt_irq_restore(irq);
 }
@@ -198,14 +209,10 @@ static inline void __pos_i2s_resume(pos_i2s_t *i2s)
 
     rt_trace(RT_TRACE_CAM, "[I2S] Resuming (i2s: %d, clk: %d, periph_freq: %d, i2s_freq: %d, div: %d)\n", i2s->conf.itf, itf->clk, periph_freq, itf->conf.frame_clk_freq, div);
   
-    // In case the interface was previously stopped and we haven't finished to drain the buffers yet
-    // just block the caller until it is done;
-    __pos_wait_channel_drain(i2s);
-
     i2s->reenqueue = 1;
 
-    plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[0], i2s->conf.block_size, UDMA_CHANNEL_CFG_EN | UDMA_CHANNEL_CFG_SIZE_16);
-    plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[1], i2s->conf.block_size, UDMA_CHANNEL_CFG_EN | UDMA_CHANNEL_CFG_SIZE_16);
+    plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[0], i2s->conf.block_size, i2s->udma_cfg);
+    plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[1], i2s->conf.block_size, i2s->udma_cfg);
 
     unsigned int conf = 
         I2S_CFG_CLKGEN_BITS_WORD(i2s->conf.word_size) | 

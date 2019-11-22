@@ -29,11 +29,11 @@ typedef struct {
     uint8_t current_read_buffer;
     uint8_t nb_ready_buffer;
     uint8_t channel;
-    uint8_t nb_drain_buffers;
     struct pi_i2s_conf conf;
     pi_task_t *waiting_first;
     pi_task_t *waiting_last;
     int i2s_freq;
+    uint32_t udma_cfg;
 } pos_i2s_t;
 
 #endif
