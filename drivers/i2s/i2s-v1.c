@@ -184,7 +184,7 @@ void pi_i2s_close(struct pi_device *device)
 
     int irq = rt_irq_disable();
 
-    i2s->open_count++;
+    i2s->open_count--;
     if (i2s->open_count == 0)
     {
         int periph_id = ARCHI_UDMA_I2S_ID(i2s->conf.itf >> 1);
