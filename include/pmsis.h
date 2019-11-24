@@ -34,6 +34,8 @@
 #include "pmsis/chips/vega/perf.h"
 #elif PULP_CHIP_FAMILY == CHIP_GAP9
 #include "pmsis/chips/gap9/perf.h"
+#else
+#include "pmsis/chips/gap8/perf.h"
 #endif
 #include "pmsis/rtos/os_frontend_api/pmsis_time.h"
 #include "pmsis/rtos/os_frontend_api/pmsis_freq.h"
