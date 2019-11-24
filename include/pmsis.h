@@ -28,13 +28,19 @@
 #include "pmsis/task.h"
 #include "pmsis/cluster/cluster_sync/fc_to_cl_delegate.h"
 #include "pmsis/cluster/cl_malloc.h"
+#if PULP_CHIP_FAMILY == CHIP_GAP
+#include "pmsis/chips/gap8/perf.h"
+#include "pmsis/chips/gap8/freq.h"
+#elif PULP_CHIP_FAMILY == CHIP_GAP9 || PULP_CHIP_FAMILY == CHIP_VEGA
+#include "pmsis/chips/gap9/perf.h"
+#include "pmsis/chips/gap9/freq.h"
+#endif
 #include "pmsis/rtos/os_frontend_api/pmsis_time.h"
 #include "pmsis/rtos/os_frontend_api/pmsis_freq.h"
 #include "pmsis/rtos/malloc/pmsis_malloc.h"
 #include "pmsis/rtos/malloc/pmsis_l1_malloc.h"
 #include "pmsis/rtos/malloc/pmsis_l2_malloc.h"
 #include "pmsis/drivers/perf.h"
-#include "pmsis/chips/gap8/perf.h"
 #include "pmsis/drivers/hyperbus.h"
 #include "pmsis/drivers/cpi.h"
 #include "pmsis/drivers/i2c.h"
