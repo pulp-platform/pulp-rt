@@ -30,10 +30,10 @@
 #include "pmsis/cluster/cl_malloc.h"
 #if PULP_CHIP_FAMILY == CHIP_GAP
 #include "pmsis/chips/gap8/perf.h"
-#include "pmsis/chips/gap8/freq.h"
-#elif PULP_CHIP_FAMILY == CHIP_GAP9 || PULP_CHIP_FAMILY == CHIP_VEGA
+#elif PULP_CHIP_FAMILY == CHIP_VEGA
+#include "pmsis/chips/vega/perf.h"
+#elif PULP_CHIP_FAMILY == CHIP_GAP9
 #include "pmsis/chips/gap9/perf.h"
-#include "pmsis/chips/gap9/freq.h"
 #endif
 #include "pmsis/rtos/os_frontend_api/pmsis_time.h"
 #include "pmsis/rtos/os_frontend_api/pmsis_freq.h"
