@@ -23,6 +23,8 @@
 extern void __pos_i2s_handle_copy_asm();
 
 
+static int __pos_i2s_global_open_count;
+
 static pos_i2s_t __pos_i2s[ARCHI_UDMA_NB_I2S];
 
 
@@ -69,24 +71,27 @@ int pi_i2s_open(struct pi_device *device)
     struct pi_i2s_conf *conf = (struct pi_i2s_conf *)device->config;
     int itf_id = conf->itf;
     pos_i2s_t *i2s = &__pos_i2s[itf_id];
+    int periph_id = ARCHI_UDMA_I2S_ID(itf_id >> 1);
 
     device->data = (void *)i2s;
 
     memcpy(&i2s->conf, conf, sizeof(struct pi_i2s_conf));
 
+    __pos_i2s_global_open_count++;
+    if (__pos_i2s_global_open_count == 1)
+    {
+        // Deactivate i2s clock-gating
+        plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));        
+    }
+
     i2s->open_count++;
     if (i2s->open_count == 1)
     {
-        int periph_id = ARCHI_UDMA_I2S_ID(itf_id >> 1);
         int sub_periph_id = itf_id & 1;
         int channel_id = UDMA_EVENT_ID(periph_id) + sub_periph_id;
         int pdm = (i2s->conf.format & PI_I2S_FMT_DATA_FORMAT_MASK) == PI_I2S_FMT_DATA_FORMAT_PDM;
 
         i2s->channel = channel_id;
-        i2s->current_buffer = 0;
-        i2s->current_read_buffer = 0;
-        i2s->nb_ready_buffer = 0;
-        i2s->waiting_first = NULL;
         i2s->reenqueue = 0;
         if (conf->word_size == 16)
             i2s->udma_cfg = UDMA_CHANNEL_CFG_EN | UDMA_CHANNEL_CFG_SIZE_16;
@@ -98,9 +103,6 @@ int pi_i2s_open(struct pi_device *device)
 
         // Activate routing of UDMA i2s soc events to FC to trigger interrupts
         soc_eu_fcEventMask_setEvent(channel_id);
-
-        // Deactivate i2s clock-gating
-        plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
 
         // Redirect all UDMA i2s events to a specific callback
         __rt_udma_register_channel_callback(channel_id, __pos_i2s_handle_copy_asm, (void *)i2s);
@@ -169,7 +171,9 @@ static inline void __pos_i2s_suspend(pos_i2s_t *i2s)
     // Also reactivate the interrupts in case these pending samples trigger an
     // end of transfer
     rt_irq_enable();
-    pi_time_wait_us(1);
+
+    volatile int i;
+    for (i=0; i<20; i++);
 
     // Then clear the channels so that we start from a clean state the next time.
     rt_irq_disable();
@@ -187,14 +191,19 @@ void pi_i2s_close(struct pi_device *device)
     i2s->open_count--;
     if (i2s->open_count == 0)
     {
-        int periph_id = ARCHI_UDMA_I2S_ID(i2s->conf.itf >> 1);
-
         // Deactivate event routing
         soc_eu_fcEventMask_clearEvent(i2s->channel);
+    }
+
+    __pos_i2s_global_open_count--;
+    if (__pos_i2s_global_open_count == 0)
+    {
+        int periph_id = ARCHI_UDMA_I2S_ID(i2s->conf.itf >> 1);
 
         // Reactivate clock-gating
         plp_udma_cg_set(plp_udma_cg_get() & ~(1<<periph_id));
     }
+
 
     rt_irq_restore(irq);
 }
@@ -210,6 +219,10 @@ static inline void __pos_i2s_resume(pos_i2s_t *i2s)
     rt_trace(RT_TRACE_CAM, "[I2S] Resuming (i2s: %d, clk: %d, periph_freq: %d, i2s_freq: %d, div: %d)\n", i2s->conf.itf, itf->clk, periph_freq, itf->conf.frame_clk_freq, div);
   
     i2s->reenqueue = 1;
+    i2s->current_buffer = 0;
+    i2s->current_read_buffer = 0;
+    i2s->nb_ready_buffer = 0;
+    i2s->waiting_first = NULL;
 
     plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[0], i2s->conf.block_size, i2s->udma_cfg);
     plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[1], i2s->conf.block_size, i2s->udma_cfg);
@@ -314,6 +327,8 @@ int pi_i2s_write(struct pi_device *dev, void *mem_block, size_t size)
 
 static void __attribute__((constructor)) __pos_i2s_init()
 {
+    __pos_i2s_global_open_count = 0;
+
     for (int i=0; i<ARCHI_UDMA_NB_I2S; i++)
     {
         __pos_i2s[i].open_count = 0;
