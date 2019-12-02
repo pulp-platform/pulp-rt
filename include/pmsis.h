@@ -63,5 +63,9 @@
 #include "hal/utils.h"
 #include "pmsis/cluster/cluster_sync/cl_synchronisation.h"
 
+#ifdef __GAP_OPENOCD__
+unsigned int __rt_iodev = 2;
+#endif
+
 #endif
 
