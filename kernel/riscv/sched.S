@@ -50,19 +50,7 @@ __rt_no_first:
 __rt_common:
   sw      x11, RT_SCHED_T_LAST(x10)
 
-  // Check if a thread must be waken-up
-  lw      x12, RT_SCHED_T_WAITING(x10)
-  sw      x0,  RT_SCHED_T_WAITING(x10)
-  beqz    x12, enqueue_end
-
-  la      x10, __rt_thread_current
-  lw      x10, 0(x10)
-  bne     x10, x12, thread_enqueue
-
 enqueue_end:
-  jr          x9
-
-thread_enqueue:
   jr          x9
 
 __rt_handle_special_event:

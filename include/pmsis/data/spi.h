@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
+ * Copyright (C) 2018 GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ typedef struct {
   pi_task_t *waiting_first;
   pi_task_t *waiting_last;
   unsigned int pending_repeat_len;
+  unsigned int pending_repeat_misaligned_size;
   unsigned int udma_cmd[4];
   int open_count;
   int id;
@@ -35,6 +36,7 @@ typedef struct {
   unsigned int pending_repeat_base;
   unsigned int pending_repeat_send;
   unsigned int pending_repeat_flags;
+  uint32_t buffer;
   struct pi_device *pending_repeat_device;
 } pi_spim_t;
 

@@ -44,12 +44,24 @@ __rt_fc_socevents_handler:
   li  x10, ARCHI_EU_DEMUX_ADDR + EU_CORE_BUFFER_CLEAR
   sw  x9, 0(x10)
 
+#ifdef ARCHI_UDMA_HAS_HYPER
+  // Due to a HW bug in the core on Gap, we have to load this value early
+  lw    x12, %tiny(__rt_hyper_udma_handle)(x0)
+#endif
+
   // Extract ID part
   p.extractu x10, x8, EU_SOC_EVENTS_EVENT_MASK_BITS-1, EU_SOC_EVENTS_EVENT_MASK_OFFSET
 
+#ifdef ARCHI_UDMA_HAS_HYPER
+  p.bneimm x10, UDMA_EVENT_ID(ARCHI_UDMA_HYPER_ID(0)), __rt_fc_socevents_not_hyper_rx
+  jr x12
 
+__rt_fc_socevents_not_hyper_rx:
+  p.bneimm x10, UDMA_EVENT_ID(ARCHI_UDMA_HYPER_ID(0))+1, __rt_fc_socevents_not_hyper_tx
+  jr x12
+#endif
 
-
+__rt_fc_socevents_not_hyper_tx:
 
   // UDMA CHANNEL EVENTS
   li x9, ARCHI_SOC_EVENT_UDMA_NB_EVT

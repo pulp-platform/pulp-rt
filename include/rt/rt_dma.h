@@ -159,12 +159,18 @@ static inline void rt_dma_memcpy(unsigned int ext, unsigned int loc, unsigned sh
 #endif
 
   int id = -1;
+#if MCHAN_VERSION >= 7
+  eu_mutex_lock_from_id(0);
+#endif
   if (!merge) id = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_1D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
   // Prevent the compiler from pushing the transfer before all previous
   // stores are done
   __asm__ __volatile__ ("" : : : "memory");
   plp_dma_cmd_push(cmd, loc, ext);
+#if MCHAN_VERSION >= 7
+  eu_mutex_unlock_from_id(0);
+#endif
   if (!merge) copy->id = id;
 
 #ifdef __RT_USE_PROFILE
@@ -181,6 +187,9 @@ static inline void rt_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned
 #endif
 
   int id = -1;
+#if MCHAN_VERSION >= 7
+  eu_mutex_lock_from_id(0);
+#endif
   if (!merge) id = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
   // Prevent the compiler from pushing the transfer before all previous
@@ -189,6 +198,10 @@ static inline void rt_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned
   plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
   if (!merge) copy->id = id;
 
+#if MCHAN_VERSION >= 7
+  eu_mutex_unlock_from_id(0);
+#endif
+  
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 1);
 #endif

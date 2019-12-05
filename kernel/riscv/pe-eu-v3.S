@@ -55,12 +55,22 @@ __rt_pe_start:
     li      t1, ARCHI_EU_DEMUX_ADDR
     sw      t0, EU_CORE_MASK(t1)
 
+#ifndef ARCHI_NO_L1_TINY
+    sw      x0, %tiny(__rt_dma_first_pending)(x0)
+#endif
+
 #ifdef ARCHI_HAS_CC
     li      t2, ARCHI_CC_CORE_ID
     bne     a1, t2, __rt_slave_start
 #else
     bne     a1, x0, __rt_slave_start
 #endif
+
+    li      t0, (1<<ARCHI_CL_EVT_DMA1)
+    li      t1, ARCHI_EU_DEMUX_ADDR
+    sw      t0, EU_CORE_MASK_IRQ_OR(t1)
+
+
 
     // Prepare few values that will be kept in saved registers to optimize the loop
     la      s0, __rt_cluster_pool
@@ -89,6 +99,9 @@ __rt_pe_start:
     la      s10, __rt_set_slave_stack
     ori     s10, s10, 1
 #endif
+
+    csrwi   0x300, 0x8
+
     j       __rt_master_loop
 
 
@@ -309,9 +322,11 @@ __rt_set_slave_stack:
 #ifdef ARCHI_HAS_CC
     // If the cluster has a cluster controller, the first slave has core ID 0
     // and thus we need to take the next stack
-    addi     s3, s3, 1
-#endif
+    addi     t5, s3, 1
+    p.mul   t4, t5, a0
+#else
     p.mul   t4, s3, a0
+#endif
     add     sp, t4, t0
 
 #ifdef __RT_USE_ASSERT
@@ -353,3 +368,92 @@ __rt_slave_wait_call:
 
 #endif
 
+
+
+#if defined(ARCHI_HAS_CLUSTER)
+#ifndef ARCHI_NO_L1_TINY
+    .global __rt_dma_2d
+__rt_dma_2d:
+
+    sw  x8, -4(sp)
+    sw  x9, -8(sp)
+    sw  a0, -12(sp)
+    sw  a1, -16(sp)
+    sw  a2, -20(sp)
+
+    li  a2, ARCHI_MCHAN_DEMUX_ADDR
+
+    lw  x8, %tiny(__rt_dma_first_pending)(x0)
+
+    lw  a1, CL_DMA_CMD_T_ID(x8)
+    lw  a0, CL_DMA_CMD_T_SIZE(x8)
+    p.bsetr a1, x0, a1
+    sw  a1, MCHAN_STATUS_OFFSET(a2)
+    lw  a1, CL_DMA_CMD_T_LENGTH(x8)
+
+    beqz a0, __rt_dma_2d_done
+
+__rt_dma_2d_redo:
+    lw  x9, CL_DMA_CMD_T_CMD(x8)
+    
+    bgt a0, a1, __rt_dma_2d_not_last
+    mv  a1, a0
+
+__rt_dma_2d_not_last:
+    lw  a0, MCHAN_CMD_OFFSET(a2)
+    sw  a0, CL_DMA_CMD_T_ID(x8)
+
+    lw  a0, CL_DMA_CMD_T_SIZE(x8)
+
+    p.inserti x9, a1, MCHAN_CMD_CMD_LEN_WIDTH-1, MCHAN_CMD_CMD_LEN_BIT
+
+    sw  x9, MCHAN_CMD_OFFSET(a2)   // cmd
+
+    sub a0, a0, a1
+    sw  a0, CL_DMA_CMD_T_SIZE(x8)
+
+    lw  a0, CL_DMA_CMD_T_LOC_ADDR(x8)
+
+    sw  a0, MCHAN_CMD_OFFSET(a2)   // local address
+    add a0, a0, a1
+    sw  a0, CL_DMA_CMD_T_LOC_ADDR(x8)
+
+
+    lw  a0, CL_DMA_CMD_T_EXT_ADDR(x8)
+    lw  a1, CL_DMA_CMD_T_STRIDE(x8)
+
+    sw  a0, MCHAN_CMD_OFFSET(a2)   // external address
+    add a0, a0, a1
+    sw  a0, CL_DMA_CMD_T_EXT_ADDR(x8)
+
+__rt_dma_2d_exit:
+    lw  x8, -4(sp)
+    lw  x9, -8(sp)
+    lw  a0, -12(sp)
+    lw  a1, -16(sp)
+    lw  a2, -20(sp)
+
+    mret
+
+__rt_dma_2d_done:
+    sw  x0, CL_DMA_CMD_T_EXT_ADDR(x8)
+
+    lw  x9, CL_DMA_CMD_T_NEXT(x8)
+    sw  x9, %tiny(__rt_dma_first_pending)(x0)
+
+    li  x8, ARCHI_EU_DEMUX_ADDR + EU_SW_EVENTS_DEMUX_OFFSET + (RT_DMA_EVENT<<2)
+    sw  x0, EU_CORE_TRIGG_SW_EVENT(x8)
+
+    beqz x9, __rt_dma_2d_exit
+
+    mv  x8, x9
+
+    lw  a0, CL_DMA_CMD_T_SIZE(x8)
+    lw  a1, CL_DMA_CMD_T_LENGTH(x8)
+
+    j   __rt_dma_2d_redo
+
+
+
+#endif
+#endif

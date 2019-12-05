@@ -12,6 +12,12 @@ PULP_LIB_FC_SRCS_rt     += kernel/init.c \
   kernel/utils.c kernel/error.c kernel/bridge.c kernel/conf.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/thread.S
 
+PULP_CFLAGS     += -D__RT_USE_BRIDGE=1
+
+ifdef CONFIG_WARNING_ENABLED
+PULP_CFLAGS     += -D__RT_USE_WARNING=1
+endif
+
 ifneq '$(cluster/version)' ''
 PULP_LIB_FC_SRCS_rt     += kernel/task.c
 PULP_LIB_FC_ASM_SRCS_rt += kernel/$(fc_archi)/task.S
@@ -28,6 +34,9 @@ ifeq '$(CONFIG_SCHED_ENABLED)' '1'
 PULP_LIB_FC_SRCS_rt     += kernel/thread.c kernel/events.c
 endif
 
+ifeq '$(CONFIG_CHECK_CLUSTER_START)' '1'
+PULP_CFLAGS             += -DCONFIG_CHECK_CLUSTER_START=1
+endif
 
 
 ifeq '$(CONFIG_ALLOC_ENABLED)' '1'
@@ -79,8 +88,13 @@ ifeq '$(pulp_chip_family)' 'vega'
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
 else
+ifeq '$(pulp_chip_family)' 'gap9'
+PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
+PULP_LIB_FC_SRCS_rt     += kernel/freq-one-per-domain.c
+else
 PULP_LIB_FC_SRCS_rt     += kernel/fll-v$(fll/version).c
 PULP_LIB_FC_SRCS_rt     += kernel/freq-v$(fll/version).c
+endif
 endif
 endif
 endif
@@ -115,6 +129,10 @@ ifeq '$(pulp_chip_family)' 'vega'
 PULP_LIB_FC_SRCS_rt += kernel/vega/maestro.c kernel/vega/maestro_irq.c kernel/vega/pad.c
 endif
 
+ifeq '$(pulp_chip_family)' 'gap9'
+PULP_LIB_FC_SRCS_rt += kernel/gap9/maestro.c kernel/gap9/maestro_irq.c kernel/gap9/pad.c
+endif
+
 ifeq '$(pulp_chip_family)' 'gap'
 PULP_LIB_FC_SRCS_rt += kernel/gap/maestro.c kernel/gap/pmu_driver.c
 endif
@@ -128,6 +146,11 @@ endif
 ifeq '$(pulp_chip_family)' 'vivosoc3_1'
 PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/fll.c 
 PULP_LIB_FC_SRCS_rt     += kernel/vivosoc3/freq.c
+endif
+
+ifeq '$(pulp_chip_family)' 'vivosoc4'
+PULP_LIB_FC_SRCS_rt     += kernel/vivosoc4/fll.c 
+PULP_LIB_FC_SRCS_rt     += kernel/vivosoc4/freq.c
 endif
 
 
@@ -150,6 +173,10 @@ endif
 
 ifeq '$(pulp_chip_family)' 'pulpissimo'
 PULP_LIB_FC_SRCS_rt += kernel/pulpissimo/pulpissimo.c	
+endif
+
+ifeq '$(pulp_chip_family)' 'pulp'
+PULP_LIB_FC_SRCS_rt += kernel/pulp/pulp.c	
 endif
 
 INSTALL_TARGETS += $(INSTALL_DIR)/lib/$(pulp_chip)/$(PULP_LIB_NAME_rt)/crt0.o

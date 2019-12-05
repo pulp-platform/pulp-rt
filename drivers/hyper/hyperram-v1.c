@@ -23,6 +23,8 @@
 
 // If not NULL, this task is enqueued when the current transfer is finished.
 RT_FC_TINY_DATA struct pi_task *__rt_hyper_end_task;
+// If not NULL, a task is on-going, all other should be put on-hold
+RT_FC_TINY_DATA struct pi_task *__rt_hyper_current_task;
 
 // Following variables are used to reenqueue transfers to overcome burst limit.
 // This is used directly by assebly to quickly reenqueue the transfer.
@@ -50,6 +52,8 @@ RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_length;
 RT_FC_TINY_DATA unsigned int __rt_hyper_pending_emu_stride;
 RT_FC_TINY_DATA unsigned char __rt_hyper_pending_emu_do_memcpy;
 RT_FC_TINY_DATA struct pi_task *__rt_hyper_pending_emu_task;
+
+RT_FC_TINY_DATA void *__rt_hyper_udma_handle;
 
 // Local task used to enqueue cluster requests.
 // We cannot reuse the task coming from cluster side as it is used by the emulation
@@ -161,7 +165,6 @@ static char __pi_hyper_temp_buffer[__PI_HYPER_TEMP_BUFFER_SIZE];
 void pi_hyper_conf_init(struct pi_hyper_conf *conf)
 {
   conf->id = -1;
-  conf->ram_size = 0;
   conf->type = PI_HYPER_TYPE_RAM;
   conf->cs = 0;
 }
@@ -170,7 +173,10 @@ void pi_hyper_conf_init(struct pi_hyper_conf *conf)
 #ifdef __RT_HYPER_COPY_ASM
 
 extern void __rt_hyper_handle_copy();
-
+extern void __rt_hyper_handle_burst();
+#if PULP_CHIP == CHIP_GAP8_REVC
+extern void __rt_hyper_handler();
+#endif
 #else
 
 static void __rt_hyper_handle_copy()
@@ -197,6 +203,7 @@ static void __rt_hyper_handle_copy()
     if (task != NULL)
     {
       __rt_hyper_end_task = NULL;
+      __rt_hyper_current_task = NULL;
       __rt_event_handle_end_of_task(task);
     }
 
@@ -221,18 +228,16 @@ int32_t pi_hyper_open(struct pi_device *device)
   struct pi_hyper_conf *conf = (struct pi_hyper_conf *)device->config;
   int periph_id;
   int channel;
-  int ramsize;
 
   periph_id = ARCHI_UDMA_HYPER_ID(conf->id);
   channel = UDMA_EVENT_ID(periph_id);
-  ramsize = conf->ram_size;
 
   pi_hyper_t *hyper = pmsis_l2_malloc(sizeof(pi_hyper_t));
   if (hyper == NULL) return -1;
 
   if (conf->type == PI_HYPER_TYPE_RAM)
   {
-    if (__pi_hyper_init(hyper, ramsize))
+    if (__pi_hyper_init(hyper, 1000000))
       goto error;
   }
 
@@ -244,8 +249,15 @@ int32_t pi_hyper_open(struct pi_device *device)
   if (__rt_hyper_open_count == 1)
   {
     // Activate routing of UDMA hyper soc events to FC to trigger interrupts
+#if PULP_CHIP == CHIP_GAP8_REVC
+    rt_irq_clr(1<<ARCHI_FC_IRQ_HYPER_RX);
+    rt_irq_mask_set(1<<ARCHI_FC_IRQ_HYPER_RX);
+    rt_irq_clr(1<<ARCHI_FC_IRQ_HYPER_TX);
+    rt_irq_mask_set(1<<ARCHI_FC_IRQ_HYPER_TX);
+#else
     soc_eu_fcEventMask_setEvent(channel);
     soc_eu_fcEventMask_setEvent(channel + 1);
+#endif
 
     // Deactivate Hyper clock-gating
     plp_udma_cg_set(plp_udma_cg_get() | (1<<periph_id));
@@ -253,6 +265,8 @@ int32_t pi_hyper_open(struct pi_device *device)
     // Redirect all UDMA hyper events to our callback
     __rt_udma_register_channel_callback(channel, __rt_hyper_handle_copy, NULL);
     __rt_udma_register_channel_callback(channel+1, __rt_hyper_handle_copy, NULL);
+
+    __rt_hyper_udma_handle = __rt_hyper_handle_copy;
   }
 
   int dt_val = conf->type == PI_HYPER_TYPE_RAM ? 1 : 0;
@@ -433,6 +447,7 @@ void __attribute__((noinline)) __pi_hyper_copy_aligned(int channel,
     __rt_hyper_pending_addr = (unsigned int)addr;
     __rt_hyper_pending_repeat = 512;
     __rt_hyper_pending_repeat_size = size;
+    __rt_hyper_udma_handle = __rt_hyper_handle_burst;
     size = 512;
   } else {
     __rt_hyper_pending_repeat = 0;
@@ -576,6 +591,7 @@ static int __pi_hyper_resume_misaligned_read(struct pi_task *task)
       }
 
       __rt_hyper_pending_emu_task = NULL;
+      __rt_hyper_current_task = NULL;
       __rt_event_handle_end_of_task(task);
 
       return 1;
@@ -731,6 +747,7 @@ static int __pi_hyper_resume_misaligned_write(struct pi_task *task)
       }
 
       __rt_hyper_pending_emu_task = NULL;
+      __rt_hyper_current_task = NULL;
       __rt_event_handle_end_of_task(task);
 
       return 1;
@@ -761,6 +778,8 @@ static void __pi_hyper_copy_misaligned(struct pi_task *task)
 
 static void __pi_hyper_copy_exec(int channel, uint32_t addr, uint32_t hyper_addr, uint32_t size, pi_task_t *event)
 {
+  __rt_hyper_current_task = event;
+
   // Check if we are in the fast case where everything is correctly aligned.
   if (likely((((int)addr & 0x3) == 0) && (((int)hyper_addr) & 0x1) == 0 && (((int)size & 0x3) == 0 || ((channel & 1) && ((int)size & 0x1) == 0))))
   {
@@ -784,6 +803,8 @@ static void __pi_hyper_copy_exec(int channel, uint32_t addr, uint32_t hyper_addr
 
 static void __pi_hyper_2d_copy_exec(int channel, uint32_t addr, uint32_t hyper_addr, uint32_t size, int stride, uint32_t length, pi_task_t *event)
 {
+  __rt_hyper_current_task = event;
+
   // Otherwise go through the slow misaligned case.
   __rt_hyper_pending_emu_channel = channel;
   __rt_hyper_pending_emu_hyper_addr = hyper_addr;
@@ -855,7 +876,7 @@ void __pi_hyper_copy(int channel,
   if (cs)
     hyper_addr |= REG_MBR1;
 
-  if (__rt_hyper_end_task != NULL || __rt_hyper_pending_emu_size != 0)
+  if (__rt_hyper_current_task != NULL)
   {
     if (__rt_hyper_pending_tasks != NULL)
     __rt_hyper_pending_tasks_last->implem.next = event;
@@ -887,7 +908,7 @@ void __pi_hyper_copy_2d(int channel,
   if (cs)
     hyper_addr |= REG_MBR1;
 
-  if (__rt_hyper_end_task != NULL || __rt_hyper_pending_emu_size_2d != 0)
+  if (__rt_hyper_current_task != NULL)
   {
     if (__rt_hyper_pending_tasks != NULL)
     __rt_hyper_pending_tasks_last->implem.next = event;
@@ -931,12 +952,17 @@ void __rt_hyper_resume_copy(struct pi_task *task)
 static void __attribute__((constructor)) __rt_hyper_init()
 {
   __rt_hyper_end_task = NULL;
+  __rt_hyper_current_task = NULL;
   __rt_hyper_pending_tasks = NULL;
   __pi_hyper_cluster_reqs_first = NULL;
   __rt_hyper_pending_emu_channel = -1;
   __rt_hyper_open_count = 0;
   __rt_hyper_pending_emu_size = 0;
   __rt_hyper_pending_emu_size_2d = 0;
+#if PULP_CHIP == CHIP_GAP8_REVC
+  rt_irq_set_handler(ARCHI_FC_IRQ_HYPER_RX, __rt_hyper_handler);
+  rt_irq_set_handler(ARCHI_FC_IRQ_HYPER_TX, __rt_hyper_handler);
+#endif
 }
 
 

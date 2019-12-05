@@ -53,6 +53,8 @@ RT_L1_TINY_DATA int __rt_pe_trace[ARCHI_CLUSTER_NB_PE];
 
 RT_L1_TINY_DATA rt_cluster_call_pool_t __rt_cluster_pool;
 RT_L1_TINY_DATA int __rt_cluster_nb_active_pe;
+RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_first_pending;
+RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_last_pending;
 
 
 
@@ -137,7 +139,7 @@ static int __rt_cluster_setup(rt_fc_cluster_data_t *cluster)
 
 
 #ifdef FLL_VERSION
-  #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
+  #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1|| PULP_CHIP_FAMILY == CHIP_VIVOSOC4
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
       // Setup FLL
@@ -300,7 +302,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
   rt_trace(RT_TRACE_CONF, "Unmounting cluster (cluster: %d)\n", cid);
 
 #ifdef FLL_VERSION
-  #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
+  #if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1 || PULP_CHIP_FAMILY == CHIP_VIVOSOC4
     if (rt_platform() != ARCHI_PLATFORM_FPGA)
     {
       // check if cl fll was used
@@ -334,7 +336,7 @@ static inline __attribute__((always_inline)) void __rt_cluster_unmount(int cid, 
 }
 
 
-void pi_cluster_conf_init(struct cluster_driver_conf *conf)
+void pi_cluster_conf_init(struct pi_cluster_conf *conf)
 {
   conf->id = 0;
 }
@@ -344,7 +346,7 @@ int pi_cluster_open(struct pi_device *cluster_dev)
 {
   int irq = rt_irq_disable();
 
-  struct cluster_driver_conf *conf = (struct cluster_driver_conf *)cluster_dev->config;
+  struct pi_cluster_conf *conf = (struct pi_cluster_conf *)cluster_dev->config;
   int cid = conf->id;
 
   cluster_dev->data = (void *)&__rt_fc_cluster_data[cid];
@@ -377,7 +379,7 @@ int pi_cluster_close(struct pi_device *cluster_dev)
 }
 
 
-
+void __rt_dma_2d();
 
 static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
 {
@@ -390,6 +392,10 @@ static RT_FC_BOOT_CODE int __rt_cluster_init(void *arg)
   {
     __rt_fc_cluster_data[i].cid = i;
   }
+
+#ifndef ARCHI_NO_L1_TINY
+  rt_irq_set_handler(ARCHI_CL_EVT_DMA1, __rt_dma_2d);
+#endif
 
   rt_irq_set_handler(RT_FC_ENQUEUE_EVENT, __rt_remote_enqueue_event);
   rt_irq_mask_set(1<<RT_FC_ENQUEUE_EVENT);

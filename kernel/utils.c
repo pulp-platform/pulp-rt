@@ -95,7 +95,7 @@ void __rt_fc_lock(rt_fc_lock_t *lock)
   int irq = rt_irq_disable();
   while(lock->locked)
   {
-    lock->fc_wait = __rt_thread_current;
+    //lock->fc_wait = __rt_thread_current;
     __rt_event_execute(rt_event_internal_sched(), 1);
   }
   lock->locked = 1;
@@ -114,6 +114,7 @@ static int __rt_fc_unlock_to_cluster(rt_fc_lock_t *lock)
   if (lock->waiting) {
     rt_fc_lock_req_t *req = lock->waiting;
     lock->waiting = req->next;
+    rt_compiler_barrier();
     req->done = 1;
     __rt_cluster_notif_req_done(req->cid);
     return 1;
@@ -157,6 +158,7 @@ static void __rt_fc_cluster_lock_req(void *_req)
     }
     else
     {
+      rt_compiler_barrier();
       // The lock is not taken, take it and reply to the cluster
       req->done = 1;
       lock->locked = 1;
@@ -165,23 +167,16 @@ static void __rt_fc_cluster_lock_req(void *_req)
   }
   else
   {
-    // Request is an unlock, first check if we can give the lock to the FC
-    rt_thread_t *fc_wait = lock->fc_wait;
-    if (fc_wait)
+    // Request is an unlock, first check if we can give it to a cluster
+    if (__rt_fc_unlock_to_cluster(lock))
     {
-      lock->locked = 0;
-      lock->fc_wait = NULL;
-      __rt_thread_wakeup(fc_wait);
-    }
-    else  if (__rt_fc_unlock_to_cluster(lock))
-    {
-      // Otherwise, try to give it to a cluster
     }
     else
     {
       lock->locked = 0;
     } 
 
+    rt_compiler_barrier();
     req->done = 1;
     __rt_cluster_notif_req_done(req->cid);
 

@@ -26,6 +26,10 @@ endif
 
 include $(PULP_RT_CONFIG)
 
+ifdef ARCHI_DIR
+PULP_CFLAGS += -I$(ARCHI_DIR)
+endif
+
 PULP_CFLAGS += -I$(CURDIR)/kernel
 
 ifdef USE_PMSIS
@@ -96,6 +100,10 @@ endef
 $(foreach file, $(HAL_FILES), $(eval $(call halSrcRules,$(patsubst %.c,%.o,$(file)),$(file))))
 
 ifeq '$(pulp_chip_family)' 'vega'
+CHIP_TARGETS += gen_linker_script
+endif
+
+ifeq '$(pulp_chip_family)' 'gap9'
 CHIP_TARGETS += gen_linker_script
 endif
 

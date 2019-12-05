@@ -105,6 +105,8 @@ __rt_fc_socevents_register:
   // Context restore
   //
 
+  .global udma_event_handler_end
+udma_event_handler_end:
   .global __rt_fc_socevents_handler_exit
 __rt_fc_socevents_handler_exit:
   lw  x8, 0(sp)

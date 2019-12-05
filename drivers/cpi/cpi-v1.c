@@ -24,34 +24,6 @@ static rt_cpi_t __rt_cpi[ARCHI_UDMA_NB_CAM];
 
 
 
-#ifndef __RT_CPI_COPY_ASM
-
-void __rt_udma_handle_copy(int event, void *arg)
-{
-  rt_udma_channel_t *channel = __rt_udma_channels[event];
-  pi_task_t *pending_1 = channel->pendings[1];
-  pi_task_t *pending_0 = channel->pendings[0];
-  pi_task_t *pending_first = channel->waitings_first;
-  channel->pendings[0] = pending_1;
-
-  if (pending_first)
-  {
-    // TODO
-  }
-  else
-  {
-    channel->pendings[1] = NULL;
-  }
-
-  __rt_event_handle_end_of_task(pending_0);
-}
-
-#else
-
-extern void __rt_udma_handle_copy();
-
-#endif
-
 
 
 void pi_cpi_conf_init(struct pi_cpi_conf *conf)
@@ -73,9 +45,9 @@ int pi_cpi_open(struct pi_device *device)
   periph_id = ARCHI_UDMA_CAM_ID(conf->itf);
   channel = UDMA_EVENT_ID(periph_id);
 
-  cpi->channel_id = channel;
+  cpi->channel_id = periph_id;
   cpi->open_count++;
-  cpi->base = ARCHI_UDMA_ADDR + UDMA_PERIPH_OFFSET(ARCHI_UDMA_CAM_ID(periph_id));
+  cpi->base = ARCHI_UDMA_ADDR + UDMA_PERIPH_OFFSET(periph_id);
 
   if (cpi->open_count == 1)
   {
@@ -100,15 +72,14 @@ void pi_cpi_close(struct pi_device *device)
 {
   rt_cpi_t *cpi = (rt_cpi_t *)device->data;
 
-  int channel = cpi->channel_id;
-  int periph_id = UDMA_PERIPH_ID(channel);
+  int periph_id = cpi->channel_id;
 
   cpi->open_count--;
 
   if (cpi->open_count == 0)
   {
     // Deactivate event routing
-    soc_eu_fcEventMask_clearEvent(channel);
+    soc_eu_fcEventMask_clearEvent(UDMA_EVENT_ID(periph_id));
 
     // Reactivate clock-gating
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<periph_id));
@@ -131,7 +102,8 @@ void pi_cpi_capture_async(struct pi_device *device, void *buffer, int32_t size, 
   rt_cpi_t *cpi = (rt_cpi_t *)device->data;
   int irq = rt_irq_disable();
   __rt_task_init(task);
-  __rt_udma_copy_enqueue(task, cpi->channel_id, &cpi->channel, (uint32_t)buffer, size, UDMA_CHANNEL_CFG_SIZE_16);
+
+  __rt_udma_copy_enqueue(task, UDMA_CHANNEL_ID(cpi->channel_id), &cpi->channel, (uint32_t)buffer, size, UDMA_CHANNEL_CFG_SIZE_16);
   rt_irq_restore(irq);
 }
 

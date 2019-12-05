@@ -24,7 +24,9 @@
 #include "rt/chips/rt_gap.h"
 #include "rt/chips/rt_wolfe.h"
 #include "rt/chips/rt_vega.h"
+#include "rt/chips/rt_gap9.h"
 #include "rt/chips/rt_pulpissimo.h"
+#include "rt/chips/rt_pulp.h"
 
 #include "rt/rt_irq.h"
 #include "rt/rt_utils.h"

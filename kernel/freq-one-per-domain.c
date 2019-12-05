@@ -74,7 +74,7 @@ void __rt_freq_init()
   }
 #endif
 
-#if PULP_CHIP == CHIP_VEGA
+#if PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_GAP9
   // By default on Vega, we connect each FLL on each domain
   apb_soc_clk_sel_set(
     ARCHI_APB_SOC_CTRL_ADDR,

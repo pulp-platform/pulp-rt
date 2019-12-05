@@ -27,6 +27,8 @@
 
 #if PULP_CHIP == CHIP_VEGA
 #include "rt/implem/vega.h"
+#elif PULP_CHIP == CHIP_GAP9
+#include "rt/implem/gap9.h"
 #endif
 
 extern void __pi_yield();
@@ -38,6 +40,10 @@ static inline struct pi_task *pi_task_block(struct pi_task *task)
   task->implem.keep = 1;
   __rt_task_init(task);
   return task;
+}
+
+static inline void pi_task_destroy(pi_task_t *task)
+{
 }
 
 extern int pmsis_exit_value;

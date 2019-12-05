@@ -23,6 +23,34 @@
 RT_FC_TINY_DATA rt_udma_channel_t *__rt_udma_channels[ARCHI_NB_PERIPH*2];
 
 
+#ifndef __RT_UDMA_COPY_ASM
+
+void __rt_udma_handle_copy(int event, void *arg)
+{
+  rt_udma_channel_t *channel = __rt_udma_channels[event];
+  pi_task_t *pending_1 = channel->pendings[1];
+  pi_task_t *pending_0 = channel->pendings[0];
+  pi_task_t *pending_first = channel->waitings_first;
+  channel->pendings[0] = pending_1;
+
+  if (pending_first)
+  {
+    // TODO
+  }
+  else
+  {
+    channel->pendings[1] = NULL;
+  }
+
+  __rt_event_handle_end_of_task(pending_0);
+}
+
+#else
+
+extern void __rt_udma_handle_copy();
+
+#endif
+
 
 void __rt_udma_copy_enqueue(pi_task_t *task, int channel_id, rt_udma_channel_t *channel, uint32_t buffer, uint32_t size, uint32_t cfg)
 {

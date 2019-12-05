@@ -20,6 +20,7 @@
 #ifdef UDMA_VERSION
 #include "pmsis/implem/udma.h"
 #endif
+#include "pmsis/implem/pwm.h"
 #include "pmsis/implem/perf.h"
 #include "pmsis/implem/cpi.h"
 #include "pmsis/implem/uart.h"
@@ -27,5 +28,24 @@
 #include "pmsis/implem/dma.h"
 #endif
 #include "rt/implem/implem.h"
+
+#if PULP_CHIP_FAMILY != CHIP_VIVOSOC3 && PULP_CHIP_FAMILY != CHIP_VIVOSOC3_1 && PULP_CHIP_FAMILY != CHIP_VIVOSOC4
+
+static inline int __pi_freq_get_domain(int domain)
+{
+    return domain == PI_FREQ_DOMAIN_FC ? RT_FREQ_DOMAIN_FC : domain == PI_FREQ_DOMAIN_CL ? RT_FREQ_DOMAIN_CL : RT_FREQ_DOMAIN_PERIPH;
+}
+
+static inline int32_t pi_freq_set(pi_freq_domain_e domain, uint32_t freq)
+{
+    return rt_freq_set_and_get(__pi_freq_get_domain(domain), freq, NULL);
+}
+
+static inline uint32_t pi_freq_get(pi_freq_domain_e domain)
+{
+    return __rt_freq_domains[__pi_freq_get_domain(domain)];
+}
+
+#endif
 
 #endif
