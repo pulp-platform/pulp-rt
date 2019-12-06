@@ -72,6 +72,73 @@ int atoi(const char *str) {
 
 void halide_print(void *user_context, const char *msg) { printf("%s\n", msg); }
 
+//////////////
+// Parallel //
+//////////////
+typedef int (*halide_task_t)(void *user_context, int task_number,
+                             uint8_t *closure);
+
+// Wrapper for PULP 2
+void pulp_do_halide_par_for_fork(void *arg) {
+  unsigned *arguments = (unsigned *)arg;
+
+  void *user_context = (void *)arguments[0];
+  unsigned task_num = arguments[1];
+  uint8_t *closure = (uint8_t *)arguments[2];
+  halide_task_t task = (halide_task_t)arguments[3];
+
+  for (unsigned core_id = rt_core_id(); core_id < task_num; core_id += ARCHI_NB_PE) {
+    task(user_context, core_id, closure);
+  }
+
+}
+
+// Wrapper for pulp 1
+void pulp_do_halide_par_for_entry(void *arg) {
+  // printf("ARCHI_NB_PE=%d! %d\n", ARCHI_NB_PE, rt_core_id());
+  // for (int i = 0; i < 4; ++i)
+  // {
+  //   printf("ARG[%d]=%d\n", i, ((unsigned*)arg)[i]);
+  // }
+  rt_team_fork(0, pulp_do_halide_par_for_fork, arg);
+}
+
+// Halide calls this function
+int halide_do_par_for(void *user_context, halide_task_t task, int min, int size,
+                      uint8_t *closure) {
+  // Mount the cluster
+  rt_cluster_mount(1, 0, 0, NULL);
+
+  // Prints
+  // printf("user_context 0x%8x\n", (unsigned) user_context);
+  // printf("task         0x%8x\n", (unsigned) task);
+  // printf("min          0x%8x\n", (unsigned) min);
+  // printf("size         0x%8x\n", (unsigned) size);
+  // printf("closure      0x%8x\n", (unsigned) closure);
+
+  // unsigned *tmp = (unsigned*) closure;
+  // for (int i = 0; i < 64; ++i)
+  // {
+  //   printf("closure[%2d]   0x%8x\n", i, (unsigned) tmp[i]);
+  // }
+
+  // Halide task expexts three arguments, pack them into one struct
+  unsigned arguments[4];
+  arguments[0] = (unsigned)user_context;
+  arguments[1] = (unsigned)size;
+  arguments[2] = (unsigned)closure;
+  arguments[3] = (unsigned)task;
+
+  // Dispatch the task to the cluster
+  rt_cluster_call(NULL, 0, pulp_do_halide_par_for_entry, arguments, NULL, 0,
+                  0, 0, NULL);
+
+  // Unmount the cluster
+  rt_cluster_mount(0, 0, 0, NULL);
+
+  return 0;
+}
+
 /////////////
 // Atomics //
 /////////////
