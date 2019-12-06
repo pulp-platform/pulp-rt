@@ -113,7 +113,7 @@ int rt_task_cluster_init(rt_task_cluster_t *cluster, rt_task_conf_t *conf, rt_ev
   // that no stack is allocated as the stacks comes from the task framework.
   // The event will be used afterwards, once we notify the cores to leave the
   // task framework, to wait until they fully left it.
-  rt_cluster_call(NULL, cid, __rt_task_master_entry, cluster, 1, (void *)-1, 0, 0, conf->nb_cores, cluster->end_event);
+  rt_cluster_call(NULL, cid, __rt_task_master_entry, cluster, (void *)-1, 0, 0, conf->nb_cores, cluster->end_event);
 
 
   // Not really used as this call is synchronous, just enqueue the event if

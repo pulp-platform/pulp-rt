@@ -136,7 +136,6 @@ static inline struct pi_cluster_task *pi_cluster_task(struct pi_cluster_task *ta
 {
   task->entry = entry;
   task->arg = arg;
-  task->nb_arg = 1;
   task->stacks = (void *)0;
   task->stack_size = 0;
   task->nb_cores = 0;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/*
+/* 
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
@@ -37,7 +37,7 @@ static void __attribute__((constructor)) __rt_cluster_pulpos_emu_init()
   }
 }
 
-int rt_cluster_call(rt_cluster_call_t *call, int cid, void (*entry)(void *arg), void *arg, unsigned nb_arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event)
+int rt_cluster_call(rt_cluster_call_t *_call, int cid, void (*entry)(void *arg), void *arg, void *stacks, int master_stack_size, int slave_stack_size, int nb_pe, rt_event_t *event)
 {
   int irq = rt_irq_disable();
 
@@ -47,7 +47,6 @@ int rt_cluster_call(rt_cluster_call_t *call, int cid, void (*entry)(void *arg), 
 
   pi_cluster_task(task, entry, arg);
 
-  task->nb_arg = nb_arg;
   task->stacks = stacks;
   task->stack_size = master_stack_size;
   task->slave_stack_size = slave_stack_size;

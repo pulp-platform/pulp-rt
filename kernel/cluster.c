@@ -506,7 +506,7 @@ static void __rt_cluster_start(void *arg)
 int rt_cluster_fetch_all(int cid)
 {
   rt_cluster_mount(1, cid, 0, NULL);
-  return rt_cluster_call(NULL, cid, __rt_cluster_start, NULL, 0, NULL, 0, 0, rt_nb_pe(), NULL);
+  return rt_cluster_call(NULL, cid, __rt_cluster_start, NULL, NULL, 0, 0, rt_nb_pe(), NULL);
 }
 
 #else
