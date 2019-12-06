@@ -91,6 +91,26 @@ __rt_pe_start:
 
     bne     a1, x0, __rt_slave_start
 
+    // Set up barrier that will be used for each fork join (all cores participate and get triggered)
+    li      t0, -1
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_MASK+ 0(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_MASK+ 4(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_MASK+ 8(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_MASK+12(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_MASK+16(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_MASK+20(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_MASK+24(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TRIGGER_MASK+28(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TARGET_MASK + 0(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TARGET_MASK + 4(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TARGET_MASK + 8(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TARGET_MASK +12(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TARGET_MASK +16(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TARGET_MASK +20(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TARGET_MASK +24(t1)
+    sw      t0, EU_BARRIER_DEMUX_OFFSET+EU_HW_BARR_TARGET_MASK +28(t1)
+
+
     // Prepare few values that will be kept in saved registers to optimize the loop
     la      s0, __rt_cluster_pool
     li      s3, ARCHI_EU_DEMUX_ADDR
@@ -203,20 +223,22 @@ __rt_master_no_slave_barrier:
     // For that we push first the function for setting stack, then the stack size and the base
     p.beqimm t5, 0, __rt_master_loop_no_slave
     // Dispatch the stack initialization
-    la      a0, dispatch_node
-    li      t1, -1
-    sw      s10, 0(a0) // entry: __rt_set_slave_stack
-    sw      t2,  4(a0) // arg: stack size
-    sw      sp,  8(a0) // stack: stack address
-    sw      t1,  12(a0) // barrier: -1 for none
-    sw      t6,  16(a0) // nb_cores
+    la      t4, dispatch_node
+    li      t1, 0
+    sw      s10, 0(t4) // entry: __rt_set_slave_stack
+    sw      t2,  4(t4) // arg: stack size
+    sw      sp,  8(t4) // stack: stack address
+    sw      t1,  12(t4) // barrier: -1 for none
+    sw      t6,  16(t4) // nb_cores
     // Wake the slaves
     li      t1, (1<<PULP_DISPATCH_EVENT)
     sw      t1, EU_SW_EVENTS_DEMUX_OFFSET + EU_CORE_TRIGG_SW_EVENT(s3)
     // Remove event from own status
     sw      t1, EU_CORE_DEMUX_OFFSET + EU_CORE_BUFFER_CLEAR(s3)
 
-    // TODO
+    // Wait for cores at barrier
+    p.elw   x0, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_WAIT_CLEAR(s3)
+
 //    sw      s10, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
 //    sw      t2, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
 //    sw      sp, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
@@ -290,7 +312,8 @@ __rt_wait_for_dispatch:
     // Check if this core is part of the dispatch task!
     la      a0, dispatch_node
     lw      t0, 16(a0) // number of cores
-    bge     s3, t0, __rt_wait_for_dispatch
+    bge     s3, t0, __rt_fork_return // All cores participate in every fork/barrier, some just dont do anything
+//    bge     s3, t0, __rt_wait_for_dispatch
 
     // Load the entry point and the arguments from the structure
     lw      s1, 12(a0) // barrier

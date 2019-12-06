@@ -249,11 +249,14 @@ static inline void rt_team_fork(int nb_cores, void (*entry)(void *), void *arg)
   // Remove the event from own status
   pulp_write32(ARCHI_EU_DEMUX_ADDR + EU_CORE_DEMUX_OFFSET + EU_CORE_BUFFER_CLEAR, 1<<PULP_DISPATCH_EVENT);
 
+  // Trigger cores before executing function
+  rt_compiler_barrier();
+
   entry(arg);
 
   if (barrier >= 0)
   {
-    __rt_team_barrier();
+    // __rt_team_barrier(); // Barrier in assembly
   }
 
 #ifdef __RT_USE_PROFILE
