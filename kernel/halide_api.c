@@ -50,6 +50,11 @@ FILE *fopen(const char *pathname, const char *mode) {
   return (FILE *)NULL;
 }
 
+size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream) {
+  printf("fwrite not implemented!\n");
+  return 0;
+}
+
 int fclose(FILE *stream) {
   printf("fclose not implemented!\n");
   return -1;
@@ -58,6 +63,11 @@ int fclose(FILE *stream) {
 int fileno(FILE *stream) {
   printf("fileno not implemented!\n");
   return -1;
+}
+
+int atoi(const char *str) {
+  printf("atoi not implemented!\n");
+  return 0;
 }
 
 void halide_print(void *user_context, const char *msg) { printf("%s\n", msg); }
