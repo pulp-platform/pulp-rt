@@ -79,6 +79,7 @@ __rt_hyper_handle_copy_end:
   lw        x11, %tiny(__rt_hyper_end_task)(x0)
   sw        x0, %tiny(__rt_hyper_end_task)(x0)
   beqz      x11, __rt_hyper_handle_emu_task
+  sw        x0, %tiny(__rt_hyper_current_task)(x0)
   jal       x9, __rt_event_enqueue
 	
 __rt_hyper_handle_emu_task:

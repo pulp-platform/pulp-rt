@@ -30,7 +30,7 @@
 
 #else
 
-#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN || PULP_CHIP == CHIP_PULP || PULP_CHIP == CHIP_PULP_V1 || PULP_CHIP == CHIP_ARNOLD || PULP_CHIP == CHIP_VEGA
+#if PULP_CHIP == CHIP_QUENTIN || PULP_CHIP == CHIP_KERBIN || PULP_CHIP == CHIP_PULP || PULP_CHIP == CHIP_PULP_V1 || PULP_CHIP == CHIP_ARNOLD || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_GAP9
 
 #define __RT_FREQ_DOMAIN_FC 1
 #define __RT_FREQ_DOMAIN_CL 2
@@ -45,7 +45,7 @@
 #define __RT_FREQ_DOMAIN_PERIPH 1
 #define RT_FREQ_NB_DOMAIN 2
 
-#elif PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
+#elif PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1 || PULP_CHIP_FAMILY == CHIP_VIVOSOC4
 
 #define __RT_FREQ_DOMAIN_FC       1   // soc domain, soc fll
 #define __RT_FREQ_DOMAIN_CL       0   // cluster domain, soc fll or cl fll
@@ -83,7 +83,7 @@
 /**@{*/
 
 
-#if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
+#if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1 || PULP_CHIP_FAMILY == CHIP_VIVOSOC4
 
 /** \enum rt_freq_domain_e
  * \brief Frequency domains.
@@ -210,7 +210,7 @@ static inline int rt_freq_set(rt_freq_domain_e domain, unsigned int freq);
 
 /// @cond IMPLEM
 
-#if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1
+#if PULP_CHIP_FAMILY == CHIP_VIVOSOC3 || PULP_CHIP_FAMILY == CHIP_VIVOSOC3_1 || PULP_CHIP_FAMILY == CHIP_VIVOSOC4
 
   typedef struct __rt_freq_domain_settings_s {   
     unsigned int __rt_freq_domain_freq;
@@ -259,7 +259,7 @@ static inline int rt_freq_set(rt_freq_domain_e domain, unsigned int freq);
   #define __RT_FLL_CL 2
   #define __RT_FLL_PERIPH 1
   #define __RT_FLL_FC 0
-  #elif PULP_CHIP == CHIP_VEGA
+  #elif PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_GAP9
   #define __RT_FLL_PERIPH 0
   #define __RT_FLL_FC     1
   #define __RT_FLL_CL     2

@@ -37,8 +37,6 @@
 
 #include "rt/rt_api.h"
 
-#if defined(__riscv__)
-
 static unsigned int __rt_get_itvec(unsigned int ItBaseAddr, unsigned int ItIndex, unsigned int ItHandler)
 
 {
@@ -84,99 +82,6 @@ void rt_irq_set_handler(int irq, void (*handler)())
 #endif
 
 }
-
-#else
-
-static RT_FC_DATA void (*__rt_irq_handlers[32])();
-static RT_FC_DATA uint32_t __rt_irq_mask = 0;
-static RT_FC_DATA uint32_t __rt_irq_enabled = 0;
-
-void rt_irq_set_handler(int irq, void (*handler)())
-{
-  __rt_irq_handlers[irq] = handler;
-}
-
-void __rt_irq_handle()
-{
-  unsigned int core_id = rt_core_id();
-  unsigned int irq_id;
-
-  for(irq_id = pulp_irq_id_read(core_id); irq_id != 0xFF; irq_id = pulp_irq_id_read(core_id))
-  {
-    pulp_irq_buff_low_clear(1 << irq_id);
-
-    __rt_irq_handlers[irq_id]();
-  }
-
-}
-
-int rt_irq_disable()
-{
-  int core_id = hal_core_id();
-  int state = __rt_irq_enabled;
-
-  if (__rt_irq_enabled) __rt_irq_mask = pulp_irq_mask_low_read(core_id);
-  __rt_irq_enabled = 0;
-  pulp_irq_mask_low_set(core_id, 0);
-  // As we are deactivating the interrupts in a peripheral,
-  // we have to put some nops to make sure interrupts are really inactive
-  // when we execute the next code.
-  __asm__ volatile ("l.nop" :  :  : "memory");
-  __asm__ volatile ("l.nop" :  :  : "memory");
-  __asm__ volatile ("l.nop" :  :  : "memory");
-  __asm__ volatile ("l.nop" :  :  : "memory");
-  __asm__ volatile ("l.nop" :  :  : "memory");
-  return state;
-}
-
-void rt_irq_restore(int irq)
-{
-  // the parameter irq indicates if interrupts were enabled when rt_irq_disable
-  // was called while __rt_irq_mask is the mask to apply if interrupts must be
-  // reenabled. We have to differentiate in case someone activate an interrupt
-  // handler while interrupts are disabled, in which case we have to be careful
-  // to keep the HW mask to zero.
-  __rt_irq_enabled = irq;
-  if (__rt_irq_enabled) 
-    {
-      pulp_irq_mask_low_set(rt_core_id(), __rt_irq_mask);
-    }
-}
-
-void rt_irq_enable()
-{
-  __rt_irq_enabled = 1;
-  hal_irq_enable();
-  pulp_irq_mask_low_set(rt_core_id(), __rt_irq_mask);
-}
-
-void rt_irq_mask_set(unsigned int mask)
-{
-  __rt_irq_mask |= mask;
-  if (__rt_irq_enabled) pulp_irq_mask_low_set(rt_core_id(), __rt_irq_mask);
-  eu_evt_maskSet(mask);
-}
-
-void rt_irq_mask_clr(unsigned int mask)
-{
-  __rt_irq_mask &= ~mask;
-  if (__rt_irq_enabled) pulp_irq_mask_low_set(rt_core_id(), __rt_irq_mask);
-  eu_evt_maskClr(mask);
-}
-
-void rt_wait_for_interrupt()
-{
-  if (__rt_irq_enabled) pulp_irq_mask_low_set(rt_core_id(), 0);
-  hal_irq_disable();
-  pulp_irq_mask_low_set(rt_core_id(), __rt_irq_mask);
-  eu_evt_wait();
-  if (!__rt_irq_enabled)
-    pulp_irq_mask_low_set(rt_core_id(), 0);
-  else
-    hal_irq_enable();
-}
-
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -65,6 +65,11 @@ rt_alloc_t __rt_alloc_l2[__RT_NB_ALLOC_L2];
 #define Max(x, y) (((x)>(y))?(x):(y))
 #endif
 
+#ifdef CONFIG_ALLOC_L2_PWD_NB_BANKS
+static uint32_t __rt_alloc_account_0[CONFIG_ALLOC_L2_PWD_NB_BANKS];
+static uint32_t __rt_alloc_account_1[CONFIG_ALLOC_L2_PWD_NB_BANKS];
+#endif
+
 /*
   A semi general purpose memory allocator based on the assumption that when something is freed it's size is known.
   The rationnal is to get rid of the usual meta data overhead attached to traditionnal memory allocators.
@@ -478,8 +483,8 @@ void __rt_allocs_init()
   rt_user_alloc_init(&__rt_alloc_l2[2], rt_l2_shared_base(), rt_l2_shared_size());
 #ifdef CONFIG_ALLOC_L2_PWD_NB_BANKS
   __rt_alloc_l2[2].track_pwd = 1;
-  __rt_alloc_l2[2].pwd_count = rt_alloc(RT_ALLOC_FC_DATA, sizeof(int)*CONFIG_ALLOC_L2_PWD_NB_BANKS);
-  __rt_alloc_l2[2].ret_count = rt_alloc(RT_ALLOC_FC_DATA, sizeof(int)*CONFIG_ALLOC_L2_PWD_NB_BANKS);
+  __rt_alloc_l2[2].pwd_count = __rt_alloc_account_0;
+  __rt_alloc_l2[2].ret_count = __rt_alloc_account_0;
   for (int i=0; i<CONFIG_ALLOC_L2_PWD_NB_BANKS; i++)
   {
     __rt_alloc_l2[2].pwd_count[i] = 0;
@@ -574,25 +579,37 @@ void pi_cl_l2_free(void *chunk, int size, pi_cl_free_req_t *req)
   rt_free_cluster(RT_ALLOC_PERIPH, chunk, size, (rt_free_req_t *)req);
 }
 
-void *pmsis_l1_malloc(uint32_t size)
+void *pi_l1_malloc(struct pi_device *device, uint32_t size)
 {
   return rt_alloc(RT_ALLOC_CL_DATA, size);
 }
 
-void pmsis_l1_malloc_free(void *_chunk, int size)
+void pi_l1_free(struct pi_device *device, void *_chunk, int size)
 {
   return rt_free(RT_ALLOC_CL_DATA, _chunk, size);
 }
 
-void *pmsis_l2_malloc(int size)
+
+#endif
+
+void *pi_l2_malloc(int size)
 {
   return rt_alloc(RT_ALLOC_PERIPH, size);
 }
 
-void pmsis_l2_malloc_free(void *_chunk, int size)
+void pi_l2_free(void *_chunk, int size)
 {
   return rt_free(RT_ALLOC_PERIPH, _chunk, size);
 }
 
+#if defined(ARCHI_HAS_FC_TCDM)
+void *pi_fc_tcdm_malloc(int size)
+{
+  return rt_alloc(RT_ALLOC_FC_DATA, size);
+}
 
+void pi_fc_tcdm_free(void *_chunk, int size)
+{
+  return rt_free(RT_ALLOC_FC_DATA, _chunk, size);
+}
 #endif

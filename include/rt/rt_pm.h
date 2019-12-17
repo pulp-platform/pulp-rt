@@ -38,7 +38,7 @@
 
 /**@{*/
 
-#if PULP_CHIP != CHIP_VEGA
+#if PULP_CHIP != CHIP_VEGA && PULP_CHIP != CHIP_GAP9
 
 /** \enum rt_pm_domain_e
  * \brief Power domains.
@@ -65,7 +65,7 @@ typedef enum {
 
 
 
-#if PULP_CHIP != CHIP_VEGA
+#if PULP_CHIP != CHIP_VEGA && PULP_CHIP != CHIP_GAP9
 
 /** \enum rt_pm_state_e
  * \brief Power states.

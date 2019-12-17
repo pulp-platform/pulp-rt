@@ -39,6 +39,11 @@
 rt_i2s_dev_t i2s_desc;
 static rt_i2s_t *__rt_i2s_first[ARCHI_UDMA_NB_I2S];
 
+static inline uint32_t udma_i2s_addr(int itf)
+{
+  return ARCHI_UDMA_ADDR + UDMA_PERIPH_OFFSET(ARCHI_UDMA_I2S_ID(itf));
+}
+
 static inline int __rt_i2s_id(rt_i2s_t *i2s)
 {
   return ARCHI_UDMA_I2S_ID(i2s->i2s_id) - ARCHI_UDMA_I2S_ID(0);
@@ -53,6 +58,7 @@ void rt_i2s_conf_init(rt_i2s_conf_t *conf)
   conf->width = 16;
   conf->id = -1;
   conf->flags = 0;
+  conf->channels = 1;
 }
 
 static void __rt_i2s_free(rt_i2s_t *i2s)
@@ -205,7 +211,7 @@ static inline void __rt_i2s_resume(rt_i2s_t *dev)
 
   udma_i2s_i2s_slv_setup_set(
     udma_i2s_addr(0),
-    UDMA_I2S_I2S_SLV_SETUP_SLAVE_WORDS(1-1)             |
+    UDMA_I2S_I2S_SLV_SETUP_SLAVE_WORDS(dev->channels - 1)             |
     UDMA_I2S_I2S_SLV_SETUP_SLAVE_BITS(16-1)             |
     UDMA_I2S_I2S_SLV_SETUP_SLAVE_LSB(0)               |
     UDMA_I2S_I2S_SLV_SETUP_SLAVE_2CH(dev->dual)       |
@@ -337,6 +343,8 @@ rt_i2s_t* rt_i2s_open(char *dev_name, rt_i2s_conf_t *conf, rt_event_t*event)
   if (i2s == NULL) goto error;
 
   memcpy((void *)&i2s->desc, (void *)desc, sizeof(rt_i2s_dev_t));
+
+  i2s->channels = conf->channels;
 
   rt_irq_restore(irq);
 

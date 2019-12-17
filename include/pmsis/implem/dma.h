@@ -21,18 +21,34 @@
 #include "pmsis.h"
 #include "hal/pulp.h"
 
-struct cl_dma_cmd_s
+struct pi_cl_dma_cmd_s
 {
   int id;
+  uint32_t cmd;
+  uint32_t size;
+  uint32_t stride;
+  uint32_t length;
+  uint32_t loc_addr;
+  uint32_t ext_addr;
+  struct pi_cl_dma_cmd_s *next;
 };
 
-static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned short size, cl_dma_dir_e dir, int merge, cl_dma_cmd_t *copy)
+extern RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_first_pending;
+extern RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_last_pending;
+
+static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned short size, pi_cl_dma_dir_e dir, int merge, pi_cl_dma_cmd_t *copy)
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[rt_core_id()];
   gv_vcd_dump_trace(trace, 4);
 #endif
 
+#if MCHAN_VERSION >= 7
+  eu_mutex_lock_from_id(0);
+#else
+  int irq = rt_irq_disable();
+#endif
+  
   int id = -1;
   if (!merge) id = plp_dma_counter_alloc();
   unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_1D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
@@ -42,32 +58,117 @@ static inline void __cl_dma_memcpy(unsigned int ext, unsigned int loc, unsigned 
   plp_dma_cmd_push(cmd, loc, ext);
   if (!merge) copy->id = id;
 
+#if MCHAN_VERSION >= 7
+  eu_mutex_unlock_from_id(0);
+#else
+  rt_irq_restore(irq);
+#endif
+  
+  copy->length = 0;
+
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 1);
 #endif
 }
 
 
-static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned short size, unsigned short stride, unsigned short length, cl_dma_dir_e dir, int merge, cl_dma_cmd_t *copy)
+#if MCHAN_VERSION >= 7
+
+static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned int size, unsigned int stride, unsigned short length, pi_cl_dma_dir_e dir, int merge, pi_cl_dma_cmd_t *copy)
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[rt_core_id()];
   gv_vcd_dump_trace(trace, 4);
 #endif
 
+  eu_mutex_lock_from_id(0);
+  
   int id = -1;
   if (!merge) id = plp_dma_counter_alloc();
-  unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
-  // Prevent the compiler from pushing the transfer before all previous
-  // stores are done
-  __asm__ __volatile__ ("" : : : "memory");
-  plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
-  if (!merge) copy->id = id;
+
+  {
+    unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
+    // Prevent the compiler from pushing the transfer before all previous
+    // stores are done
+    __asm__ __volatile__ ("" : : : "memory");
+    plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
+    if (!merge) copy->id = id;
+    copy->length = 0;
+  }
+
+  eu_mutex_unlock_from_id(0);
+  
 
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 1);
 #endif
 }
+
+#else
+
+static inline void __cl_dma_memcpy_2d(unsigned int ext, unsigned int loc, unsigned int size, unsigned int stride, unsigned short length, pi_cl_dma_dir_e dir, int merge, pi_cl_dma_cmd_t *copy)
+{
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 4);
+#endif
+
+  int irq = rt_irq_disable();
+  
+  int id = -1;
+
+  if (stride < (1<<15))
+  {
+    if (!merge) id = plp_dma_counter_alloc();
+    unsigned int cmd = plp_dma_getCmd(dir, size, PLP_DMA_2D, PLP_DMA_TRIG_EVT, PLP_DMA_NO_TRIG_IRQ, PLP_DMA_SHARED);
+    // Prevent the compiler from pushing the transfer before all previous
+    // stores are done
+    __asm__ __volatile__ ("" : : : "memory");
+    plp_dma_cmd_push_2d(cmd, loc, ext, stride, length);
+    if (!merge) copy->id = id;
+    copy->length = 0;
+  }
+  else
+  {
+    uint32_t iter_length = size < length ? size : length;
+    unsigned int cmd = plp_dma_getCmd(dir, iter_length, PLP_DMA_1D, PLP_DMA_NO_TRIG_EVT, PLP_DMA_TRIG_IRQ, PLP_DMA_SHARED);
+    // Prevent the compiler from pushing the transfer before all previous
+    // stores are done
+    copy->stride = stride;
+    copy->length = length;
+    copy->cmd = plp_dma_getCmd(dir, 0, PLP_DMA_1D, PLP_DMA_NO_TRIG_EVT, PLP_DMA_TRIG_IRQ, PLP_DMA_SHARED);
+    copy->id = id;
+    copy->next = NULL;
+
+    if (__rt_dma_first_pending)
+    {
+      copy->loc_addr = loc;
+      copy->ext_addr = ext;
+      copy->size = size;
+      __rt_dma_last_pending->next = copy;
+    }
+    else
+    {
+      copy->loc_addr = loc + iter_length;
+      copy->ext_addr = ext + stride;
+      copy->size = size - iter_length;
+      __asm__ __volatile__ ("" : : : "memory");
+      copy->id = plp_dma_counter_alloc();
+      plp_dma_cmd_push(cmd, loc, ext);
+      __rt_dma_first_pending =copy;
+    }
+
+    __rt_dma_last_pending = copy;
+  }
+
+  rt_irq_restore(irq);  
+
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 1);
+#endif
+}
+
+#endif
 
 static inline void __cl_dma_flush()
 {
@@ -81,54 +182,105 @@ static inline void __cl_dma_flush()
 #endif
 }
 
-static inline void __cl_dma_wait(cl_dma_cmd_t *copy)
+#if MCHAN_VERSION >= 7
+
+static inline void __cl_dma_wait(pi_cl_dma_cmd_t *copy)
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[rt_core_id()];
   gv_vcd_dump_trace(trace, 5);
 #endif
-  plp_dma_wait(copy->id);
+
+  int counter = copy->id;
+
+  eu_mutex_lock_from_id(0);
+
+  while(DMA_READ(MCHAN_STATUS_OFFSET) & (1 << counter)) {
+    eu_mutex_unlock_from_id(0);
+    eu_evt_maskWaitAndClr(1<<ARCHI_CL_EVT_DMA0);
+    eu_mutex_lock_from_id(0);
+  }
+
+  plp_dma_counter_free(counter);
+
+  eu_mutex_unlock_from_id(0);
+  
 #ifdef __RT_USE_PROFILE
   gv_vcd_dump_trace(trace, 1);
 #endif
 }
 
-static inline void cl_dma_memcpy(cl_dma_copy_t *copy)
+#else
+
+static inline void __cl_dma_wait(pi_cl_dma_cmd_t *copy)
 {
-  __cl_dma_memcpy(copy->ext, copy->loc, copy->size, copy->dir, copy->merge, (cl_dma_cmd_t *)copy);
+#ifdef __RT_USE_PROFILE
+  int trace = __rt_pe_trace[rt_core_id()];
+  gv_vcd_dump_trace(trace, 5);
+#endif
+  if (copy->length == 0)
+  {
+    int irq = rt_irq_disable();
+
+    while(DMA_READ(PLP_DMA_STATUS_OFFSET) & (1 << copy->id)) {
+      rt_irq_restore(irq);
+      eu_evt_maskWaitAndClr(1<<ARCHI_CL_EVT_DMA0);
+      irq = rt_irq_disable();
+    }
+
+    plp_dma_counter_free(copy->id);
+
+    rt_irq_restore(irq);
+  }
+  else
+  {
+    while(*(volatile uint32_t *)&copy->ext_addr != 0)
+      eu_evt_maskWaitAndClr(1<<RT_DMA_EVENT);
+  }
+  
+#ifdef __RT_USE_PROFILE
+  gv_vcd_dump_trace(trace, 1);
+#endif
+}
+
+#endif
+
+static inline void pi_cl_dma_memcpy(pi_cl_dma_copy_t *copy)
+{
+  __cl_dma_memcpy(copy->ext, copy->loc, copy->size, copy->dir, copy->merge, (pi_cl_dma_cmd_t *)copy);
 }
 
 
-static inline void cl_dma_memcpy_2d(cl_dma_copy_2d_t *copy)
+static inline void pi_cl_dma_memcpy_2d(pi_cl_dma_copy_2d_t *copy)
 {
-  __cl_dma_memcpy_2d(copy->ext, copy->loc, copy->size, copy->stride, copy->length, copy->dir, copy->merge, (cl_dma_cmd_t *)copy);
+  __cl_dma_memcpy_2d(copy->ext, copy->loc, copy->size, copy->stride, copy->length, copy->dir, copy->merge, (pi_cl_dma_cmd_t *)copy);
 }
 
 
-static inline void cl_dma_flush()
+static inline void pi_cl_dma_flush()
 {
   __cl_dma_flush();
 }
 
 
-static inline void cl_dma_wait(void *copy)
+static inline void pi_cl_dma_wait(void *copy)
 {
   __cl_dma_wait(copy);
 }
 
-static inline void cl_dma_cmd(uint32_t ext, uint32_t loc, uint32_t size, cl_dma_dir_e dir, cl_dma_cmd_t *cmd)
+static inline void pi_cl_dma_cmd(uint32_t ext, uint32_t loc, uint32_t size, pi_cl_dma_dir_e dir, pi_cl_dma_cmd_t *cmd)
 {
-  __cl_dma_memcpy(ext, loc, size, dir, 0, (cl_dma_cmd_t *)cmd);
+  __cl_dma_memcpy(ext, loc, size, dir, 0, (pi_cl_dma_cmd_t *)cmd);
 }
 
-static inline void cl_dma_cmd_2d(uint32_t ext, uint32_t loc, uint32_t size, uint32_t stride, uint32_t length, cl_dma_dir_e dir, cl_dma_cmd_t *cmd)
+static inline void pi_cl_dma_cmd_2d(uint32_t ext, uint32_t loc, uint32_t size, uint32_t stride, uint32_t length, pi_cl_dma_dir_e dir, pi_cl_dma_cmd_t *cmd)
 {
-  __cl_dma_memcpy_2d(ext, loc, size, stride, length, dir, 0, (cl_dma_cmd_t *)cmd);
+  __cl_dma_memcpy_2d(ext, loc, size, stride, length, dir, 0, (pi_cl_dma_cmd_t *)cmd);
 }
 
-static inline void cl_dma_cmd_wait(cl_dma_cmd_t *cmd)
+static inline void pi_cl_dma_cmd_wait(pi_cl_dma_cmd_t *cmd)
 {
-  __cl_dma_wait((cl_dma_cmd_t *)cmd);
+  __cl_dma_wait((pi_cl_dma_cmd_t *)cmd);
 }
 
 #endif

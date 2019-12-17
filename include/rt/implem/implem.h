@@ -27,6 +27,8 @@
 
 #if PULP_CHIP == CHIP_VEGA
 #include "rt/implem/vega.h"
+#elif PULP_CHIP == CHIP_GAP9
+#include "rt/implem/gap9.h"
 #endif
 
 extern void __pi_yield();

@@ -95,7 +95,7 @@ void __rt_fc_lock(rt_fc_lock_t *lock)
   int irq = rt_irq_disable();
   while(lock->locked)
   {
-    lock->fc_wait = __rt_thread_current;
+    //lock->fc_wait = __rt_thread_current;
     __rt_event_execute(rt_event_internal_sched(), 1);
   }
   lock->locked = 1;
@@ -167,17 +167,9 @@ static void __rt_fc_cluster_lock_req(void *_req)
   }
   else
   {
-    // Request is an unlock, first check if we can give the lock to the FC
-    rt_thread_t *fc_wait = lock->fc_wait;
-    if (fc_wait)
+    // Request is an unlock, first check if we can give it to a cluster
+    if (__rt_fc_unlock_to_cluster(lock))
     {
-      lock->locked = 0;
-      lock->fc_wait = NULL;
-      __rt_thread_wakeup(fc_wait);
-    }
-    else  if (__rt_fc_unlock_to_cluster(lock))
-    {
-      // Otherwise, try to give it to a cluster
     }
     else
     {

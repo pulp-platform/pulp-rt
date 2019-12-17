@@ -41,7 +41,7 @@ RT_L2_DATA static unsigned short __rt_hyperflash_set_reg_buffer[2];
 
 static void __rt_hyperflash_read(rt_flash_t *_dev, void *data, void *addr, size_t size, rt_event_t *event);
 
-static void __rt_hyperflash_set_reg(rt_hyperflash_t *dev, unsigned int addr, unsigned short value)
+void __rt_hyperflash_set_reg(rt_hyperflash_t *dev, unsigned int addr, unsigned short value)
 {
   rt_event_t *event = rt_event_get_blocking(NULL);
   __rt_hyperflash_set_reg_buffer[0] = value;

@@ -6,6 +6,7 @@
 
 # PADS
 ifeq '$(CONFIG_PADS_ENABLED)' '1'
+PULP_CFLAGS += -DCONFIG_PADS_ENABLED=1
 ifneq '$(padframe/version)' ''
 PULP_LIB_FC_SRCS_rt += drivers/pads/pads-v$(padframe/version).c
 endif
@@ -50,14 +51,40 @@ PULP_LIB_FC_SRCS_rt += drivers/i2c/i2c-v$(udma/i2c/version).c drivers/i2c/i2c-v$
 endif
 endif
 
+
+
+# I2S
+
+ifeq '$(CONFIG_I2S_ENABLED)' '1'
+ifneq '$(udma/i2s/version)' ''
+ifeq '$(udma/i2s/version)' '1'
+PULP_LIB_FC_SRCS_rt += drivers/i2s/i2s-v$(udma/i2s/version).c
+PULP_LIB_FC_ASM_SRCS_rt +=  drivers/i2s/i2s-v$(udma/i2s/version)_asm.S
+endif
+endif
+endif
+
+
+
 # PWM
 
-ifeq '$(pulp_chip_family)' 'gap'
 ifeq '$(CONFIG_PWM_ENABLED)' '1'
+
+ifeq '$(pulp_chip_family)' 'gap'
 PULP_LIB_FC_CFLAGS += -DRT_CONFIG_PWM_ENABLED
 PULP_LIB_FC_SRCS_rt += drivers/pwm/pwm.c
 PULP_LIB_FC_ASM_SRCS_rt += drivers/pwm/pwm_asm.S
+has_pwm=1
 endif
+
+ifeq '$(pulp_chip_family)' 'wolfe'
+has_pwm=1
+endif
+
+endif
+
+ifeq '$(has_pwm)' '1'
+PULP_LIB_FC_SRCS_rt += drivers/pwm/pwm-v1.c
 endif
 
 

@@ -50,7 +50,6 @@ rt_hyperram_t *rt_hyperram_open(char *dev_name, rt_hyperram_conf_t *conf, rt_eve
     return NULL;
 
   pi_hyper_conf_init(&pi_conf);
-  pi_conf.ram_size = conf->ram_size;
   pi_conf.id = conf->id;
 
   pi_open_from_conf(device, &pi_conf);

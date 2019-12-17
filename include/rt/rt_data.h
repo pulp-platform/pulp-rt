@@ -41,6 +41,8 @@
 #include "rt/chips/gap/config.h"
 #elif PULP_CHIP == CHIP_VEGA
 #include "rt/chips/vega/config.h"
+#elif PULP_CHIP == CHIP_GAP9
+#include "rt/chips/gap9/config.h"
 #endif
 
 #define INLINE static inline
@@ -98,6 +100,9 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 // This event is used by the external debug bridge to enqueue tasks to pulp
 #define RT_BRIDGE_ENQUEUE_EVENT 4
 
+#define RT_DMA_EVENT 5
+#define RT_USER_EVENT 6
+
 #if defined(EU_VERSION) && (EU_VERSION == 1)
 #define RT_FORK_EVT 0
 #endif
@@ -127,7 +132,7 @@ typedef void (*rt_error_callback_t)(void *arg, rt_event_t *event, int error, voi
 #define L1_DATA RT_L1_DATA
 #define PI_L1 RT_L1_DATA
 
-#if (defined(ARCHI_HAS_FC_TCDM) || defined(ARCHI_HAS_L2_ALIAS)) && !defined(__LLVM__)
+#if (defined(ARCHI_HAS_FC_TCDM) || defined(ARCHI_HAS_L2_ALIAS)) && !defined(__LLVM__) && !defined(RV_ISA_RV32)
 #define RT_FC_TINY_DATA __attribute__((section(".data_tiny_fc"))) __attribute__ ((tiny))
 #else
 #define RT_FC_TINY_DATA __attribute__((section(".data_tiny_fc")))
@@ -508,6 +513,7 @@ typedef struct rt_i2s_dev_s {
   void (*capture)(rt_i2s_t *dev_name, void *buffer, size_t size, rt_event_t *event);
   void (*start)(rt_i2s_t *handle);
   void (*stop)(rt_i2s_t *handle);
+  void (*channel_capture)(rt_i2s_t *dev_name, int channel, void *buffer, size_t size, rt_event_t *event);
 } rt_i2s_dev_t;
 
 typedef struct rt_i2s_s {
@@ -523,6 +529,7 @@ typedef struct rt_i2s_s {
   char dual;
   char running;
   char width;
+  char channels;
 } rt_i2s_t;
 
 typedef struct rt_fs_l2_s {
@@ -850,6 +857,15 @@ extern RT_FC_TINY_DATA void *__rt_hyper_udma_handle;
 #define PI_TASK_T_DATA_5         (18*4)
 #define PI_TASK_T_DATA_6         (19*4)
 #define PI_TASK_T_DATA_7         (20*4)
+
+#define CL_DMA_CMD_T_ID          (0*4)
+#define CL_DMA_CMD_T_CMD         (1*4)
+#define CL_DMA_CMD_T_SIZE        (2*4)
+#define CL_DMA_CMD_T_STRIDE      (3*4)
+#define CL_DMA_CMD_T_LENGTH      (4*4)
+#define CL_DMA_CMD_T_LOC_ADDR    (5*4)
+#define CL_DMA_CMD_T_EXT_ADDR    (6*4)
+#define CL_DMA_CMD_T_NEXT        (7*4)
 
 /// @endcond
 

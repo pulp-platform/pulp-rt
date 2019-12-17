@@ -52,7 +52,7 @@ RT_BOOT_CODE static void do_dtors(void)
 
 void __rt_putc_debug_bridge(char c);
 
-#if PULP_CHIP_FAMILY == CHIP_GAP || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_WOLFE
+#if PULP_CHIP_FAMILY == CHIP_GAP || PULP_CHIP == CHIP_VEGA || PULP_CHIP == CHIP_WOLFE || PULP_CHIP == CHIP_GAP9
 void __rt_pmu_init();
 #endif
 
@@ -73,12 +73,15 @@ extern unsigned char stack_start;
 
 void __rt_init()
 {
+
 #if PULP_CHIP_FAMILY == CHIP_GAP
   // Always allow JTAG accesses for now as security is not implemented
   hal_pmu_bypass_set (ARCHI_REG_FIELD_SET (hal_pmu_bypass_get (), 1, 11, 1) );
 #endif
 
+#ifdef __RT_USE_BRIDGE
   __rt_bridge_set_available();
+#endif
 
   if (rt_platform() == ARCHI_PLATFORM_GVSOC)
   {
@@ -128,12 +131,14 @@ void __rt_init()
 
   // Schedulers are also initialized now as other modules are accessing directly
   // some of their variables.
-  __rt_thread_sched_init();
+  //__rt_thread_sched_init();
   __rt_event_sched_init();
 
 #ifdef PADS_VERSION
+#ifdef CONFIG_PADS_ENABLED
   // Initialize now the default padframe so that the user can overwrite it
   __rt_padframe_init();
+#endif
 #endif
 
   // Call global and static constructors
@@ -145,7 +150,9 @@ void __rt_init()
   // Now do individual modules initializations.
   if (__rt_cbsys_exec(RT_CBSYS_START)) goto error;
 
+#if defined(CONFIG_CHECK_CLUSTER_START) && CONFIG_CHECK_CLUSTER_START == 1
   if (__rt_check_clusters_start()) goto error;
+#endif
 
   return;
 
@@ -318,4 +325,25 @@ static int __rt_check_clusters_start()
 void pi_open_from_conf(struct pi_device *device, void *conf)
 {
   device->config = conf;
+}
+
+void pi_pulpos_conf_init(struct pi_pulpos_conf *conf)
+{
+  conf->io_dev = PI_PULPOS_IO_DEV_BRIDGE;
+}
+
+int pi_os_open(struct pi_device *device)
+{
+  struct pi_pulpos_conf *conf = (struct pi_pulpos_conf *)device->config;
+
+  if (conf->io_dev != PI_PULPOS_IO_DEV_BRIDGE)
+  {
+    __rt_iodev = conf->io_dev;
+
+    if (__rt_iodev == PI_PULPOS_IO_DEV_UART)
+      __rt_iodev_uart_baudrate = conf->uart.baudrate;
+
+    __rt_io_set();
+  }
+  return 0;
 }

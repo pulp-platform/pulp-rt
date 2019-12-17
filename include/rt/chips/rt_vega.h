@@ -366,8 +366,6 @@ typedef enum {
 
 //!@}
 
-#endif
-
 
 
 /// @cond IMPLEM
@@ -381,5 +379,7 @@ typedef enum {
 void rt_l1_power_ctrl(unsigned int banks, rt_l1_power_ctrl_e flags);
 
 /// @endcond
+
+#endif
 
 #endif
