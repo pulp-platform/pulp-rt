@@ -46,6 +46,8 @@ static inline uint32_t pi_freq_get(pi_freq_domain_e domain)
     return __rt_freq_domains[__pi_freq_get_domain(domain)];
 }
 
+#ifdef ARCHI_HAS_CLUSTER
+
 static inline void cl_wait_task(unsigned char *done)
 {
     while ((*(volatile char *)done) == 0)
@@ -53,6 +55,8 @@ static inline void cl_wait_task(unsigned char *done)
         eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
     }
 }
+
+#endif
 
 #endif
 
