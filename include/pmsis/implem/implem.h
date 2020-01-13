@@ -56,6 +56,15 @@ static inline void cl_wait_task(unsigned char *done)
     }
 }
 
+
+static inline void pi_task_push(pi_task_t *task)
+{
+  rt_event_enqueue(task);
+}
+
+
+#endif
+
 static inline void pi_task_wait_on(struct pi_task *task)
 {
   while(!task->done)
@@ -72,16 +81,6 @@ struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), 
   __rt_task_init(task);
   return task;
 }
-
-
-
-static inline void pi_task_push(pi_task_t *task)
-{
-  rt_event_enqueue(task);
-}
-
-
-#endif
 
 #endif
 
