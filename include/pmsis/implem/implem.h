@@ -46,6 +46,8 @@ static inline uint32_t pi_freq_get(pi_freq_domain_e domain)
     return __rt_freq_domains[__pi_freq_get_domain(domain)];
 }
 
+#endif
+
 #ifdef ARCHI_HAS_CLUSTER
 
 static inline void cl_wait_task(unsigned char *done)
@@ -81,7 +83,5 @@ struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), 
   __rt_task_init(task);
   return task;
 }
-
-#endif
 
 #endif
