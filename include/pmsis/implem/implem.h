@@ -56,6 +56,31 @@ static inline void cl_wait_task(unsigned char *done)
     }
 }
 
+static inline void pi_task_wait_on(struct pi_task *task)
+{
+  while(!task->done)
+    rt_event_yield(NULL);
+}
+
+
+struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), void *arg)
+{
+  task->id = PI_TASK_CALLBACK_ID;
+  task->arg[0] = (uint32_t)callback;
+  task->arg[1] = (uint32_t)arg;
+  task->implem.keep = 1;
+  __rt_task_init(task);
+  return task;
+}
+
+
+
+static inline void pi_task_push(pi_task_t *task)
+{
+  rt_event_enqueue(task);
+}
+
+
 #endif
 
 #endif
