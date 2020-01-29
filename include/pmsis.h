@@ -40,10 +40,9 @@
 #endif
 #include "pmsis/rtos/os_frontend_api/pmsis_time.h"
 #include "pmsis/rtos/os_frontend_api/freq.h"
-#include "pmsis/rtos/malloc/pmsis_malloc.h"
-#include "pmsis/rtos/malloc/pmsis_l1_malloc.h"
-#include "pmsis/rtos/malloc/pmsis_l2_malloc.h"
-#include "pmsis/rtos/malloc/pmsis_fc_tcdm_malloc.h"
+#include "pmsis/rtos/malloc/cl_l1_malloc.h"
+#include "pmsis/rtos/malloc/l2_malloc.h"
+#include "pmsis/rtos/malloc/fc_l1_malloc.h"
 #include "pmsis/drivers/perf.h"
 #include "pmsis/drivers/hyperbus.h"
 #include "pmsis/drivers/cpi.h"
