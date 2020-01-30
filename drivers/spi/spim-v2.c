@@ -283,6 +283,45 @@ void pi_spi_ioctl(struct pi_device *device, uint32_t cmd, void *_arg)
   rt_irq_restore(irq);
 }
 
+static void __attribute__((noinline)) pos_spim_enqueue_to_pending(pi_spim_t *spim, pi_task_t *task, uint32_t data0, uint32_t data1, uint32_t data2, uint32_t data3, uint32_t data4)
+{
+  task->implem.data[0] = data0;
+  task->implem.data[1] = data1;
+  task->implem.data[2] = data2;
+  task->implem.data[3] = data3;
+  task->implem.data[4] = data4;
+
+  if (spim->waiting_first)
+    spim->waiting_last->implem.next = task;
+  else
+    spim->waiting_first = task;
+
+  spim->waiting_last = task;
+  task->implem.next = NULL;
+}
+
+
+
+static void __attribute__((noinline)) pos_spim_enqueue_to_pending_7(pi_spim_t *spim, pi_task_t *task, uint32_t data0, uint32_t data1, uint32_t data2, uint32_t data3, uint32_t data4, uint32_t data5, uint32_t data6, uint32_t data7)
+{
+  task->implem.data[0] = data0;
+  task->implem.data[1] = data1;
+  task->implem.data[2] = data2;
+  task->implem.data[3] = data3;
+  task->implem.data[4] = data4;
+  task->implem.data[5] = data5;
+  task->implem.data[6] = data6;
+  task->implem.data[7] = data7;
+
+  if (spim->waiting_first)
+    spim->waiting_last->implem.next = task;
+  else
+    spim->waiting_first = task;
+
+  spim->waiting_last = task;
+  task->implem.next = NULL;
+}
+
 void pi_spi_close(struct pi_device *device)
 {
   int irq = rt_irq_disable();
@@ -726,8 +765,12 @@ void __pi_handle_waiting_copy(pi_task_t *task)
     pi_spi_send_async((struct pi_device *)task->implem.data[1], (void *)task->implem.data[2], task->implem.data[3], task->implem.data[4], task);
   else if (task->implem.data[0] == 1)
     pi_spi_receive_async((struct pi_device *)task->implem.data[1], (void *)task->implem.data[2], task->implem.data[3], task->implem.data[4], task);
-  else
+  else if (task->implem.data[0] == 2)
     pi_spi_transfer_async((struct pi_device *)task->implem.data[1], (void *)task->implem.data[2], (void *)task->implem.data[3], task->implem.data[4], task->implem.data[5], task);
+  else if (task->implem.data[0] == 3)
+      pi_spi_copy_async((struct pi_device *)task->implem.data[1], task->implem.data[2], (void *)task->implem.data[3], task->implem.data[4], task->implem.data[5], task);
+  else if (task->implem.data[0] == 4)
+      pi_spi_copy_2d_async((struct pi_device *)task->implem.data[1], task->implem.data[2], (void *)task->implem.data[3], task->implem.data[4], task->implem.data[5], task->implem.data[6], task->implem.data[7], task);
 }
 
 
@@ -1227,7 +1270,7 @@ void pi_spi_copy_async(struct pi_device *device,
     }
     else
     {
-        //pos_spim_enqueue_to_pending_7(spim, task, 3, (int)device, addr, (int)data, size, flags, 0, 0);
+        pos_spim_enqueue_to_pending_7(spim, task, 3, (int)device, addr, (int)data, size, flags, 0, 0);
     }
 
     hal_irq_restore(irq);
@@ -1275,7 +1318,7 @@ void pi_spi_copy_2d_async(struct pi_device *device,
     }
     else
     {
-        //pos_spim_enqueue_to_pending_7(spim, task, 4, (int)device, addr, (int)data, size, stride, length, flags);
+        pos_spim_enqueue_to_pending_7(spim, task, 4, (int)device, addr, (int)data, size, stride, length, flags);
     }
 
     hal_irq_restore(irq);
