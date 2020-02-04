@@ -63,6 +63,10 @@ error:
 
 int pi_gpio_pin_configure(struct pi_device *device, pi_gpio_e pin, pi_gpio_flags_e flags)
 {
+  pi_pad_e pad = (pin >> PI_GPIO_NUM_SHIFT);
+  /* Setup first pad for GPIO. */
+  pi_pad_set_function(pad, PI_PAD_FUNC1);
+
   return pi_gpio_mask_configure(device, 1<<(pin & 0xff), flags);
 }
 
