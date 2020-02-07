@@ -201,7 +201,7 @@ int pi_spi_open(struct pi_device *device)
   pi_spim_t *spim = &__rt_spim[conf->itf];
   pos_spim_l2_t *spim_l2 = &pos_spim_l2[conf->itf];
 
-  pi_spim_cs_t *spim_cs = pmsis_l2_malloc(sizeof(pi_spim_cs_t));
+  pi_spim_cs_t *spim_cs = pi_l2_malloc(sizeof(pi_spim_cs_t));
   if (spim_cs == NULL) goto error;
 
   device->data = (void *)spim_cs;
@@ -333,6 +333,9 @@ void pi_spi_close(struct pi_device *device)
 
   spim->open_count--;
 
+  pi_spi_receive_ucode_set(device, NULL, 0);
+  pi_spi_send_ucode_set(device, NULL, 0);
+
   if (spim->open_count == 0)
   {
     // Deactivate event routing
@@ -341,6 +344,8 @@ void pi_spi_close(struct pi_device *device)
     // Reactivate clock-gating
     plp_udma_cg_set(plp_udma_cg_get() & ~(1<<periph_id));
   }
+
+  pi_l2_free(spim_cs, sizeof(pi_spim_cs_t));
 
   rt_irq_restore(irq);
 }
@@ -596,15 +601,17 @@ void pi_spi_receive_async(struct pi_device *device, void *data, size_t len, pi_s
   spim->pending_copy = task;
 
 
-  if ((addr & 0x3) || size < 4)
-  {
-    iter_size = 4 - (addr & 0x3);
-    if (iter_size > size)
-      iter_size = size;
-    misaligned_size = iter_size;
-    addr = (uint32_t)&spim->buffer;
-  }
-  else if (size > 8192)
+  //if ((addr & 0x3) || size < 4)
+  //{
+  //  iter_size = 4 - (addr & 0x3);
+  //  if (iter_size > size)
+  //    iter_size = size;
+  //  misaligned_size = iter_size;
+  //  addr = (uint32_t)&spim->buffer;
+  //}
+  //else 
+  
+  if (size > 8192)
   {
     iter_size = 8192;
   }
@@ -783,6 +790,9 @@ void *pi_spi_receive_ucode_set(struct pi_device *device, uint8_t *ucode, uint32_
     if (spim_cs->udma_receive_cmd)
         pi_l2_free(spim_cs->udma_receive_cmd, (spim_cs->udma_receive_cmd_size + 2)*4);
 
+    if (ucode == NULL)
+        return NULL;
+
     spim_cs->udma_receive_cmd = pi_l2_malloc(ucode_size + 4*4);
     if (spim_cs->udma_receive_cmd == NULL)
         return NULL;
@@ -814,6 +824,9 @@ void *pi_spi_send_ucode_set(struct pi_device *device, uint8_t *ucode, uint32_t u
 
     if (spim_cs->udma_send_cmd)
         pi_l2_free(spim_cs->udma_send_cmd, (spim_cs->udma_send_cmd_size + 2)*4);
+
+    if (ucode == NULL)
+        return NULL;
 
     spim_cs->udma_send_cmd = pi_l2_malloc(ucode_size + 4*4);
     if (spim_cs->udma_send_cmd == NULL)
