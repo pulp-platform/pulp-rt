@@ -38,6 +38,8 @@ int pi_mem_slab_alloc(pi_mem_slab_t *slab, void **mem, int32_t timeout)
 {
     int result;
 
+    int irq = hal_irq_disable();
+
     if (slab->free_list != NULL)
     {
         /* take a free block */
@@ -53,13 +55,19 @@ int pi_mem_slab_alloc(pi_mem_slab_t *slab, void **mem, int32_t timeout)
         result = -1;
     }
 
+    hal_irq_restore(irq);
+    
     return result;
 }
 
 
 void pi_mem_slab_free(pi_mem_slab_t *slab, void **mem)
 {
+    int irq = hal_irq_disable();
+
     **(char ***)mem = slab->free_list;
     slab->free_list = *(char **)mem;
     slab->num_used--;
+
+    hal_irq_restore(irq);
 }
