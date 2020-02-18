@@ -60,16 +60,18 @@ static void pos_i2s_mem_slab_pop(pos_i2s_t *i2s, pi_task_t *task)
 }
 
 
-static void pos_i2s_enqueue(pos_i2s_t *i2s)
+static int pos_i2s_enqueue(pos_i2s_t *i2s)
 {
     char *buffer = NULL;
     unsigned int base = hal_udma_channel_base(i2s->channel);
     uint32_t size;
+    int task_done = 1;
 
     if (i2s->pending_size)
     {
         buffer = (char *)i2s->pending_buffer;
         size = i2s->pending_size;
+        task_done = 0;
     }
     else
     {
@@ -113,30 +115,37 @@ static void pos_i2s_enqueue(pos_i2s_t *i2s)
 
         plp_udma_enqueue(base, (uint32_t)buffer, iter_size, i2s->udma_cfg);
     }
+
+    return task_done;
 }
 
 
 void __pos_i2s_handle_copy(pos_i2s_t *i2s)
 {
+    int task_done = 1;
+
     if (i2s->reenqueue)
     {
-        pos_i2s_enqueue(i2s);
+        task_done = pos_i2s_enqueue(i2s);
     }
 
-    pi_task_t *waiting = i2s->waiting_first;
-
-    if (waiting)
+    if (task_done)
     {
-        if (!i2s->is_pingpong)
+        pi_task_t *waiting = i2s->waiting_first;
+
+        if (waiting)
         {
-            pos_i2s_mem_slab_pop(i2s, waiting);
+            if (!i2s->is_pingpong)
+            {
+                pos_i2s_mem_slab_pop(i2s, waiting);
+            }
+            i2s->waiting_first = waiting->implem.next;
+            __rt_event_enqueue(waiting);
         }
-        i2s->waiting_first = waiting->implem.next;
-        __rt_event_enqueue(waiting);
-    }
-    else
-    {
-        i2s->nb_ready_buffer++;
+        else
+        {
+            i2s->nb_ready_buffer++;
+        }
     }
 }
 
@@ -150,9 +159,6 @@ int pi_i2s_open(struct pi_device *device)
     pos_i2s_t *i2s = &__pos_i2s[itf_id];
     int periph_id = ARCHI_UDMA_I2S_ID(itf_id >> 1);
     int is_pingpong = (conf->options & PI_I2S_OPT_MEM_SLAB) == 0;
-
-    if (conf->block_size > (1<<16)-1)
-        return -1;
 
     if (is_pingpong)
     {
