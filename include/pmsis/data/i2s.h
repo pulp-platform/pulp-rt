@@ -22,6 +22,8 @@
 #include "pmsis/task.h"
 
 typedef struct {
+    uint32_t pending_size;
+    char * pending_buffer;
     uint8_t reenqueue;
     uint8_t clk;
     uint8_t open_count;

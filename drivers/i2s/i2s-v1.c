@@ -60,22 +60,59 @@ static void pos_i2s_mem_slab_pop(pos_i2s_t *i2s, pi_task_t *task)
 }
 
 
-static void *pos_i2s_mem_slab_enqueue(pos_i2s_t *i2s)
+static void pos_i2s_enqueue(pos_i2s_t *i2s)
 {
+    char *buffer = NULL;
     unsigned int base = hal_udma_channel_base(i2s->channel);
-    void *buffer;
-    pi_mem_slab_alloc(i2s->conf.mem_slab, &buffer, 0);
+    uint32_t size;
 
-    if (buffer != NULL)
+    if (i2s->pending_size)
     {
-        i2s->ring_buffer[i2s->ring_buffer_head++] = buffer;
-        if (i2s->ring_buffer_head == i2s->ring_buffer_nb_elem)
-            i2s->ring_buffer_head = 0;
-
-        plp_udma_enqueue(base, (int)buffer, i2s->conf.block_size, i2s->udma_cfg);
+        buffer = (char *)i2s->pending_buffer;
+        size = i2s->pending_size;
     }
+    else
+    {
+        size = i2s->conf.block_size;
 
-    return buffer;
+        if (i2s->is_pingpong)
+        {
+            int buffer_index = i2s->current_buffer;
+            buffer = i2s->conf.pingpong_buffers[buffer_index];
+            i2s->current_buffer = buffer_index ^ 1;
+        }
+        else
+        {
+            pi_mem_slab_alloc(i2s->conf.mem_slab, (void **)&buffer, 0);
+
+            if (buffer != NULL)
+            {
+                i2s->ring_buffer[i2s->ring_buffer_head++] = buffer;
+                if (i2s->ring_buffer_head == i2s->ring_buffer_nb_elem)
+                    i2s->ring_buffer_head = 0;
+            }
+        }
+    }
+    
+    if (buffer)
+    {
+        uint32_t iter_size;
+        uint32_t max_size = (1<<16)-4;
+
+        if (size > max_size)
+        {
+            iter_size = max_size;
+            i2s->pending_size = size - iter_size;
+            i2s->pending_buffer = buffer + iter_size;
+        }
+        else
+        {
+            iter_size = size;
+            i2s->pending_size = 0;
+        }
+
+        plp_udma_enqueue(base, (uint32_t)buffer, iter_size, i2s->udma_cfg);
+    }
 }
 
 
@@ -83,21 +120,7 @@ void __pos_i2s_handle_copy(pos_i2s_t *i2s)
 {
     if (i2s->reenqueue)
     {
-        unsigned int base = hal_udma_channel_base(i2s->channel);
-        int buffer_index = i2s->current_buffer;
-
-        if (i2s->is_pingpong)
-        {
-            void *buffer = i2s->conf.pingpong_buffers[buffer_index];
-            i2s->current_buffer = buffer_index ^ 1;
-            plp_udma_enqueue(base, (int)buffer, i2s->conf.block_size, UDMA_CHANNEL_CFG_EN | UDMA_CHANNEL_CFG_SIZE_16);
-        }
-        else
-        {
-            i2s->ring_buffer_nb_elem++;
-
-            pos_i2s_mem_slab_enqueue(i2s);
-        }
+        pos_i2s_enqueue(i2s);
     }
 
     pi_task_t *waiting = i2s->waiting_first;
@@ -157,6 +180,8 @@ int pi_i2s_open(struct pi_device *device)
 
         i2s->channel = channel_id;
         i2s->reenqueue = 0;
+        i2s->pending_size = 0;
+
         if (conf->word_size == 16)
             i2s->udma_cfg = UDMA_CHANNEL_CFG_EN | UDMA_CHANNEL_CFG_SIZE_16;
         else
@@ -310,16 +335,8 @@ static inline void __pos_i2s_resume(pos_i2s_t *i2s)
     i2s->nb_ready_buffer = 0;
     i2s->waiting_first = NULL;
 
-    if (i2s->is_pingpong)
-    {
-        plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[0], i2s->conf.block_size, i2s->udma_cfg);
-        plp_udma_enqueue(base, (int)i2s->conf.pingpong_buffers[1], i2s->conf.block_size, i2s->udma_cfg);
-    }
-    else
-    {
-        pos_i2s_mem_slab_enqueue(i2s);
-        pos_i2s_mem_slab_enqueue(i2s);
-    }
+    pos_i2s_enqueue(i2s);
+    pos_i2s_enqueue(i2s);
 
     unsigned int conf = 
         UDMA_I2S_CFG_CLKGEN0_BITS_WORD(i2s->conf.word_size - 1) | 
