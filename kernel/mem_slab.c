@@ -13,12 +13,12 @@ static void create_free_list(struct pi_mem_slab *slab)
     char *p;
 
     slab->free_list = NULL;
-    p = slab->buffer;
+    p = slab->buffer + slab->block_size*(slab->num_blocks - 1);
 
     for (j = 0U; j < slab->num_blocks; j++) {
         *(char **)p = slab->free_list;
         slab->free_list = p;
-        p += slab->block_size;
+        p -= slab->block_size;
     }
 }
 

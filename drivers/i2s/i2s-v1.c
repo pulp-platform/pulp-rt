@@ -128,6 +128,9 @@ int pi_i2s_open(struct pi_device *device)
     int periph_id = ARCHI_UDMA_I2S_ID(itf_id >> 1);
     int is_pingpong = (conf->options & PI_I2S_OPT_MEM_SLAB) == 0;
 
+    if (conf->block_size > (1<<16)-1)
+        return -1;
+
     if (is_pingpong)
     {
         if (conf->pingpong_buffers[0] == NULL || conf->pingpong_buffers[1] == NULL)
