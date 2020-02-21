@@ -221,6 +221,8 @@ int pi_spi_open(struct pi_device *device)
   spim_cs->udma_receive_cmd = NULL;
 
   int div = __rt_spi_get_div(spim_cs->max_baudrate);
+  /* Clock div does not fit on 8 bits, SoC frequency needs to be lowered. */
+  if (div > 0xFF) goto error;
   spim_cs->div = div;
 
   spim_cs->cfg = SPI_CMD_CFG(div, conf->polarity, conf->phase);
