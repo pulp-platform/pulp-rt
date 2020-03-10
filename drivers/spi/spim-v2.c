@@ -1256,7 +1256,7 @@ void pi_spi_copy_async(struct pi_device *device,
   uint32_t addr, void *data, uint32_t size,
   pi_spi_flags_e flags, pi_task_t *task)
 {
-    //printf("Copy bitstream (device: %p, ext2loc: %d, addr: 0x%lx, buffer: %p, size: 0x%lx, flags: 0x%x, task: %p)\n", device, __BITEXTRACT(flags, 1, 4), addr, data, size, flags, task);
+    //printf("Copy bitstream (device: %p, ext2loc: %d, addr: 0x%lx, buffer: %p, size: 0x%lx, flags: 0x%x, task: %p)\n", device, __BITEXTRACTU(flags, 1, 4), addr, data, size, flags, task);
 
     pi_spim_cs_t *spim_cs = (pi_spim_cs_t *)device->data;
     pi_spim_t *spim = spim_cs->spim;
@@ -1265,9 +1265,9 @@ void pi_spi_copy_async(struct pi_device *device,
 
     if (likely(!spim->pending_copy))
     {
-        int qspi = __BITEXTRACT(flags, 2, 2) == 1;
-        int cs_mode = __BITEXTRACT(flags, 2, 0);
-        int ext2loc = __BITEXTRACT(flags, 1, 4);
+        int qspi = __BITEXTRACTU(flags, 2, 2) == 1;
+        int cs_mode = __BITEXTRACTU(flags, 2, 0);
+        int ext2loc = __BITEXTRACTU(flags, 1, 4);
         
         spim->pending_copy = task;
 
@@ -1314,9 +1314,9 @@ void pi_spi_copy_2d_async(struct pi_device *device,
 
     if (likely(!spim->pending_copy))
     {
-        int qspi = __BITEXTRACT(flags, 2, 2) == 1;
-        int cs_mode = __BITEXTRACT(flags, 2, 0);
-        int ext2loc = __BITEXTRACT(flags, 1, 4);
+        int qspi = __BITEXTRACTU(flags, 2, 2) == 1;
+        int cs_mode = __BITEXTRACTU(flags, 2, 0);
+        int ext2loc = __BITEXTRACTU(flags, 1, 4);
 
         spim->pending_copy = task;
 
