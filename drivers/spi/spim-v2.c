@@ -1351,8 +1351,8 @@ void pi_spi_conf_init(struct pi_spi_conf *conf)
   conf->itf = 0;
   conf->polarity = 0;
   conf->phase = 0;
-  conf->max_rcv_chunk_size = -1;
-  conf->max_snd_chunk_size = -1;
+  conf->max_rcv_chunk_size = 8192;
+  conf->max_snd_chunk_size = 8192;
 }
 
 static void __attribute__((constructor)) __rt_spim_init()
