@@ -32,11 +32,12 @@ L2_DATA static pi_uart_t __rt_uart[ARCHI_UDMA_NB_UART];
 void pi_uart_conf_init(struct pi_uart_conf *conf)
 {
   conf->baudrate_bps = __RT_UART_BAUDRATE;
-  conf->uart_id = 0;
-  conf->stop_bit_count = 1;
-  conf->parity_mode = 0;
+  conf->stop_bit_count = PI_UART_STOP_BITS_ONE;
+  conf->parity_mode = PI_UART_PARITY_DISABLE;
+  conf->word_size = PI_UART_WORD_SIZE_8_BITS;
   conf->enable_rx = 1;
   conf->enable_tx = 1;
+  conf->uart_id = 0;
 }
 
 
@@ -78,12 +79,19 @@ static void __rt_uart_wait_tx_done(pi_uart_t *uart)
 
 static void __rt_uart_setup(pi_uart_t *uart)
 {
-  int div =  (__rt_freq_periph_get() + uart->baudrate/2) / uart->baudrate;
+  int baudrate = uart->conf.baudrate_bps;
+  int div =  (__rt_freq_periph_get() + baudrate/2) / baudrate;
 
   // The counter in the UDMA will count from 0 to div included
   // and then will restart from 0, so we must give div - 1 as
   // divider
-  plp_uart_setup(uart->channel - ARCHI_UDMA_UART_ID(0), 0, div-1);
+  plp_uart_setup_set(uart->channel - ARCHI_UDMA_UART_ID(0),
+                     uart->conf.parity_mode,
+                     uart->conf.word_size,
+                     uart->conf.stop_bit_count,
+                     uart->conf.enable_tx,
+                     uart->conf.enable_rx,
+                     div-1);
 }
 
 
@@ -160,7 +168,8 @@ int pi_uart_open(struct pi_device *device)
   }
 
   uart->open_count++;
-  uart->baudrate = baudrate;
+  //uart->baudrate = baudrate;
+  memcpy(&(uart->conf), conf, sizeof(struct pi_uart_conf));
   uart->channel = channel;
 
   // First activate uart device
@@ -297,6 +306,71 @@ int pi_uart_write_byte(pi_device_t *device, uint8_t *byte)
 int pi_uart_write_byte_async(pi_device_t *device, uint8_t *byte, pi_task_t *callback)
 {
   return pi_uart_write_async(device, byte, 1, callback);
+}
+
+/* Ioctl functions. */
+static void __rt_uart_conf_set(pi_device_t *device, struct pi_uart_conf *conf)
+{
+  pi_uart_t *uart = (pi_uart_t *) device->data;
+
+  memcpy(&(uart->conf), conf, sizeof(struct pi_uart_conf));
+  __rt_uart_setup(uart);
+}
+
+static void __rt_uart_rx_abort(pi_device_t *device)
+{
+  pi_uart_t *uart = (pi_uart_t *) device->data;
+  plp_uart_rx_disable(uart->channel - ARCHI_UDMA_UART_ID(0));
+  plp_uart_rx_clr(uart->channel - ARCHI_UDMA_UART_ID(0));
+}
+
+static void __rt_uart_tx_abort(pi_device_t *device)
+{
+  pi_uart_t *uart = (pi_uart_t *) device->data;
+  plp_uart_tx_disable(uart->channel - ARCHI_UDMA_UART_ID(0));
+  plp_uart_tx_clr(uart->channel - ARCHI_UDMA_UART_ID(0));
+}
+
+static void __rt_uart_rx_enable(pi_device_t *device)
+{
+  pi_uart_t *uart = (pi_uart_t *) device->data;
+  plp_uart_rx_enable(uart->channel - ARCHI_UDMA_UART_ID(0));
+}
+
+static void __rt_uart_tx_enable(pi_device_t *device)
+{
+  pi_uart_t *uart = (pi_uart_t *) device->data;
+  plp_uart_tx_enable(uart->channel - ARCHI_UDMA_UART_ID(0));
+}
+
+int pi_uart_ioctl(pi_device_t *device, uint32_t cmd, void *arg)
+{
+  switch(cmd)
+  {
+  case PI_UART_IOCTL_CONF_SETUP :
+    __rt_uart_conf_set(device, (struct pi_uart_conf *) arg);
+    break;
+
+  case PI_UART_IOCTL_ABORT_RX :
+    __rt_uart_rx_abort(device);
+    break;
+
+  case PI_UART_IOCTL_ABORT_TX :
+    __rt_uart_tx_abort(device);
+    break;
+
+  case PI_UART_IOCTL_ENABLE_RX :
+    __rt_uart_rx_enable(device);
+    break;
+
+  case PI_UART_IOCTL_ENABLE_TX :
+    __rt_uart_tx_enable(device);
+    break;
+
+  default :
+    return -1;
+  }
+  return 0;
 }
 
 
