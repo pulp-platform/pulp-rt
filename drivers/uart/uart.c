@@ -15,7 +15,7 @@
  */
 
 
-/* 
+/*
  * Authors: Germain Haugou, GreenWaves Technologies (germain.haugou@greenwaves-technologies.com)
  */
 
@@ -23,6 +23,18 @@
 
 #define __RT_UART_BAUDRATE 115200
 
+
+/*
+ * Disable RX channel, abort current transfer,
+ * flush event tasks linked to the channel.
+ */
+static void __rt_uart_rx_abort(pi_device_t *device);
+
+/*
+ * Disable TX channel, abort current transfer,
+ * flush event tasks linked to the channel.
+ */
+static void __rt_uart_tx_abort(pi_device_t *device);
 
 
 L2_DATA static pi_uart_t __rt_uart[ARCHI_UDMA_NB_UART];
@@ -56,7 +68,7 @@ static void __rt_uart_wait_tx_done(pi_uart_t *uart)
 #if 1
 
 // There is a bug in the uart, between 2 bytes, the uart says it is not busy
-// and so if we are not lucky, we can continue while the uart is actually 
+// and so if we are not lucky, we can continue while the uart is actually
 // still busy. Instead, wait for a few clock refs
 
 #ifdef ITC_VERSION
@@ -148,7 +160,7 @@ static int __rt_uart_setfreq_after(void *arg)
 int pi_uart_open(struct pi_device *device)
 {
   int irq = rt_irq_disable();
-  
+
   struct pi_uart_conf *conf = (struct pi_uart_conf *)device->config;
 
   int uart_id = conf->uart_id;
@@ -210,9 +222,10 @@ void pi_uart_close(struct pi_device *device)
   // some printf are still pending
   __rt_uart_wait_tx_done(uart);
 
-  // Set enable bits for uart channel back to 0 
+  // Set enable bits for uart channel back to 0
   // This is needed to be able to propagate new configs when re-opening
-  plp_uart_disable(uart->channel - ARCHI_UDMA_UART_ID(0));      
+  __rt_uart_tx_abort(device);
+  __rt_uart_rx_abort(device);
 
   // Then stop the uart
   plp_udma_cg_set(plp_udma_cg_get() & ~(1<<uart->channel));
@@ -322,6 +335,11 @@ static void __rt_uart_rx_abort(pi_device_t *device)
   pi_uart_t *uart = (pi_uart_t *) device->data;
   plp_uart_rx_disable(uart->channel - ARCHI_UDMA_UART_ID(0));
   plp_uart_rx_clr(uart->channel - ARCHI_UDMA_UART_ID(0));
+  /* Clear event tasks. */
+  uart->rx_channel.pendings[0] = NULL;
+  uart->rx_channel.pendings[1] = NULL;
+  uart->rx_channel.waitings_first = NULL;
+  uart->rx_channel.waitings_last = NULL;
 }
 
 static void __rt_uart_tx_abort(pi_device_t *device)
@@ -329,6 +347,11 @@ static void __rt_uart_tx_abort(pi_device_t *device)
   pi_uart_t *uart = (pi_uart_t *) device->data;
   plp_uart_tx_disable(uart->channel - ARCHI_UDMA_UART_ID(0));
   plp_uart_tx_clr(uart->channel - ARCHI_UDMA_UART_ID(0));
+  /* Clear event tasks. */
+  uart->tx_channel.pendings[0] = NULL;
+  uart->tx_channel.pendings[1] = NULL;
+  uart->tx_channel.waitings_first = NULL;
+  uart->tx_channel.waitings_last = NULL;
 }
 
 static void __rt_uart_rx_enable(pi_device_t *device)
