@@ -20,7 +20,8 @@
 typedef struct pi_uart_s {
   int open_count;
   int channel;
-  unsigned int baudrate;
+  //unsigned int baudrate;
+  struct pi_uart_conf conf;
   int active;
   rt_udma_channel_t rx_channel;
   rt_udma_channel_t tx_channel;
