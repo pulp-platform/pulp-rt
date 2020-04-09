@@ -68,8 +68,8 @@ void __rt_deinit()
 
 #else
 
-extern unsigned char stack;
-extern unsigned char stack_start;
+extern unsigned char __rt_fc_stack[];
+extern unsigned int __rt_fc_stack_size;
 
 void __rt_init()
 {
@@ -84,7 +84,7 @@ void __rt_init()
 #endif
 
 #ifdef __RT_USE_ASSERT
-  cpu_stack_check_enable((int)&stack_start, (int)&stack);
+  cpu_stack_check_enable((int)__rt_fc_stack, (int)__rt_fc_stack + __rt_fc_stack_size);
 #endif
 
   rt_trace(RT_TRACE_INIT, "Starting runtime initialization\n");
