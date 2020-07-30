@@ -559,68 +559,71 @@ static inline void *rt_cluster_tiny_addr(int cid, void *data)
 
 static inline unsigned int __rt_get_fc_vector_base()
 {
-#if defined(ARCHI_CORE_RISCV_ITC)
-  return hal_spr_read(0x305) & ~1;
-#else
-#if defined(APB_SOC_VERSION) && APB_SOC_VERSION == 1
-  return ARCHI_L2_ADDR;
-#else
-  if (rt_is_fc()) {
-#if defined(ARCHI_CORE_HAS_SECURITY) && !defined(ARCHI_CORE_HAS_1_10)
-    return __builtin_pulp_spr_read(SR_MTVEC);
-#elif defined(ARCHI_CORE_HAS_1_10)
-#ifdef RV_ISA_RV32
-    return 0;
-#else
-    return __builtin_pulp_spr_read(SR_MTVEC) & ~1;
-#endif
-#elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
-    return apb_soc_bootaddr_get();
-#endif
-  }
-  else
-  {
-#if defined(ARCHI_HAS_CLUSTER)
-#if defined(ARCHI_CLUSTER_CTRL_ADDR)
-    return plp_ctrl_bootaddr_get();
-#endif
-#endif
-  }
-#endif
-#endif
+  #if defined(ARCHI_CORE_RISCV_ITC)
+    return hal_spr_read(0x305) & ~1;
+  #else
+    #if defined(APB_SOC_VERSION) && APB_SOC_VERSION == 1
+      return ARCHI_L2_ADDR;
+    #else
+      if (rt_is_fc()) {
+        #if defined(ARCHI_CORE_HAS_SECURITY) && !defined(ARCHI_CORE_HAS_1_10)
+          return __builtin_pulp_spr_read(SR_MTVEC);
+        #elif defined(ARCHI_CORE_HAS_1_10)
+          #ifdef RV_ISA_RV32
+            return hal_spr_read(0x7D1) & ~1; //MTVECx in Ibex with Pulpissimo Patch
+            //return 0;
+          #else
+            return __builtin_pulp_spr_read(SR_MTVEC) & ~1;
+          #endif
+        #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+          return apb_soc_bootaddr_get();
+        #endif
+      }
+      else
+      {
+        #if defined(ARCHI_HAS_CLUSTER)
+          #if defined(ARCHI_CLUSTER_CTRL_ADDR)
+            return plp_ctrl_bootaddr_get();
+          #endif
+        #endif
+      }
+    #endif
+  #endif
 
   return 0;
 }
 
 static inline void __rt_set_fc_vector_base(unsigned int base)
 {
-#if defined(ARCHI_CORE_RISCV_ITC)
-  hal_spr_write(0x305, base);
-#else
-#if defined(APB_SOC_VERSION) && APB_SOC_VERSION == 1
-#else
-  if (rt_is_fc()) {
-#if defined(ARCHI_CORE_HAS_SECURITY)
-    __builtin_pulp_spr_write(SR_MTVEC, base);
-#elif defined(ARCHI_CORE_HAS_1_10)
-#ifdef RV_ISA_RV32
-#else
-    __builtin_pulp_spr_write(SR_MTVEC, base | 1);
-#endif
-#elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
-    apb_soc_bootaddr_set(base);
-#endif
-  }
-  else
-  {
-#if defined(ARCHI_HAS_CLUSTER)
-#if defined(ARCHI_CLUSTER_CTRL_ADDR)
-    plp_ctrl_bootaddr_set(base);
-#endif
-#endif
-  }
-#endif
-#endif
+  #if defined(ARCHI_CORE_RISCV_ITC)
+    hal_spr_write(0x305, base);
+  #else
+    #if defined(APB_SOC_VERSION) && APB_SOC_VERSION == 1
+      
+    #else
+      if (rt_is_fc()) {
+        #if defined(ARCHI_CORE_HAS_SECURITY)
+          __builtin_pulp_spr_write(SR_MTVEC, base);
+        #elif defined(ARCHI_CORE_HAS_1_10)
+          #ifdef RV_ISA_RV32
+            hal_spr_write(0x7D1, base); //MTVECx in Ibex with Pulpissimo Patch
+          #else
+            __builtin_pulp_spr_write(SR_MTVEC, base | 1);
+          #endif
+        #elif defined(APB_SOC_VERSION) && APB_SOC_VERSION >= 2
+          apb_soc_bootaddr_set(base);
+        #endif
+      }
+      else
+      {
+        #if defined(ARCHI_HAS_CLUSTER)
+          #if defined(ARCHI_CLUSTER_CTRL_ADDR)
+            plp_ctrl_bootaddr_set(base);
+          #endif
+        #endif
+      }
+    #endif
+  #endif
 }
 
 typedef enum {
